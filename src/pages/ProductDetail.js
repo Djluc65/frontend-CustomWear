@@ -14,7 +14,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { currentProduct, loading, error } = useSelector(state => state.products);
+  const { currentProduct, isLoading, error } = useSelector(state => state.products);
   const { user } = useSelector(state => state.auth);
   
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -67,7 +67,7 @@ const ProductDetail = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="product-detail-loading">
         <div className="loading-spinner"></div>
@@ -112,6 +112,15 @@ const ProductDetail = () => {
   const getImageUrl = (img) => {
     if (!img) return '/api/placeholder/600/600';
     return typeof img === 'string' ? img : (img.url || '/api/placeholder/600/600');
+  };
+
+  // Unifie le flag de personnalisation
+  const isCustomizable = Boolean(currentProduct?.customizable || currentProduct?.customization?.isCustomizable);
+
+  // Normalise l’affichage du nom de couleur (string ou objet)
+  const getColorName = (color) => {
+    if (!color) return '';
+    return typeof color === 'string' ? color : (color.name || '');
   };
 
   // Compute a safe minimum price across variants
@@ -226,7 +235,7 @@ const ProductDetail = () => {
                     <div className="variant-info">
                       <span className="variant-name">
                         {variant.size && `Taille: ${variant.size}`}
-                        {variant.color && ` - Couleur: ${variant.color}`}
+                        {getColorName(variant.color) && ` - Couleur: ${getColorName(variant.color)}`}
                       </span>
                       <span className="variant-price">{formatPrice(variant?.price)} €</span>
                     </div>
@@ -238,7 +247,7 @@ const ProductDetail = () => {
           )}
 
           {/* Personnalisation */}
-          {currentProduct.customizable && (
+          {isCustomizable && (
             <div className="customization-section">
               <div className="customization-header">
                 <label className="checkbox-label">
@@ -447,7 +456,7 @@ const ProductDetail = () => {
 
           <div className="details-section">
             <h3>Personnalisation</h3>
-            <p><strong>Personnalisable:</strong> {currentProduct.customization?.isCustomizable ? 'Oui' : 'Non'}</p>
+            <p><strong>Personnalisable:</strong> {isCustomizable ? 'Oui' : 'Non'}</p>
             {currentProduct.customization?.options && (
               <ul>
                 <li>Texte: {currentProduct.customization.options.text?.enabled ? 'Oui' : 'Non'}</li>

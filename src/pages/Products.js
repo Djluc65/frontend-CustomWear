@@ -144,15 +144,15 @@ const Products = () => {
         </div>
         
         <div className="products-controls">
-          {/* <div className="search-bar">
+          <div className="search-bar">
             <FiSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Rechercher un produit..."
+              placeholder="Rechercher un produit (titre, description, tags)"
               value={localFilters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
             />
-          </div> */}
+          </div>
           
           <button 
             className={`filter-toggle ${showFilters ? 'active' : ''}`}
@@ -224,11 +224,14 @@ const Products = () => {
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
                 <option value="">Toutes les catégories</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat.slug}>
-                    {cat.name}
-                  </option>
-                ))}
+                {categories.map(cat => {
+                  const slug = getCategorySlug(cat);
+                  return (
+                    <option key={cat._id || cat.id || slug} value={slug}>
+                      {cat.name}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             

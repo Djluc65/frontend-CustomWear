@@ -11,12 +11,13 @@ const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const primaryImageUrl = product?.images?.[0]?.url || product?.image || '/api/placeholder/300/300';
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     const effectivePrice = (product?.price?.sale ?? product?.price?.base ?? 0);
-    const primaryImageUrl = product?.images?.[0]?.url || product?.image || '/api/placeholder/300/300';
 
     const cartItem = {
       id: product._id,
@@ -87,12 +88,22 @@ const ProductCard = ({ product }) => {
       transition={{ duration: 0.3 }}
     >
       <Link to={`/product/${product._id}`} className="product-link">
-        <div className="product-image-container">
+        <div
+          className="product-image-container"
+          style={{
+            backgroundImage: `url(${primaryImageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
           <img
-            src={product?.images?.[0]?.url || product?.image || '/api/placeholder/300/300'}
+            src={primaryImageUrl}
             alt={product.name}
             className="product-image"
             loading="lazy"
+            decoding="async"
+            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, 300px"
           />
           
           {/* Badge de réduction */}

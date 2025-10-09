@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -15,6 +15,12 @@ import {
   FiSearch
 } from 'react-icons/fi';
 import { logout } from '../../store/slices/authSlice';
+import { 
+  fetchNotifications, 
+  markAllRead, 
+  markRead, 
+  clearAll 
+} from '../../store/slices/notificationsSlice';
 import './AdminLayout.css';
 
 const AdminLayout = () => {
@@ -23,6 +29,8 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
+  const { items: notifications, unreadCount } = useSelector(state => state.notifications);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const menuItems = [
     { path: '/admin', icon: FiHome, label: 'Dashboard', exact: true },
@@ -37,6 +45,11 @@ const AdminLayout = () => {
     dispatch(logout());
     navigate('/');
   };
+
+  useEffect(() => {
+    // Charger les notifications au montage
+    dispatch(fetchNotifications());
+  }, [dispatch]);
 
   const isActiveRoute = (path, exact = false) => {
     if (exact) {
@@ -124,10 +137,45 @@ const AdminLayout = () => {
               />
             </div>
             
-            <button className="notification-btn">
-              <FiBell />
-              <span className="notification-badge">3</span>
-            </button>
+            <div className="notification-wrapper">
+              <button className="notification-btn" onClick={() => setIsNotifOpen(v => !v)}>
+                <FiBell />
+                {unreadCount > 0 && (
+                  <span className="notification-badge">{unreadCount}</span>
+                )}
+              </button>
+
+              {isNotifOpen && (
+                <div className="notification-panel">
+                  <div className="notification-panel-header">
+                    <span>Notifications</span>
+                    <div className="notification-actions">
+                      <button onClick={() => dispatch(markAllRead())}>Tout lire</button>
+                      <button onClick={() => dispatch(clearAll())}>Vider</button>
+                    </div>
+                  </div>
+                  <div className="notification-list">
+                    {notifications && notifications.length > 0 ? (
+                      notifications.map((n) => (
+                        <div 
+                          key={n.id} 
+                          className={`notification-item ${n.type} ${n.read ? 'read' : 'unread'}`}
+                          onMouseEnter={() => !n.read && dispatch(markRead(n.id))}
+                        >
+                          <div className="notification-item-header">
+                            <span className="notification-title">{n.title}</span>
+                            <span className="notification-time">{new Date(n.ts).toLocaleString('fr-FR')}</span>
+                          </div>
+                          <div className="notification-message">{n.message}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="notification-empty">Aucune notification</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="header-user">
               <div className="user-avatar">

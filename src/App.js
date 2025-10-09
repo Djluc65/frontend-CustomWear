@@ -10,6 +10,8 @@ import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import CheckoutCancel from './pages/CheckoutCancel';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import Customize from './pages/Customize';
@@ -20,9 +22,11 @@ import AdminRoute from './components/Admin/AdminRoute';
 import AdminLayout from './components/Admin/AdminLayout';
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
-import AdminProducts from './pages/Admin/AdminProducts';
-import AdminOrders from './pages/Admin/AdminOrders';
-import AdminUsers from './pages/Admin/AdminUsers';
+  import AdminProducts from './pages/Admin/AdminProducts';
+  import AdminOrders from './pages/Admin/AdminOrders';
+  import AdminUsers from './pages/Admin/AdminUsers';
+  import AdminAnalytics from './pages/Admin/AdminAnalytics';
+  import AdminSettings from './pages/Admin/AdminSettings';
 
 // Import des styles
 import 'react-toastify/dist/ReactToastify.css';
@@ -46,6 +50,8 @@ function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
 
         {/* Routes publiques */}
@@ -60,6 +66,8 @@ function App() {
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/checkout/success" element={<CheckoutSuccess />} />
+                <Route path="/checkout/cancel" element={<CheckoutCancel />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/customize" element={<Customize />} />

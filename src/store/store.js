@@ -9,6 +9,7 @@ import cartReducer from './slices/cartSlice';
 import productsReducer from './slices/productsSlice';
 import ordersReducer from './slices/ordersSlice';
 import adminReducer from './slices/adminSlice';
+import notificationsReducer from './slices/notificationsSlice';
 
 // Configuration de persistance
 const persistConfig = {
@@ -23,7 +24,8 @@ const rootReducer = combineReducers({
   cart: cartReducer,
   products: productsReducer,
   orders: ordersReducer,
-  admin: adminReducer
+  admin: adminReducer,
+  notifications: notificationsReducer
 });
 
 // Reducer persisté

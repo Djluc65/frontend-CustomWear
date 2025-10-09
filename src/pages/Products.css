@@ -37,6 +37,12 @@
   min-width: 300px;
 }
 
+/* Spécifique à la zone de contrôle des produits: réduire la largeur */
+.products-controls .search-bar {
+  min-width: 200px;
+  width: 420px;
+}
+
 .search-bar input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;

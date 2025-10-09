@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiCreditCard, FiTruck, FiUser } from 'react-icons/fi';
+import api from '../services/api';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -11,6 +12,7 @@ const Checkout = () => {
   const { user } = useSelector(state => state.auth);
   
   const [step, setStep] = useState(1);
+  const [isPaying, setIsPaying] = useState(false);
   const [formData, setFormData] = useState({
     shipping: {
       firstName: '',
@@ -43,10 +45,66 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Logique de traitement de la commande
-    console.log('Order submitted:', formData);
-    // Redirection vers page de confirmation
-    navigate('/order-confirmation');
+    if (step !== 2) {
+      // Forcer le passage à l’étape paiement si on n’y est pas
+      return setStep(2);
+    }
+
+    try {
+      setIsPaying(true);
+      // Préparer les items (montants en centimes)
+      const lineItems = items.map((item) => ({
+        name: item.name,
+        amount: Math.round(Number(item.price) * 100),
+        quantity: Number(item.quantity) || 1,
+        currency: 'EUR',
+        image: item.image || undefined,
+        sku: item.sku || undefined
+      }));
+
+      // Frais de livraison affichés dans le résumé (5.99 €)
+      const shippingFeeCents = 599;
+
+      if (formData.payment.method === 'card') {
+        // Stripe Checkout
+        const { data } = await api.post('/api/payments/create-checkout-session', {
+          items: lineItems,
+          customerEmail: formData?.shipping?.email || user?.email || undefined,
+          shippingFeeCents,
+          metadata: {
+            source: 'checkout-page',
+            cartItemsCount: items.length
+          }
+        });
+
+        if (data?.url) {
+          window.location.assign(data.url);
+        } else {
+          console.error('URL de session Stripe manquante');
+        }
+      } else if (formData.payment.method === 'paypal') {
+        // PayPal Checkout: créer l'ordre puis rediriger vers l'approve URL
+        const { data } = await api.post('/api/paypal/create-order', {
+          items: lineItems,
+          customerEmail: formData?.shipping?.email || user?.email || undefined,
+          shippingFeeCents,
+          metadata: {
+            source: 'checkout-page',
+            cartItemsCount: items.length
+          }
+        });
+
+        if (data?.approveUrl) {
+          window.location.assign(data.approveUrl);
+        } else {
+          console.error('Lien d’approbation PayPal manquant');
+        }
+      }
+    } catch (err) {
+      console.error('Erreur lors de l’initiation du paiement:', err);
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   if (items.length === 0) {
@@ -213,13 +271,25 @@ const Checkout = () => {
                   </div>
                 )}
 
+                {formData.payment.method === 'paypal' && (
+                  <div className="paypal-info" style={{ marginTop: '0.5rem', color: '#374151' }}>
+                    Vous serez redirigé vers PayPal pour valider votre paiement.
+                  </div>
+                )}
+
                 <div className="form-actions">
                   <button type="button" onClick={() => setStep(1)} className="back-btn">
                     Retour
                   </button>
-                  <button type="submit" className="submit-btn">
-                    Finaliser la commande
-                  </button>
+                  {formData.payment.method === 'paypal' ? (
+                    <button type="submit" className="paypal-btn" disabled={isPaying}>
+                      {isPaying ? 'Redirection vers PayPal…' : 'Payer avec PayPal'}
+                    </button>
+                  ) : (
+                    <button type="submit" className="submit-btn" disabled={isPaying}>
+                      {isPaying ? 'Redirection vers Stripe…' : 'Payer par carte'}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
