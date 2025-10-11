@@ -21,7 +21,7 @@ const Products = () => {
   
   const { 
     products, 
-    loading, 
+    isLoading, 
     error, 
     filters, 
     pagination,
@@ -98,17 +98,19 @@ const Products = () => {
   };
 
   const handleLoadMore = () => {
-    if (pagination.hasNextPage) {
+    const currentPage = pagination?.page || pagination?.currentPage || 1;
+    const totalPages = pagination?.pages || pagination?.totalPages || 1;
+    if (currentPage < totalPages) {
       dispatch(fetchProducts({
         category: localFilters.category || '',
         search: localFilters.search || '',
-        page: (pagination.currentPage || 1) + 1,
+        page: currentPage + 1,
         limit: 12
       }));
     }
   };
 
-  if (loading && products.length === 0) {
+  if (isLoading && products.length === 0) {
     return (
       <div className="products-loading">
         <div className="loading-spinner"></div>
@@ -306,7 +308,7 @@ const Products = () => {
           ))}
         </div>
         
-        {products.length === 0 && !loading && (
+        {products.length === 0 && !isLoading && (
           <div className="no-products">
             <h3>Aucun produit trouvé</h3>
             <p>Essayez de modifier vos critères de recherche</p>
@@ -316,14 +318,14 @@ const Products = () => {
           </div>
         )}
         
-        {pagination.hasNextPage && (
+        {((pagination?.page || pagination?.currentPage || 1) < (pagination?.pages || pagination?.totalPages || 1)) && (
           <div className="load-more">
             <button 
               onClick={handleLoadMore}
-              disabled={loading}
+              disabled={isLoading}
               className="load-more-btn"
             >
-              {loading ? 'Chargement...' : 'Charger plus'}
+              {isLoading ? 'Chargement...' : 'Charger plus'}
             </button>
           </div>
         )}
