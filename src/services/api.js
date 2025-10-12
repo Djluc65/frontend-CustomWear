@@ -148,6 +148,8 @@ export const authAPI = {
   logout: () => api.post('/api/auth/logout'),
   getProfile: () => api.get('/api/users/profile'),
   updateProfile: (userData) => api.put('/api/users/profile', userData),
+  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
+  resetPassword: (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword }),
 };
 
 // Services API pour les produits (côté client)

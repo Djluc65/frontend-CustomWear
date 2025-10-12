@@ -70,6 +70,9 @@ export const googleLogin = createAsyncThunk(
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
       return data;
     } catch (error) {
       console.error('[authSlice] googleLogin error', error?.response?.data || error);

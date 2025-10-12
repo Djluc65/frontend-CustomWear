@@ -104,10 +104,7 @@ const Auth = () => {
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = () => {
+    const initializeGoogle = () => {
       try {
         if (!window.google?.accounts?.id) return;
         window.google.accounts.id.initialize({
@@ -139,6 +136,18 @@ const Auth = () => {
         console.warn('[Auth] Initialisation Google Identity échouée', e);
       }
     };
+
+    // Si le SDK est déjà présent (chargé via index.html), initialiser directement
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return;
+    }
+
+    // Sinon, injecter le script et initialiser au chargement
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = initializeGoogle;
     document.body.appendChild(script);
     return () => {
       if (script && script.parentNode) script.parentNode.removeChild(script);
