@@ -11,6 +11,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.12.2",
+    "build": "^0.1.4",
     "fabric": "^6.7.1",
     "framer-motion": "^12.23.22",
     "html2canvas": "^1.4.1",
