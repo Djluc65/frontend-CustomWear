@@ -417,8 +417,8 @@
   background: #f8fafc;
 }
 
-/* Style YouTube pour la barre de recherche dans la sous-barre */
-.search-bar { 
+/* Style YouTube pour la barre de recherche dans la sous-barre (scopée) */
+.sub-navbar .search-bar { 
   display: flex; 
   align-items: center; 
   justify-content: center; 
@@ -432,7 +432,7 @@
   transition: box-shadow 160ms ease, background-color 160ms ease, transform 160ms ease, border-color 160ms ease;
 }
 
-.search-bar input { 
+.sub-navbar .search-bar input { 
   flex: 1; 
   height: 36px; 
   border: none; 
@@ -445,7 +445,7 @@
   transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
-.search-btn { 
+.sub-navbar .search-btn { 
   background-color: #3b82f6; 
   border: none; 
   height: 36px; 
@@ -458,16 +458,16 @@
   transition: background-color 0.2s; 
 }
 
-.search-btn:hover { 
+.sub-navbar .search-btn:hover { 
   background-color: #2563eb; 
 }
 
-.search-btn svg { 
+.sub-navbar .search-btn svg { 
   color: #fff; 
   font-size: 18px; 
 }
 
-.mic-btn { 
+.sub-navbar .mic-btn { 
   background-color: #f8fafc; 
   border: 1px solid #e2e8f0; 
   border-radius: 50%; 
@@ -480,23 +480,23 @@
   cursor: pointer; 
 }
 
-.mic-btn:hover { 
+.sub-navbar .mic-btn:hover { 
   background-color: #eef2f7; 
 }
 
-.mic-btn svg { 
+.sub-navbar .mic-btn svg { 
   color: #374151; 
   font-size: 18px; 
 }
 
 /* Animation au focus (click dans l'input) */
-.search-bar:focus-within {
+.sub-navbar .search-bar:focus-within {
   background-color: #ffffff;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.search-bar input:focus {
+.sub-navbar .search-bar input:focus {
   background-color: #ffffff;
 }
 
