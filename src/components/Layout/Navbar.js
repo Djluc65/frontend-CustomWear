@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone } from 'react-icons/fa';
 import { logout, loadUser } from '../../store/slices/authSlice';
@@ -9,9 +9,12 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debounceTimer, setDebounceTimer] = useState(null);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const userMenuRef = useRef(null);
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const { isAuthenticated, user } = useSelector(state => state.auth);
   const { totalQuantity } = useSelector(state => state.cart);
@@ -28,6 +31,7 @@ const Navbar = () => {
     dispatch(logout());
     navigate('/');
     setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
   };
 
   const handleSearch = (e) => {
@@ -59,6 +63,38 @@ const Navbar = () => {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  // Fermer dropdown utilisateur au changement de route
+  useEffect(() => {
+    setIsUserDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Fermer dropdown si clic en dehors
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  // Empêcher le scroll arrière-plan quand le menu mobile est ouvert
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
 
   return (
     <nav className="navbar">
@@ -95,12 +131,17 @@ const Navbar = () => {
 
           {/* Utilisateur */}
           {isAuthenticated ? (
-            <div className="user-menu">
-              <button className="navbar-action user-button">
+            <div className="user-menu" ref={userMenuRef}>
+              <button
+                className="navbar-action user-button"
+                onClick={() => setIsUserDropdownOpen((prev) => !prev)}
+                aria-haspopup="true"
+                aria-expanded={isUserDropdownOpen}
+              >
                 <FaUser />
                 <span className="user-name">{user?.name}</span>
               </button>
-              <div className="user-dropdown">
+              <div className={`user-dropdown ${isUserDropdownOpen ? 'open' : ''}`}>
                 <Link to="/profile" className="dropdown-link">Mon Profil</Link>
                 <Link to="/orders" className="dropdown-link">Mes Commandes</Link>
                 <button onClick={handleLogout} className="dropdown-link logout-btn">
