@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome } from 'react-icons/fa';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import './Navbar.css';
 
@@ -10,6 +10,8 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debounceTimer, setDebounceTimer] = useState(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const userMenuRef = useRef(null);
   
   const dispatch = useDispatch();
@@ -96,8 +98,33 @@ const Navbar = () => {
     };
   }, [isMenuOpen]);
 
+  // Masquer la navbar au scroll (mobile uniquement)
+  useEffect(() => {
+    const handleScroll = () => {
+      const current = window.scrollY;
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        setIsHidden(false);
+        lastScrollY.current = current;
+        return;
+      }
+      if (!isMenuOpen) {
+        if (current > lastScrollY.current && current > 20) {
+          setIsHidden(true);
+        } else {
+          setIsHidden(false);
+        }
+      } else {
+        setIsHidden(false);
+      }
+      lastScrollY.current = current;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMenuOpen]);
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isHidden ? 'hidden' : ''}`}>
       <div className="navbar-top">
       <div className="navbar-container">
         {/* Logo */}
@@ -121,6 +148,10 @@ const Navbar = () => {
 
         {/* Actions */}
         <div className="navbar-actions">
+          {/* Accueil (mobile icône) */}
+          <Link to="/" className="navbar-action home-mobile" aria-label="Accueil">
+            <FaHome />
+          </Link>
           {/* Panier */}
           <Link to="/cart" className="navbar-action cart-link">
             <FaShoppingCart />

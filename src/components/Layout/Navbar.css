@@ -7,6 +7,12 @@
   transition: all 0.3s ease;
 }
 
+/* Masquage de la navbar (utilisé en mobile) */
+.navbar.hidden {
+  transform: translateY(-120%);
+  pointer-events: none;
+}
+
 .navbar-top {
   background: linear-gradient(135deg, #32465b 0%, #a8d8ef 100%);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
@@ -167,6 +173,11 @@
 
 /* Icône de connexion mobile cachée par défaut (visible en mobile via media query) */
 .login-mobile {
+  display: none;
+}
+
+/* Icône Accueil mobile cachée par défaut */
+.home-mobile {
   display: none;
 }
 
@@ -533,6 +544,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  /* Décaler légèrement la navbar vers le bas en mobile */
+  .navbar {
+    top: 10px;
+  }
   .navbar-menu,
   .navbar-search,
   .auth-links,
@@ -565,6 +580,11 @@
 
   /* Afficher l’icône de connexion uniquement sur mobile */
   .login-mobile {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .home-mobile {
     display: inline-flex;
     align-items: center;
   }
