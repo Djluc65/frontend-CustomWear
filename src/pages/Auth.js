@@ -13,6 +13,7 @@ const Auth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector(state => state.auth);
+  const ENABLE_TEST_ADMIN = process.env.REACT_APP_ENABLE_TEST_ADMIN === 'true';
   
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode');
@@ -350,7 +351,7 @@ const Auth = () => {
             <span>Continuer avec Facebook</span>
           </button>
 
-          {isLogin && (
+          {ENABLE_TEST_ADMIN && isLogin && (
             <button onClick={handleTestAdminLogin} className="test-admin-btn">
               <FiShield />
               <span>Connexion Admin Test</span>

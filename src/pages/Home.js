@@ -10,6 +10,7 @@ import './Home.css';
 const Home = () => {
   const dispatch = useDispatch();
   const { featuredProducts, loading } = useSelector((state) => state.products);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(fetchFeaturedProducts());
@@ -113,9 +114,11 @@ const Home = () => {
                 <FaPalette />
                 Personnaliser Maintenant
               </Link>
-              <Link to="/admin/login" className="btn btn-outline" style={{ marginTop: '10px', fontSize: '0.9em' }}>
-                Admin Dashboard
-              </Link>
+              {isAuthenticated && user?.role === 'admin' && (
+                <Link to="/admin/login" className="btn btn-outline" style={{ marginTop: '10px', fontSize: '0.9em' }}>
+                  Admin Dashboard
+                </Link>
+              )}
             </div>
           </motion.div>
           
