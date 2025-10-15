@@ -344,7 +344,7 @@ const Auth = () => {
             <FcGoogle />
             <span>Continuer avec Google</span>
           </button>
-          <div id="google-btn-container" className="google-btn-container" />
+          {/* Suppression du conteneur de bouton Google rendu par Google Identity pour éviter la duplication */}
 
           <button onClick={handleFacebookAuth} className="facebook-btn">
             <FaFacebook />
