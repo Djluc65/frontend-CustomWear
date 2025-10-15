@@ -150,10 +150,17 @@ const Navbar = () => {
               </div>
             </div>
           ) : (
-            <div className="auth-links">
-              <Link to="/auth" className="navbar-link">Connexion</Link>
-              <Link to="/auth?mode=register" className="navbar-button">Inscription</Link>
-            </div>
+            <>
+              {/* Icône Connexion (mobile uniquement) */}
+              <Link to="/auth" className="navbar-action login-mobile" aria-label="Connexion">
+                <FaUser />
+              </Link>
+              {/* Liens texte (desktop) */}
+              <div className="auth-links">
+                <Link to="/auth" className="navbar-link">Connexion</Link>
+                <Link to="/auth?mode=register" className="navbar-button">Inscription</Link>
+              </div>
+            </>
           )}
         </div>
 

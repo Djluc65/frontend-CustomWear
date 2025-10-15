@@ -165,6 +165,11 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Icône de connexion mobile cachée par défaut (visible en mobile via media query) */
+.login-mobile {
+  display: none;
+}
+
 .navbar-action:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
@@ -540,6 +545,12 @@
     display: block;
   }
 
+  /* Placer le bouton menu (hamburger) à gauche sur mobile */
+  .mobile-menu-toggle {
+    order: -1;
+    margin-right: 10px;
+  }
+
   .navbar-container {
     padding: 0 15px;
   }
@@ -550,6 +561,12 @@
 
   .user-name {
     display: none;
+  }
+
+  /* Afficher l’icône de connexion uniquement sur mobile */
+  .login-mobile {
+    display: inline-flex;
+    align-items: center;
   }
 }
 
