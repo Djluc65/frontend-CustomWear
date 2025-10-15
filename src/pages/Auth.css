@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #d6d9e6 0%, #cecece 100%);
+  background: whitesmoke;
   padding: 2rem 1rem;
 }
 
@@ -232,7 +232,7 @@
 }
 
 .auth-image {
-  background: linear-gradient(135deg, #32465b 0%, #a8d8ef 100%);
+  background: #32465b;
   display: flex;
   flex-direction: column;
   align-items: center;

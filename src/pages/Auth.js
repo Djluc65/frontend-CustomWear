@@ -236,7 +236,7 @@ const Auth = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="auth-header">
-            <h1>{isLogin ? 'Connexi' : 'Inscription'}</h1>
+            <h1>{isLogin ? 'Connexion' : 'Inscription'}</h1>
             <p>
               {isLogin 
                 ? 'Connectez-vous à votre compte CustomWear' 
