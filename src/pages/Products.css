@@ -1,5 +1,6 @@
 .products-page {
   max-width: 1000px;
+  height: 2500px;
   margin: 0 auto;
   padding: 2rem 1rem;
   min-height: calc(100vh - 200px);
