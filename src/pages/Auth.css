@@ -174,11 +174,15 @@
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s ease;
+  margin-top: 5px;
 }
 
 .facebook-btn:hover {
   background: #f9fafb;
   border-color: #9ca3af;
+}
+.facebook-icon {
+  color: #3b82f6;
 }
 
 .google-btn svg {
