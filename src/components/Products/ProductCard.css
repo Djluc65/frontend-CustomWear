@@ -126,6 +126,12 @@
   background: #e74c3c;
 }
 
+/* État actif (aimé) */
+.wishlist-btn.active {
+  background: #e74c3c;
+  color: white;
+}
+
 .cart-btn:hover {
   background: #27ae60;
 }

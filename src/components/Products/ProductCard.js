@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FaShoppingCart, FaHeart, FaEye, FaStar } from 'react-icons/fa';
 import { addToCart } from '../../store/slices/cartSlice';
 import { toast } from 'react-toastify';
 import './ProductCard.css';
+import { usersAPI } from '../../services/api';
 
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { user } = useSelector(state => state.auth);
+  const [liked, setLiked] = useState(false);
 
   const primaryImageUrl = product?.images?.[0]?.url || product?.image || '/api/placeholder/300/300';
 
@@ -39,10 +42,36 @@ const ProductCard = ({ product }) => {
     });
   };
 
-  const handleWishlist = (e) => {
+  useEffect(() => {
+    if (user && Array.isArray(user.wishlist)) {
+      const isLiked = user.wishlist.some(id => id === product._id);
+      setLiked(isLiked);
+    }
+  }, [user, product?._id]);
+
+  const handleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.info('Fonctionnalité de liste de souhaits bientôt disponible !');
+    if (!user) {
+      toast.info('Connectez-vous pour gérer vos favoris');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      if (!liked) {
+        await usersAPI.addToWishlist(product._id);
+        setLiked(true);
+        toast.success('Ajouté aux favoris');
+      } else {
+        await usersAPI.removeFromWishlist(product._id);
+        setLiked(false);
+        toast.info('Retiré des favoris');
+      }
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Erreur lors de la mise à jour des favoris';
+      toast.error(message);
+    }
   };
 
   const handleView = (e) => {
@@ -124,11 +153,11 @@ const ProductCard = ({ product }) => {
           <div className="product-overlay">
             <div className="product-actions">
               <motion.button
-                className="action-btn wishlist-btn"
+                className={`action-btn wishlist-btn ${liked ? 'active' : ''}`}
                 onClick={handleWishlist}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                title="Ajouter aux favoris"
+                title={liked ? "Retirer des favoris" : "Ajouter aux favoris"}
               >
                 <FaHeart />
               </motion.button>

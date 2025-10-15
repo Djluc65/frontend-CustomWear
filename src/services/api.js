@@ -152,6 +152,13 @@ export const authAPI = {
   resetPassword: (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword }),
 };
 
+// Services API pour l'utilisateur (wishlist)
+export const usersAPI = {
+  getWishlist: () => api.get('/api/users/wishlist'),
+  addToWishlist: (productId) => api.post(`/api/users/wishlist/${productId}`),
+  removeFromWishlist: (productId) => api.delete(`/api/users/wishlist/${productId}`),
+};
+
 // Services API pour les produits (côté client)
 export const productsAPI = {
   getAllProducts: (params = {}) => api.get('/api/products', { params }),

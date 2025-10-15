@@ -364,6 +364,60 @@
   border-color: #3b82f6;
 }
 
+/* État actif (aimé) */
+.wishlist-btn.active {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+/* Share menu container */
+.share-container {
+  position: relative;
+}
+
+.share-menu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  z-index: 20;
+  min-width: 220px;
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-item:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.share-item.whatsapp:hover { background: #25D366; border-color: #25D366; }
+.share-item.facebook:hover { background: #1877F2; border-color: #1877F2; }
+.share-item.telegram:hover { background: #30A3E6; border-color: #30A3E6; }
+.share-item.instagram:hover { background: #C13584; border-color: #C13584; }
+.share-item.tiktok:hover { background: #000000; border-color: #000000; color: #ffffff; }
+.share-item.copy:hover { background: #10B981; border-color: #10B981; }
+
 /* Stock info */
 .stock-info {
   padding: 1rem;

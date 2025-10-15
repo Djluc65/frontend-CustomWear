@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FiShoppingCart, FiHeart, FiShare2, FiStar, FiMinus, FiPlus } from 'react-icons/fi';
+import { FaWhatsapp, FaFacebookF, FaInstagram, FaTiktok, FaTelegramPlane, FaLink } from 'react-icons/fa';
 import { fetchProductById } from '../store/slices/productsSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { toast } from 'react-toastify';
+import { usersAPI } from '../services/api';
 import './ProductDetail.css';
 import ProductSlideshow from '../components/Products/ProductSlideshow';
 
@@ -26,6 +28,8 @@ const ProductDetail = () => {
     position: 'center'
   });
   const [showCustomization, setShowCustomization] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -36,6 +40,9 @@ const ProductDetail = () => {
   useEffect(() => {
     if (currentProduct && currentProduct.variants && currentProduct.variants.length > 0) {
       setSelectedVariant(currentProduct.variants[0]);
+    }
+    if (currentProduct) {
+      setLiked(Boolean(currentProduct.likedByUser));
     }
   }, [currentProduct]);
 
@@ -60,10 +67,99 @@ const ProductDetail = () => {
     navigate(`/customize?product=${currentProduct._id}&variant=${selectedVariant?._id}`);
   };
 
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      toast.info('Connectez-vous pour gérer vos favoris');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      if (!liked) {
+        await usersAPI.addToWishlist(currentProduct._id);
+        setLiked(true);
+        toast.success('Ajouté aux favoris');
+      } else {
+        await usersAPI.removeFromWishlist(currentProduct._id);
+        setLiked(false);
+        toast.info('Retiré des favoris');
+      }
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Erreur lors de la mise à jour des favoris';
+      toast.error(message);
+    }
+  };
+
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change;
     if (newQuantity >= 1 && newQuantity <= (selectedVariant?.stock || 1)) {
       setQuantity(newQuantity);
+    }
+  };
+
+  // Partage
+  const getProductUrl = () => {
+    try {
+      return window.location.href;
+    } catch {
+      return `${window.location.origin}/product/${currentProduct?._id || id}`;
+    }
+  };
+
+  const getShareText = () => {
+    const name = currentProduct?.name || 'Produit';
+    return `Découvre ce produit ${name} sur CustomWear`;
+  };
+
+  const shareLinks = () => {
+    const url = encodeURIComponent(getProductUrl());
+    const text = encodeURIComponent(getShareText());
+    return {
+      whatsapp: `https://wa.me/?text=${text}%20${url}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
+      instagram: `https://www.instagram.com/`, // Pas d’API web officielle pour partager une URL
+      tiktok: `https://www.tiktok.com/`, // Pas d’API web officielle pour partager une URL
+    };
+  };
+
+  const handleShareClick = async () => {
+    const url = getProductUrl();
+    const text = getShareText();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: currentProduct?.name, text, url });
+        toast.success('Lien partagé via le menu système');
+        return;
+      } catch (err) {
+        // utilisateur a annulé ou erreur, on bascule sur le menu custom
+      }
+    }
+    setShowShareMenu((prev) => !prev);
+  };
+
+  const openShare = (platform) => {
+    const links = shareLinks();
+    const href = links[platform];
+    if (!href) return;
+    if (platform === 'instagram' || platform === 'tiktok') {
+      // Fallback: copie du lien, ouverture de la page d’accueil
+      copyLink();
+      window.open(href, '_blank', 'noopener');
+      toast.info(`Lien copié — colle-le dans ${platform === 'instagram' ? 'Instagram' : 'TikTok'}`);
+      setShowShareMenu(false);
+      return;
+    }
+    window.open(href, '_blank', 'noopener');
+    setShowShareMenu(false);
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getProductUrl());
+      toast.success('Lien copié dans le presse-papiers');
+    } catch (err) {
+      toast.error('Impossible de copier le lien');
     }
   };
 
@@ -326,13 +422,43 @@ const ProductDetail = () => {
                 Ajouter au panier
               </button>
               
-              <button className="wishlist-btn">
+              <button className={`wishlist-btn ${liked ? 'active' : ''}`} onClick={handleWishlistToggle}>
                 <FiHeart />
               </button>
               
-              <button className="share-btn">
-                <FiShare2 />
-              </button>
+              <div className="share-container">
+                <button className="share-btn" onClick={handleShareClick} title="Partager">
+                  <FiShare2 />
+                </button>
+                {showShareMenu && (
+                  <div className="share-menu">
+                    <button className="share-item whatsapp" onClick={() => openShare('whatsapp')} title="Partager sur WhatsApp">
+                      <FaWhatsapp />
+                      <span>WhatsApp</span>
+                    </button>
+                    <button className="share-item facebook" onClick={() => openShare('facebook')} title="Partager sur Facebook">
+                      <FaFacebookF />
+                      <span>Facebook</span>
+                    </button>
+                    <button className="share-item telegram" onClick={() => openShare('telegram')} title="Partager sur Telegram">
+                      <FaTelegramPlane />
+                      <span>Telegram</span>
+                    </button>
+                    <button className="share-item instagram" onClick={() => openShare('instagram')} title="Partager sur Instagram">
+                      <FaInstagram />
+                      <span>Instagram</span>
+                    </button>
+                    <button className="share-item tiktok" onClick={() => openShare('tiktok')} title="Partager sur TikTok">
+                      <FaTiktok />
+                      <span>TikTok</span>
+                    </button>
+                    <button className="share-item copy" onClick={copyLink} title="Copier le lien">
+                      <FaLink />
+                      <span>Copier</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
