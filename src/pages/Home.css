@@ -585,4 +585,9 @@
   .cta-section {
     padding: 60px 0;
   }
+
+  /* 2 colonnes pour les produits en page d’accueil (mobile) */
+  .featured-products .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

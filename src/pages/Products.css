@@ -393,8 +393,9 @@
 }
 
 @media (max-width: 480px) {
-  .products-grid.grid {
-    grid-template-columns: 1fr;
+  .products-grid.grid,
+  .products-grid.with-sidebar.grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .filters-sidebar {
