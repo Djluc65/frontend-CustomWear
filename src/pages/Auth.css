@@ -162,6 +162,25 @@
   border-color: #9ca3af;
 }
 
+.facebook-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.facebook-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
 .google-btn svg {
   font-size: 1.25rem;
 }
