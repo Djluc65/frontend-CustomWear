@@ -191,10 +191,20 @@ const ProductCard = ({ product }) => {
             {product.category}
           </div>
 
-          {/* Nom du produit */}
-          <h3 className="product-name">
-            {product.name}
-          </h3>
+          {/* Nom du produit + bouton favoris compact (mobile) */}
+          <div className="product-title-row">
+            <h3 className="product-name">
+              {product.name}
+            </h3>
+            <button
+              className={`wishlist-btn-compact ${liked ? 'active' : ''}`}
+              onClick={handleWishlist}
+              aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+              title={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <FaHeart />
+            </button>
+          </div>
 
           {/* Description courte */}
           {product.description && (
