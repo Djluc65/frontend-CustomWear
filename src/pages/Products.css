@@ -40,8 +40,7 @@
 /* Spécifique à la zone de contrôle des produits: réduire la largeur */
 .products-controls .search-bar {
   min-width: 200px;
-  width: 400px;
-  height: 800px;
+  width: 420px;
 }
 
 .search-bar input {
@@ -236,6 +235,7 @@
 
 .products-grid {
   flex: 1;
+  height: 560px;
   display: grid;
   gap: 1.5rem;
 }
