@@ -163,6 +163,10 @@
 .navbar-action {
   color: #32465b;
   text-decoration: none;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
   padding: 10px;
   border-radius: 50%;
   transition: all 0.3s ease;

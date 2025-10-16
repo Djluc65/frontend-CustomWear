@@ -32,6 +32,34 @@
   border: 3px solid #3b82f6;
 }
 
+.avatar-upload-input {
+  display: none;
+}
+
+.change-avatar-btn {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.change-avatar-btn:hover:not([disabled]) {
+  background: #e5e7eb;
+}
+
+.change-avatar-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .profile-info {
   flex: 1;
 }

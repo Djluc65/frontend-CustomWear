@@ -157,6 +157,34 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+// Upload/Mise à jour de l'avatar utilisateur
+export const updateAvatar = createAsyncThunk(
+  'auth/updateAvatar',
+  async (file, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await axios.post(`${API_URL}/users/profile/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const data = response.data?.data || response.data;
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Erreur lors de la mise à jour de l\'avatar'
+      );
+    }
+  }
+);
+
 export const loginAdmin = createAsyncThunk(
   'auth/loginAdmin',
   async ({ pseudo, email, password, role }, { rejectWithValue }) => {
@@ -320,6 +348,20 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Update Avatar
+      .addCase(updateAvatar.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateAvatar.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user || state.user;
+        state.error = null;
+      })
+      .addCase(updateAvatar.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
