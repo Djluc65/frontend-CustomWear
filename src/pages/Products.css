@@ -235,7 +235,6 @@
 
 .products-grid {
   flex: 1;
-  height: 560px;
   display: grid;
   gap: 1.5rem;
 }
