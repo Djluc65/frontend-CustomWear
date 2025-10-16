@@ -1,6 +1,5 @@
 .products-page {
-  max-width: 1000px;
-  height: 2500px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem 1rem;
   min-height: calc(100vh - 200px);
@@ -41,7 +40,8 @@
 /* Spécifique à la zone de contrôle des produits: réduire la largeur */
 .products-controls .search-bar {
   min-width: 200px;
-  width: 420px;
+  width: 400px;
+  height: 800px;
 }
 
 .search-bar input {
