@@ -398,12 +398,6 @@
     grid-template-columns: repeat(2, 1fr);
   }
   
-  /* Réduction de la hauteur du conteneur des produits en mobile avec scroll interne */
-  .products-grid {
-    max-height: 420px;
-    overflow-y: auto;
-  }
-  
   .filters-sidebar {
     padding: 1rem;
   }

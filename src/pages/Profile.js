@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiEdit3, FiSave, FiX, FiCamera } from 'react-icons/fi';
-import { updateProfile, updateAvatar, removeAvatar } from '../store/slices/authSlice';
+import { FiUser, FiMail, FiPhone, FiMapPin, FiEdit3, FiSave, FiX } from 'react-icons/fi';
+import { updateProfile } from '../store/slices/authSlice';
 import './Profile.css';
 
 const Profile = () => {
@@ -10,8 +10,6 @@ const Profile = () => {
   const { user } = useSelector(state => state.auth);
   
   const [isEditing, setIsEditing] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -36,19 +34,6 @@ const Profile = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Update error:', error);
-    }
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingAvatar(true);
-    try {
-      await dispatch(updateAvatar(file)).unwrap();
-    } catch (error) {
-      console.error('Avatar upload error:', error);
-    } finally {
-      setIsUploadingAvatar(false);
     }
   };
 
@@ -79,45 +64,6 @@ const Profile = () => {
               src={user?.avatar || '/default-avatar.png'} 
               alt="Profile" 
             />
-            {isEditing && (
-              <>
-                <input
-                  id="avatarUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="avatar-upload-input"
-                />
-                <div className="avatar-actions">
-                  <button
-                    type="button"
-                    className="change-avatar-btn"
-                    onClick={() => document.getElementById('avatarUpload')?.click()}
-                    disabled={isUploadingAvatar}
-                  >
-                    <FiCamera />
-                    {isUploadingAvatar ? 'Envoi...' : 'Changer la photo'}
-                  </button>
-                  <button
-                    type="button"
-                    className="delete-avatar-btn"
-                    onClick={async () => {
-                      setIsRemovingAvatar(true);
-                      try {
-                        await dispatch(removeAvatar()).unwrap();
-                      } catch (err) {
-                        console.error('Remove avatar error:', err);
-                      } finally {
-                        setIsRemovingAvatar(false);
-                      }
-                    }}
-                    disabled={isRemovingAvatar}
-                  >
-                    {isRemovingAvatar ? 'Suppression...' : 'Supprimer la photo'}
-                  </button>
-                </div>
-              </>
-            )}
           </div>
           <div className="profile-info">
             <h1>{user?.firstName} {user?.lastName}</h1>
