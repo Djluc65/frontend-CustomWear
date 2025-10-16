@@ -60,6 +60,32 @@
   cursor: not-allowed;
 }
 
+.avatar-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.delete-avatar-btn {
+  padding: 0.5rem 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.delete-avatar-btn:hover:not([disabled]) {
+  background: #fecaca;
+}
+
+.delete-avatar-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .profile-info {
   flex: 1;
 }

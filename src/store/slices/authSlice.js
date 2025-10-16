@@ -185,6 +185,30 @@ export const updateAvatar = createAsyncThunk(
   }
 );
 
+// Supprimer l'avatar utilisateur
+export const removeAvatar = createAsyncThunk(
+  'auth/removeAvatar',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const response = await axios.delete(`${API_URL}/users/profile/avatar`, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        }
+      });
+      const data = response.data?.data || response.data;
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Erreur lors de la suppression de l\'avatar'
+      );
+    }
+  }
+);
+
 export const loginAdmin = createAsyncThunk(
   'auth/loginAdmin',
   async ({ pseudo, email, password, role }, { rejectWithValue }) => {
@@ -362,6 +386,20 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(updateAvatar.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Remove Avatar
+      .addCase(removeAvatar.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(removeAvatar.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user || state.user;
+        state.error = null;
+      })
+      .addCase(removeAvatar.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
