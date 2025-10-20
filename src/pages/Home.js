@@ -110,9 +110,9 @@ const Home = () => {
                 <FaShoppingCart />
                 Découvrir nos Produits
               </Link>
-              <Link to="/customize" className="btn btn-secondary">
-                <FaPalette />
-                Personnaliser Maintenant
+              <Link to="/models" className="btn btn-secondary">
+                 <FaPalette />
+                 Personnaliser Maintenant
               </Link>
               {isAuthenticated && user?.role === 'admin' && (
                 <Link to="/admin/login" className="btn btn-outline" style={{ marginTop: '10px', fontSize: '0.9em' }}>

@@ -27,7 +27,7 @@
 .product-image-container {
   position: relative;
   width: 100%;
-  height: 250px;
+  height: 360px;
   overflow: hidden;
   background: #f8f9fa;
 }
@@ -138,10 +138,17 @@
 
 /* Product Info */
 .product-info {
-  padding: 20px;
+  padding: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.product-info > * {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-left: 10px !important;
+  margin-right: 10px !important;
 }
 
 .product-category {
@@ -150,14 +157,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .product-name {
   font-size: 1.2rem;
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -169,7 +176,7 @@
   font-size: 0.9rem;
   color: #7f8c8d;
   line-height: 1.5;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   flex: 1;
 }
 
@@ -177,13 +184,13 @@
 .product-rating {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0;
+  margin-bottom: 0;
 }
 
 .stars {
   display: flex;
-  gap: 2px;
+  gap: 0;
 }
 
 .star {
@@ -218,8 +225,8 @@
 .product-pricing {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0;
+  margin-bottom: 0;
 }
 
 .current-price {
@@ -236,7 +243,7 @@
 
 /* Availability */
 .product-availability {
-  margin-bottom: 15px;
+  margin-bottom: 0;
 }
 
 .in-stock {
@@ -255,14 +262,14 @@
 .customization-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0;
   background: linear-gradient(135deg, #9b59b6, #8e44ad);
   color: white;
-  padding: 5px 12px;
+  padding: 0;
   border-radius: 15px;
   font-size: 0.8rem;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   align-self: flex-start;
 }
 
@@ -272,7 +279,7 @@
 
 /* Footer Button */
 .product-footer {
-  padding: 0 20px 20px;
+  padding: 0;
 }
 
 .add-to-cart-btn {
@@ -342,7 +349,7 @@
   }
 
   .product-info {
-    padding: 15px;
+    padding: 0;
   }
 
   .product-name {
@@ -375,7 +382,7 @@
   }
 
   .product-info {
-    padding: 12px;
+    padding: 0;
   }
 
   .product-name {
@@ -387,7 +394,7 @@
   }
 
   .product-footer {
-    padding: 0 12px 12px;
+    padding: 0;
   }
 
   .add-to-cart-btn {

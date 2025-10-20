@@ -22,6 +22,7 @@
 
 .profile-avatar {
   flex-shrink: 0;
+  position: relative;
 }
 
 .profile-avatar img {
@@ -30,6 +31,32 @@
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #3b82f6;
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.75rem;
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+  transition: all 0.2s ease;
+}
+
+.avatar-edit-btn:hover {
+  opacity: 1;
+  background: #374151;
+}
+
+.avatar-edit-btn:active {
+  transform: translateX(-50%) scale(0.98);
 }
 
 .profile-info {

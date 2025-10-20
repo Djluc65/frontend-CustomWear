@@ -150,13 +150,26 @@ export const authAPI = {
   updateProfile: (userData) => api.put('/api/users/profile', userData),
   forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
   resetPassword: (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword }),
+  // Upload avatar utilisateur
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.put('/api/users/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
 };
 
-// Services API pour l'utilisateur (wishlist)
+// Services API pour l'utilisateur (wishlist + adresses)
 export const usersAPI = {
   getWishlist: () => api.get('/api/users/wishlist'),
   addToWishlist: (productId) => api.post(`/api/users/wishlist/${productId}`),
   removeFromWishlist: (productId) => api.delete(`/api/users/wishlist/${productId}`),
+  // Adresses
+  getAddresses: () => api.get('/api/users/addresses'),
+  createAddress: (addressData) => api.post('/api/users/addresses', addressData),
+  updateAddress: (addressId, addressData) => api.put(`/api/users/addresses/${addressId}`, addressData),
+  deleteAddress: (addressId) => api.delete(`/api/users/addresses/${addressId}`),
 };
 
 // Services API pour les produits (côté client)
@@ -171,6 +184,21 @@ export const ordersAPI = {
   createOrder: (orderData) => api.post('/api/orders', orderData),
   getUserOrders: () => api.get('/api/orders/user'),
   getOrder: (orderId) => api.get(`/api/orders/${orderId}`),
+};
+
+// Services API pour les personnalisations
+export const customizationsAPI = {
+  saveCustomization: (data) => api.post('/api/customizations', data),
+  getCustomization: (id) => api.get(`/api/customizations/${id}`),
+};
+
+// Services API pour les modèles produits
+export const modelsAPI = {
+  getModels: (params = {}) => api.get('/api/models', { params }),
+  getModel: (id) => api.get(`/api/models/${id}`),
+  createModel: (data) => api.post('/api/models', data),
+  updateModel: (id, data) => api.put(`/api/models/${id}`, data),
+  deleteModel: (id) => api.delete(`/api/models/${id}`),
 };
 
 // Export par défaut de l'instance axios configurée

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { 
   FiHome, 
   FiPackage, 
+  FiLayers,
   FiShoppingBag, 
   FiUsers, 
   FiBarChart2, 
@@ -35,6 +36,7 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin', icon: FiHome, label: 'Dashboard', exact: true },
     { path: '/admin/products', icon: FiPackage, label: 'Produits' },
+    { path: '/admin/models', icon: FiLayers, label: 'Modèles' },
     { path: '/admin/orders', icon: FiShoppingBag, label: 'Commandes' },
     { path: '/admin/users', icon: FiUsers, label: 'Utilisateurs' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytiques' },

@@ -63,10 +63,9 @@ export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
   async (credential, { rejectWithValue }) => {
     try {
-      console.log('[authSlice] googleLogin request', { hasCredential: Boolean(credential) });
-      const response = await axios.post(`${API_URL}/auth/google`, { credential });
+      // Envoyer le token Google au backend
+      const response = await axios.post(`${API_URL}/auth/google`, { token: credential });
       const data = response.data?.data || response.data;
-      console.log('[authSlice] googleLogin response', data);
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -75,10 +74,9 @@ export const googleLogin = createAsyncThunk(
       }
       return data;
     } catch (error) {
-      console.error('[authSlice] googleLogin error', error?.response?.data || error);
-      return rejectWithValue(
-        error.response?.data?.message || 'Erreur de connexion Google'
-      );
+      const firstValidationError = error.response?.data?.errors?.[0]?.message;
+      const message = firstValidationError || error.response?.data?.message || 'Erreur de connexion Google';
+      return rejectWithValue(message);
     }
   }
 );
@@ -87,10 +85,10 @@ export const facebookLogin = createAsyncThunk(
   'auth/facebookLogin',
   async (accessToken, { rejectWithValue }) => {
     try {
-      console.log('[authSlice] facebookLogin request', { hasAccessToken: Boolean(accessToken) });
+      // Envoyer le token Facebook au backend
       const response = await axios.post(`${API_URL}/auth/facebook`, { accessToken });
       const data = response.data?.data || response.data;
-      console.log('[authSlice] facebookLogin response', data);
+      // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.refreshToken) {
@@ -98,10 +96,9 @@ export const facebookLogin = createAsyncThunk(
       }
       return data;
     } catch (error) {
-      console.error('[authSlice] facebookLogin error', error?.response?.data || error);
-      return rejectWithValue(
-        error.response?.data?.message || 'Erreur de connexion Facebook'
-      );
+      const firstValidationError = error.response?.data?.errors?.[0]?.message;
+      const message = firstValidationError || error.response?.data?.message || 'Erreur de connexion Facebook';
+      return rejectWithValue(message);
     }
   }
 );
@@ -142,16 +139,50 @@ export const updateProfile = createAsyncThunk(
   async (profileData, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
-      const response = await axios.put(`${API_URL}/users/profile`, profileData, {
+      // Ne pas envoyer les valeurs vides au backend
+      const payload = Object.fromEntries(
+        Object.entries(profileData).filter(([key, value]) => value !== '' && value !== null && value !== undefined)
+      );
+      const response = await axios.put(`${API_URL}/users/profile`, payload, {
         headers: {
           Authorization: `Bearer ${auth.token}`
         }
       });
-      
-      return response.data;
+      const data = response.data?.data || response.data;
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Erreur de mise à jour du profil'
+      );
+    }
+  }
+);
+
+// Upload de l'avatar utilisateur
+export const uploadAvatar = createAsyncThunk(
+  'auth/uploadAvatar',
+  async (file, { getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState();
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await axios.put(`${API_URL}/users/profile/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const data = response.data?.data || response.data;
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Erreur lors de l\'upload de l\'avatar'
       );
     }
   }
@@ -180,7 +211,6 @@ export const loginAdmin = createAsyncThunk(
   }
 );
 
-// État initial
 const initialState = {
   user: null,
   token: localStorage.getItem('token'),
@@ -189,29 +219,25 @@ const initialState = {
   error: null
 };
 
-// Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     logout: (state) => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      state.error = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
     },
     clearError: (state) => {
       state.error = null;
     },
     loginSuccess: (state, action) => {
-      const { user, token } = action.payload;
-      state.user = user;
-      state.token = token;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
       state.isAuthenticated = true;
-      state.isLoading = false;
       state.error = null;
     }
   },
@@ -224,16 +250,13 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
-        state.user = action.payload.user || state.user;
-        state.token = action.payload.token || state.token;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
         state.error = action.payload;
       })
       // Register
@@ -243,16 +266,13 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
-        state.user = action.payload.user || state.user;
-        state.token = action.payload.token || state.token;
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
         state.error = action.payload;
       })
       // Google Login
@@ -262,16 +282,13 @@ const authSlice = createSlice({
       })
       .addCase(googleLogin.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
-        state.user = action.payload.user || state.user;
-        state.token = action.payload.token || state.token;
         state.error = null;
       })
       .addCase(googleLogin.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
         state.error = action.payload;
       })
       // Facebook Login
@@ -281,26 +298,25 @@ const authSlice = createSlice({
       })
       .addCase(facebookLogin.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
-        state.user = action.payload.user || state.user;
-        state.token = action.payload.token || state.token;
         state.error = null;
       })
       .addCase(facebookLogin.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
         state.error = action.payload;
       })
       // Load User
       .addCase(loadUser.pending, (state) => {
         state.isLoading = true;
+        state.error = null;
       })
       .addCase(loadUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user || state.user;
+        state.user = action.payload.user;
+        state.error = null;
       })
       .addCase(loadUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -318,8 +334,27 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.error = null;
+        try {
+          if (action.payload.user) {
+            localStorage.setItem('user', JSON.stringify(action.payload.user));
+          }
+        } catch (_) {}
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Upload Avatar
+      .addCase(uploadAvatar.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user || state.user;
+        state.error = null;
+      })
+      .addCase(uploadAvatar.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
@@ -330,16 +365,13 @@ const authSlice = createSlice({
       })
       .addCase(loginAdmin.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
         state.token = action.payload.token;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
         state.error = null;
       })
       .addCase(loginAdmin.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
         state.error = action.payload;
       });
   }
