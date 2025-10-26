@@ -433,6 +433,39 @@
   }
 }
 
+@media (max-width: 360px) {
+  .product-image-container { height: 160px; }
+
+  .product-category { left: 12px; }
+
+  .product-name {
+    font-size: 0.95rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    left: 12px;
+    bottom: 0;
+  }
+
+  .product-description {
+    left: 12px;
+    bottom: 8px;
+    width: 100%;
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+
+  .current-price { left: 12px; bottom: 10px; }
+  .in-stock, .out-of-stock { left: 12px; bottom: 12px; max-width: 100%; }
+
+  .add-to-cart-btn {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 10px 12px;
+  }
+}
+
 /* Animation pour les cartes qui apparaissent */
 .product-card {
   animation: fadeInUp 0.6s ease-out;

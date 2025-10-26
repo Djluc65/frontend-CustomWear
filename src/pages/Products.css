@@ -406,3 +406,16 @@
     gap: 0.5rem;
   }
 }
+
+/* Ultra-petits écrans (<=360px): une seule colonne, contrôles serrés */
+@media (max-width: 360px) {
+  .products-grid.grid,
+  .products-grid.with-sidebar.grid {
+    grid-template-columns: 1fr;
+  }
+  .products-controls {
+    gap: 0.4rem;
+  }
+  .search-bar { min-width: auto; }
+  .search-bar input { font-size: 0.95rem; padding: 0.6rem 0.9rem 0.6rem 2.2rem; }
+}

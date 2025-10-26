@@ -262,3 +262,13 @@
   padding: 1rem;
   background: #fff;
 }
+
+@media (max-width: 360px) {
+  .models-page .models-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .models-page .model-card-meta { padding: 10px 12px; }
+  .models-page .model-card-title { font-size: 0.9rem; }
+  .models-page .model-card-price { font-size: 0.9rem; }
+}
