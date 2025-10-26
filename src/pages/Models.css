@@ -143,6 +143,20 @@
   }
 }
 
+/* Ultra-petits écrans: autoriser scroll horizontal de la sous-nav */
+@media (max-width: 360px) {
+  .models-subnav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.4rem;
+  }
+  .subnav-link {
+    flex: 0 0 auto;
+  }
+  .models-subnav::-webkit-scrollbar { display: none; }
+}
+
 /* Dropdown catégorie dans Models */
 .subnav-dropdown {
   position: relative;
