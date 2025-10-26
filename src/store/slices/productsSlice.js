@@ -19,6 +19,9 @@ export const fetchProducts = createAsyncThunk(
     minRating = '',
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    gender = '',
+    color = '',
+    size = '',
     page = 1, 
     limit = 12 
   } = {}, { rejectWithValue }) => {
@@ -33,6 +36,9 @@ export const fetchProducts = createAsyncThunk(
       if (minRating !== '' && minRating != null) params.append('minRating', minRating);
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
+      if (gender) params.append('gender', gender);
+      if (color) params.append('color', color);
+      if (size) params.append('size', size);
       params.append('page', page);
       params.append('limit', limit);
       

@@ -14,7 +14,7 @@
 }
 
 .navbar-top {
-  background: linear-gradient(135deg, #32465b 0%, #a8d8ef 100%);
+ background: linear-gradient(135deg, #32465b 50%, #a8d8ef 100%);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   padding-top: env(safe-area-inset-top);
@@ -87,11 +87,20 @@
   color: white;
   text-decoration: none;
   font-weight: 500;
+  font-weight: bold;
   padding: 8px 16px;
   border-radius: 20px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-icon {
+  font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 .navbar-link:hover {
@@ -233,7 +242,7 @@
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #32465b;
-  padding: 8px 16px;
+  /* padding: 8px 16px; */
   border-radius: 25px;
   cursor: pointer;
   display: flex;
@@ -244,8 +253,12 @@
 
 .user-button:hover {
   background: rgba(255, 255, 255, 0.2);
+  color: #297682;
 }
 
+/* .user-button-icon {
+  font-size: 20px;
+} */
 .user-name {
   font-size: 14px;
   font-weight: 500;
@@ -274,7 +287,9 @@
 }
 
 .dropdown-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 12px 20px;
   color: #333;
   text-decoration: none;
@@ -284,6 +299,11 @@
   width: 100%;
   text-align: left;
   cursor: pointer;
+}
+
+.dropdown-icon {
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .dropdown-link:hover {
@@ -400,13 +420,21 @@
 }
 
 .mobile-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: white;
   text-decoration: none;
   padding: 18px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   font-weight: 500;
+}
+
+.mobile-icon {
+  font-size: 1rem;
+  opacity: 0.9;
+  min-width: 20px;
 }
 
 .mobile-link:hover {

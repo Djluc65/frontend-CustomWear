@@ -132,11 +132,12 @@ export const adminAPI = {
   updateProduct: (productId, productData) => api.put(`/api/admin/products/${productId}`, productData),
   deleteProduct: (productId) => api.delete(`/api/admin/products/${productId}`),
   // Upload d'images
-  uploadImages: (files) => {
+  uploadImages: (files, onUploadProgress) => {
     const formData = new FormData();
     files.forEach((file) => formData.append('images', file));
     return api.post('/api/admin/uploads', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress
     });
   }
 };
@@ -177,6 +178,8 @@ export const productsAPI = {
   getAllProducts: (params = {}) => api.get('/api/products', { params }),
   getProduct: (productId) => api.get(`/api/products/${productId}`),
   getCategories: () => api.get('/api/products/categories'),
+  // Ajout d'un avis sur un produit
+  addReview: (productId, { rating, comment }) => api.post(`/api/products/${productId}/reviews`, { rating, comment }),
 };
 
 // Services API pour les commandes (côté client)
@@ -190,6 +193,13 @@ export const ordersAPI = {
 export const customizationsAPI = {
   saveCustomization: (data) => api.post('/api/customizations', data),
   getCustomization: (id) => api.get(`/api/customizations/${id}`),
+};
+
+// Services API pour la tarification des personnalisations
+export const customizationPricingAPI = {
+  getGrid: () => api.get('/api/customization-pricing'),
+  setPrice: ({ type, placement, price, isActive = true }) => api.post('/api/customization-pricing', { type, placement, price, isActive }),
+  calculatePrice: ({ textFront, textBack, imageFront, imageBack, baseModelPrice }) => api.post('/api/calculate-price', { textFront, textBack, imageFront, imageBack, baseModelPrice }),
 };
 
 // Services API pour les modèles produits

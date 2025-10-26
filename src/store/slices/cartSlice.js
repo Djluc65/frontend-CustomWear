@@ -30,14 +30,16 @@ const cartSlice = createSlice({
       const quantity = payload.quantity ?? 1;
       const customization = payload.customization ?? null;
       const variantId = payload.variantId;
+      const color = payload.color ?? null;
+      const size = payload.size ?? null;
 
       // Normaliser les champs du produit
       const product = payload.product || null;
-      const productId = (product?.
-        _id) ?? payload.productId ?? payload.id ?? payload._id;
+      const productId = (product?._id) ?? payload.productId ?? payload.id ?? payload._id;
       const name = product?.name ?? payload.name ?? 'Produit';
       const price = (product?.price?.sale ?? product?.price?.base ?? product?.price ?? payload.price ?? 0);
-      const image = (product?.images?.[0]?.url ?? product?.images?.[0] ?? product?.image ?? payload.image ?? '/placeholder-product.jpg');
+      // Préférer payload.image si fourni (image spécifique à la couleur)
+      const image = (payload.image ?? product?.images?.[0]?.url ?? product?.images?.[0] ?? product?.image ?? '/placeholder-product.jpg');
       const category = product?.category ?? payload.category ?? '';
 
       // Garde-fou si aucune id
@@ -46,8 +48,15 @@ const cartSlice = createSlice({
         return;
       }
 
-      // Clé unique par produit + variante + personnalisation
-      const baseKey = variantId ? `${productId}_${variantId}` : `${productId}`;
+      // Clé unique par produit + variante + (couleur/taille si pas de variante) + personnalisation
+      let baseKey = `${productId}`;
+      if (variantId) {
+        baseKey = `${productId}_${variantId}`;
+      } else if (color || size) {
+        const colorKey = color ? String(color).toLowerCase() : '';
+        const sizeKey = size ? String(size).toUpperCase() : '';
+        baseKey = `${productId}_${colorKey}_${sizeKey}`;
+      }
       const itemId = customization ? `${baseKey}_${JSON.stringify(customization)}` : baseKey;
 
       const existingItem = state.items.find(item => item.id === itemId);
@@ -64,7 +73,9 @@ const cartSlice = createSlice({
           quantity,
           customization,
           category,
-          variantId
+          variantId,
+          color,
+          size
         });
       }
 
@@ -85,6 +96,9 @@ const cartSlice = createSlice({
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
+      // Champs de compatibilité
+      state.itemCount = totals.totalQuantity;
+      state.total = totals.totalAmount;
     },
     
     updateQuantity: (state, action) => {

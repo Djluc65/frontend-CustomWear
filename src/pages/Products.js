@@ -14,6 +14,19 @@ const getCategorySlug = (cat) => {
   return norm === 'tshirts' ? 't-shirts' : norm;
 };
 
+// Palette de couleurs fixe pour le filtre Couleur
+const COLOR_PALETTE = {
+  Noir: '#000000',
+  Blanc: '#ffffff',
+  Bleu: '#1e3a8a',
+  Vert: '#16a34a',
+  Jaune: '#f59e0b',
+  Rouge: '#dc2626',
+  Mauve: '#7c3aed',
+  Rose: '#ec4899',
+  Marron: '#92400e'
+};
+
 const Products = () => {
   const dispatch = useDispatch();
   const { category } = useParams();
@@ -28,8 +41,41 @@ const Products = () => {
     categories 
   } = useSelector(state => state.products);
 
+  // Liste fixe des tailles disponibles
+  const FIXED_SIZES = ['XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+
+  // Options de couleur et taille dérivées de la palette et des produits
+  const productColors = Array.from(new Set(
+    (Array.isArray(products) ? products.flatMap(p => {
+      const colorsFromProduct = Array.isArray(p.colors) ? p.colors.map(c => String(c)) : [];
+      const colorsFromVariants = Array.isArray(p.variants) ? p.variants.map(v => {
+        const val = typeof v.color === 'string' ? v.color : (v.color?.name || '');
+        return String(val);
+      }) : [];
+      return [...colorsFromProduct, ...colorsFromVariants];
+    }) : [])
+  )).filter(Boolean);
+
+  const colorOptions = Array.from(new Set([
+    ...Object.keys(COLOR_PALETTE),
+    ...productColors.map(c => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase())
+  ])).sort();
+
+  const dynamicSizes = Array.from(new Set(
+    (Array.isArray(products) ? products.flatMap(p => {
+      const sizesFromProduct = Array.isArray(p.sizes) ? p.sizes.map(s => String(s)) : [];
+      const sizesFromVariants = Array.isArray(p.variants) ? p.variants.map(v => String(v.size || '')) : [];
+      return [...sizesFromProduct, ...sizesFromVariants];
+    }) : [])
+  )).filter(Boolean);
+
+  const sizeOptions = Array.from(new Set([
+    ...FIXED_SIZES,
+    ...dynamicSizes.map(s => String(s).toUpperCase())
+  ]));
+
   const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [localFilters, setLocalFilters] = useState({
     search: searchParams.get('search') || '',
     category: category || searchParams.get('category') || '',
@@ -37,7 +83,10 @@ const Products = () => {
     maxPrice: searchParams.get('maxPrice') || '',
     minRating: searchParams.get('minRating') || '',
     featured: searchParams.get('featured') === 'true',
-    inStock: searchParams.get('inStock') === 'true'
+    inStock: searchParams.get('inStock') === 'true',
+    gender: searchParams.get('gender') || '',
+    color: searchParams.get('color') || '',
+    size: searchParams.get('size') || ''
   });
 
   // Synchroniser le filtre de catégorie avec l'URL lorsque l'utilisateur
@@ -73,6 +122,9 @@ const Products = () => {
       featured: localFilters.featured || false,
       inStock: localFilters.inStock || false,
       minRating: localFilters.minRating || '',
+      gender: localFilters.gender || '',
+      color: localFilters.color || '',
+      size: localFilters.size || '',
       page: 1,
       limit: 12
     }));
@@ -92,7 +144,10 @@ const Products = () => {
       minPrice: '',
       maxPrice: '',
       featured: false,
-      inStock: false
+      inStock: false,
+      gender: '',
+      color: '',
+      size: ''
     });
     dispatch(clearFilters());
   };
@@ -104,6 +159,14 @@ const Products = () => {
       dispatch(fetchProducts({
         category: localFilters.category || '',
         search: localFilters.search || '',
+        minPrice: localFilters.minPrice || '',
+        maxPrice: localFilters.maxPrice || '',
+        featured: localFilters.featured || false,
+        inStock: localFilters.inStock || false,
+        minRating: localFilters.minRating || '',
+        gender: localFilters.gender || '',
+        color: localFilters.color || '',
+        size: localFilters.size || '',
         page: currentPage + 1,
         limit: 12
       }));
@@ -158,7 +221,9 @@ const Products = () => {
           
           <button 
             className={`filter-toggle ${showFilters ? 'active' : ''}`}
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={() => setShowFilters(prev => !prev)}
+            aria-expanded={showFilters}
+            title={showFilters ? 'Masquer les filtres' : 'Afficher les filtres'}
           >
             <FiFilter />
             Filtres
@@ -236,40 +301,80 @@ const Products = () => {
                 })}
               </select>
             </div>
-            
-          <div className="filter-group">
-            <label>Prix</label>
-            <div className="price-range">
-              <input
-                type="number"
-                placeholder="Min"
-                value={localFilters.minPrice}
-                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              />
-              <span>-</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={localFilters.maxPrice}
-                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className="filter-group">
-            <label>Évaluation minimale</label>
-            <select 
-              value={localFilters.minRating}
-              onChange={(e) => handleFilterChange('minRating', e.target.value)}
-            >
-              <option value="">Toutes</option>
-              <option value="1">1+</option>
-              <option value="2">2+</option>
-              <option value="3">3+</option>
-              <option value="4">4+</option>
-              <option value="5">5</option>
-            </select>
-          </div>
+            <div className="filter-group">
+              <label>Genre</label>
+              <select 
+                value={localFilters.gender}
+                onChange={(e) => handleFilterChange('gender', e.target.value)}
+              >
+                <option value="">Tous</option>
+                <option value="unisexe">Unisexe</option>
+                <option value="homme">Homme</option>
+                <option value="femme">Femme</option>
+                <option value="enfant">Enfant</option>
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Couleur</label>
+              <select 
+                value={localFilters.color}
+                onChange={(e) => handleFilterChange('color', e.target.value)}
+              >
+                <option value="">Toutes</option>
+                {colorOptions.map(color => (
+                  <option key={color} value={color}>{color}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Taille</label>
+              <select 
+                value={localFilters.size}
+                onChange={(e) => handleFilterChange('size', e.target.value)}
+              >
+                <option value="">Toutes</option>
+                {sizeOptions.map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Prix</label>
+              <div className="price-range">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={localFilters.minPrice}
+                  onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={localFilters.maxPrice}
+                  onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Évaluation minimale</label>
+              <select 
+                value={localFilters.minRating}
+                onChange={(e) => handleFilterChange('minRating', e.target.value)}
+              >
+                <option value="">Toutes</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+                <option value="5">5</option>
+              </select>
+            </div>
             
             <div className="filter-group">
               <label className="checkbox-label">
@@ -296,16 +401,104 @@ const Products = () => {
         )}
         
         <div className={`products-grid ${viewMode} ${showFilters ? 'with-sidebar' : ''}`}>
-          {products.map((product, index) => (
-            <motion.div
-              key={product._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <ProductCard product={product} viewMode={viewMode} />
-            </motion.div>
-          ))}
+          {products
+            .filter((p) => {
+              // Catégorie
+              const productCategorySlug = (() => {
+                const catObj = (typeof p.category === 'object') ? p.category : { name: p.category };
+                return getCategorySlug(catObj);
+              })();
+              const categoryOk = localFilters.category
+                ? productCategorySlug === String(localFilters.category)
+                : true;
+              
+              // Genre
+              const genderOk = localFilters.gender
+                ? String(p.gender || '').toLowerCase() === String(localFilters.gender).toLowerCase()
+                : true;
+              
+              // Couleur
+              const colorOk = localFilters.color
+                ? (
+                    (Array.isArray(p.colors) && p.colors.some(c => String(c).toLowerCase() === String(localFilters.color).toLowerCase()))
+                  ) || (
+                    Array.isArray(p.variants) && p.variants.some(v => {
+                      const vColor = typeof v.color === 'string' ? v.color : (v.color?.name || '');
+                      return String(vColor).toLowerCase() === String(localFilters.color).toLowerCase();
+                    })
+                  )
+                : true;
+              
+              // Taille
+              const sizeOk = localFilters.size
+                ? (
+                    (Array.isArray(p.sizes) && p.sizes.some(s => String(s).toUpperCase() === String(localFilters.size).toUpperCase()))
+                  ) || (
+                    Array.isArray(p.variants) && p.variants.some(v => String(v.size || '').toUpperCase() === String(localFilters.size).toUpperCase())
+                  )
+                : true;
+              
+              // Prix (utiliser le prix minimum des variantes sinon prix produit)
+              const computedPrice = (() => {
+                if (Array.isArray(p.variants) && p.variants.length > 0) {
+                  const prices = p.variants
+                    .map(v => Number(v?.price))
+                    .filter(n => Number.isFinite(n));
+                  if (prices.length > 0) return Math.min(...prices);
+                }
+                const base = Number(p?.price?.base);
+                const sale = Number(p?.price?.sale);
+                if (Number.isFinite(sale)) return sale;
+                if (Number.isFinite(base)) return base;
+                return NaN;
+              })();
+              const priceOk = (() => {
+                const hasMin = localFilters.minPrice !== '';
+                const hasMax = localFilters.maxPrice !== '';
+                if (!hasMin && !hasMax) return true;
+                if (!Number.isFinite(computedPrice)) return false;
+                const min = Number(localFilters.minPrice);
+                const max = Number(localFilters.maxPrice);
+                if (hasMin && computedPrice < min) return false;
+                if (hasMax && computedPrice > max) return false;
+                return true;
+              })();
+              
+              // Évaluation minimale
+              const avgRating = (() => {
+                if (Array.isArray(p.reviews) && p.reviews.length > 0) {
+                  const sum = p.reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
+                  return sum / p.reviews.length;
+                }
+                return Number(p.rating) || 0;
+              })();
+              const ratingOk = localFilters.minRating
+                ? avgRating >= Number(localFilters.minRating)
+                : true;
+              
+              // Vedette
+              const featuredOk = localFilters.featured ? Boolean(p.featured) : true;
+              
+              // Stock
+              const stockCount = (() => {
+                if (Number.isFinite(Number(p.totalStock))) return Number(p.totalStock);
+                if (Array.isArray(p.variants)) return p.variants.reduce((acc, v) => acc + (Number(v.stock) || 0), 0);
+                return Number(p.stock) || 0;
+              })();
+              const inStockOk = localFilters.inStock ? (stockCount > 0) : true;
+              
+              return categoryOk && genderOk && colorOk && sizeOk && priceOk && ratingOk && featuredOk && inStockOk;
+            })
+            .map((product, index) => (
+              <motion.div
+                key={product._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <ProductCard product={product} viewMode={viewMode} activeColor={localFilters.color || ''} />
+              </motion.div>
+            ))}
         </div>
         
         {products.length === 0 && !isLoading && (

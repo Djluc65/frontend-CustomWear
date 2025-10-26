@@ -102,7 +102,7 @@ const Home = () => {
               Créez des Produits <span className="highlight">Uniques</span>
             </h1>
             <p className="hero-description">
-              Personnalisez et imprimez vos designs sur t-shirts, vestes, casquettes et vaisselle. 
+              Personnalisez et imprimez vos designs sur t-shirts, vestes, casquettes, bonnets et vaisselle. 
               Exprimez votre créativité avec CustomWear !
             </p>
             <div className="hero-buttons">

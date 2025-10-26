@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi';
 import { modelsAPI, adminAPI, productsAPI } from '../../services/api';
 import './AdminModels.css';
+import { sortSizes } from '../../utils/sizes';
 
 const ALLOWED_TYPES = ['t-shirt', 'sweat', 'hoodie', 'casquette', 'mug'];
 const ALLOWED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
@@ -65,6 +66,12 @@ const AdminModels = () => {
   // États pour gestion des uploads par couleur
   const [colorSideFiles, setColorSideFiles] = useState({}); // { [color]: { front: File|null, back: File|null } }
   const [colorSidePreviews, setColorSidePreviews] = useState({}); // { [color]: { front: string|null, back: string|null } }
+
+  // Nouveaux états pour validation et drag & drop
+  const [uploadErrors, setUploadErrors] = useState({ front: '', back: '', byColor: {} });
+  const [dragOver, setDragOver] = useState({ front: false, back: false, byColor: {} });
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
+  const ACCEPTED_MIME = ['image/jpeg','image/png','image/webp','image/gif','image/svg+xml'];
 
   useEffect(() => {
     const loadModels = async () => {
@@ -172,6 +179,8 @@ const AdminModels = () => {
     setBackPreview('');
     setColorSideFiles({});
     setColorSidePreviews({});
+    setUploadErrors({ front: '', back: '', byColor: {} });
+    setDragOver({ front: false, back: false, byColor: {} });
     setShowModal(true);
   };
 
@@ -195,6 +204,8 @@ const AdminModels = () => {
     setBackPreview(model?.images?.back || '');
     setColorSideFiles({});
     setColorSidePreviews({});
+    setUploadErrors({ front: '', back: '', byColor: {} });
+    setDragOver({ front: false, back: false, byColor: {} });
     setShowModal(true);
   };
 
@@ -218,6 +229,8 @@ const AdminModels = () => {
     setBackFile(null);
     setColorSideFiles({});
     setColorSidePreviews({});
+    setUploadErrors({ front: '', back: '', byColor: {} });
+    setDragOver({ front: false, back: false, byColor: {} });
     setShowModal(false);
     setEditingModel(null);
   };
@@ -253,8 +266,41 @@ const AdminModels = () => {
     });
   };
 
+  const validateImageFile = (file) => {
+    if (!file) return 'Fichier invalide';
+    if (!ACCEPTED_MIME.includes(file.type)) return 'Type de fichier non supporté';
+    if (file.size > MAX_IMAGE_SIZE) return 'Fichier trop volumineux (max 5 Mo)';
+    return '';
+  };
+
+  const setColorDrag = (color, side, val) => {
+    setDragOver(prev => ({
+      ...prev,
+      byColor: {
+        ...(prev.byColor || {}),
+        [color]: { ...(prev.byColor?.[color] || {}), [side]: val }
+      }
+    }));
+  };
+
+  const setColorError = (color, side, err) => {
+    setUploadErrors(prev => ({
+      ...prev,
+      byColor: {
+        ...(prev.byColor || {}),
+        [color]: { ...(prev.byColor?.[color] || {}), [side]: err }
+      }
+    }));
+  };
+
   const handleFileChange = (side, file) => {
     if (!file) return;
+    const err = validateImageFile(file);
+    if (err) {
+      setUploadErrors(prev => ({ ...prev, [side]: err }));
+      return;
+    }
+    setUploadErrors(prev => ({ ...prev, [side]: '' }));
     if (side === 'front') {
       setFrontFile(file);
       const url = URL.createObjectURL(file);
@@ -266,6 +312,12 @@ const AdminModels = () => {
     }
   };
 
+  const handleDrop = (side, dataTransfer) => {
+    const file = Array.from(dataTransfer?.files || [])[0];
+    if (!file) return;
+    handleFileChange(side, file);
+  };
+
   // Permet d’uploader plusieurs images d’un coup et de remplir front/back
   const handleMultiFilesUpload = (fileList) => {
     const files = Array.from(fileList || []);
@@ -274,15 +326,32 @@ const AdminModels = () => {
       if (frontPreview && frontPreview.startsWith('blob:')) URL.revokeObjectURL(frontPreview);
       if (backPreview && backPreview.startsWith('blob:')) URL.revokeObjectURL(backPreview);
 
-      const f1 = files[0];
+      const validFiles = [];
+      for (const f of files) {
+        const err = validateImageFile(f);
+        if (err) {
+          // Assigner erreurs aux slots en fonction de l’ordre
+          if (validFiles.length === 0) {
+            setUploadErrors(prev => ({ ...prev, front: err }));
+          } else {
+            setUploadErrors(prev => ({ ...prev, back: err }));
+          }
+          continue;
+        }
+        validFiles.push(f);
+      }
+
+      const f1 = validFiles[0];
       if (f1) {
+        setUploadErrors(prev => ({ ...prev, front: '' }));
         setFrontFile(f1);
         const url1 = URL.createObjectURL(f1);
         setFrontPreview(url1);
       }
 
-      const f2 = files[1];
+      const f2 = validFiles[1];
       if (f2) {
+        setUploadErrors(prev => ({ ...prev, back: '' }));
         setBackFile(f2);
         const url2 = URL.createObjectURL(f2);
         setBackPreview(url2);
@@ -295,6 +364,12 @@ const AdminModels = () => {
   // Gestion des uploads spécifiques par couleur et par côté (avant/arrière)
   const handleColorSideFileChange = (color, side, file) => {
     if (!file) return;
+    const err = validateImageFile(file);
+    if (err) {
+      setColorError(color, side, err);
+      return;
+    }
+    setColorError(color, side, '');
     // Révoquer ancien blob si présent
     const prevUrl = colorSidePreviews[color]?.[side];
     if (prevUrl && typeof prevUrl === 'string' && prevUrl.startsWith('blob:')) {
@@ -311,6 +386,18 @@ const AdminModels = () => {
     }));
   };
 
+  const handleColorSideDrop = (color, side, dt) => {
+    const file = Array.from(dt?.files || [])[0];
+    if (!file) return;
+    const err = validateImageFile(file);
+    if (err) {
+      setColorError(color, side, err);
+      return;
+    }
+    setColorError(color, side, '');
+    handleColorSideFileChange(color, side, file);
+  };
+
   const clearColorSidePreview = (color, side) => {
     const prevUrl = colorSidePreviews[color]?.[side];
     if (prevUrl && typeof prevUrl === 'string' && prevUrl.startsWith('blob:')) {
@@ -324,6 +411,7 @@ const AdminModels = () => {
       ...prev,
       [color]: { ...(prev[color] || {}), [side]: '' }
     }));
+    setColorError(color, side, '');
   };
 
   const handleSubmit = async (e) => {
@@ -651,7 +739,7 @@ const AdminModels = () => {
                 </td>
                 <td>
                   <div className="sizes-list">
-                    {Array.isArray(m.sizes) && m.sizes.map((s) => (
+                    {Array.isArray(m.sizes) && sortSizes(m.sizes).map((s) => (
                       <span key={s} className="size-pill">{s}</span>
                     ))}
                   </div>
@@ -806,8 +894,12 @@ const AdminModels = () => {
                         <div className="color-side-grid">
                           {/* Avant */}
                           <div className="color-side">
-                            <div className="color-side-label">Avant</div>
-                            <div className="color-side-preview">
+                            <div 
+                              className={`color-side-preview ${dragOver.byColor?.[color]?.front ? 'drag-over' : ''}`}
+                              onDragOver={(e) => { e.preventDefault(); setColorDrag(color, 'front', true); e.dataTransfer.dropEffect = 'copy'; }}
+                              onDragLeave={() => setColorDrag(color, 'front', false)}
+                              onDrop={(e) => { e.preventDefault(); setColorDrag(color, 'front', false); handleColorSideDrop(color, 'front', e.dataTransfer); }}
+                            >
                               {colorSidePreviews[color]?.front ? (
                                 <img src={colorSidePreviews[color]?.front} alt={`Aperçu ${color} avant`} />
                               ) : form.imagesByColor?.[color]?.front ? (
@@ -833,6 +925,9 @@ const AdminModels = () => {
                                 </button>
                               )}
                             </div>
+                            {uploadErrors.byColor?.[color]?.front && (
+                              <small className="error-text">{uploadErrors.byColor[color].front}</small>
+                            )}
                             <input 
                               type="text" 
                               placeholder="Ou URL avant"
@@ -848,8 +943,12 @@ const AdminModels = () => {
                           </div>
                           {/* Arrière */}
                           <div className="color-side">
-                            <div className="color-side-label">Arrière</div>
-                            <div className="color-side-preview">
+                            <div 
+                              className={`color-side-preview ${dragOver.byColor?.[color]?.back ? 'drag-over' : ''}`}
+                              onDragOver={(e) => { e.preventDefault(); setColorDrag(color, 'back', true); e.dataTransfer.dropEffect = 'copy'; }}
+                              onDragLeave={() => setColorDrag(color, 'back', false)}
+                              onDrop={(e) => { e.preventDefault(); setColorDrag(color, 'back', false); handleColorSideDrop(color, 'back', e.dataTransfer); }}
+                            >
                               {colorSidePreviews[color]?.back ? (
                                 <img src={colorSidePreviews[color]?.back} alt={`Aperçu ${color} arrière`} />
                               ) : form.imagesByColor?.[color]?.back ? (
@@ -875,6 +974,9 @@ const AdminModels = () => {
                                 </button>
                               )}
                             </div>
+                            {uploadErrors.byColor?.[color]?.back && (
+                              <small className="error-text">{uploadErrors.byColor[color].back}</small>
+                            )}
                             <input 
                               type="text" 
                               placeholder="Ou URL arrière"
@@ -911,7 +1013,12 @@ const AdminModels = () => {
 
                   <div className="form-group">
                     <label>Image avant</label>
-                    <div className="image-upload">
+                    <div 
+                      className={`image-upload ${dragOver.front ? 'drag-over' : ''}`}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, front: true })); e.dataTransfer.dropEffect = 'copy'; }}
+                      onDragLeave={() => setDragOver(prev => ({ ...prev, front: false }))}
+                      onDrop={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, front: false })); handleDrop('front', e.dataTransfer); }}
+                    >
                       <div className="image-preview">
                         {frontPreview ? (
                           <img src={frontPreview} alt="Aperçu avant" />
@@ -931,6 +1038,7 @@ const AdminModels = () => {
                           hidden
                         />
                       </label>
+                      {uploadErrors.front && <small className="error-text">{uploadErrors.front}</small>}
                       <input 
                         type="text" 
                         placeholder="Ou URL image"
@@ -942,7 +1050,12 @@ const AdminModels = () => {
 
                   <div className="form-group">
                     <label>Image arrière</label>
-                    <div className="image-upload">
+                    <div 
+                      className={`image-upload ${dragOver.back ? 'drag-over' : ''}`}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, back: true })); e.dataTransfer.dropEffect = 'copy'; }}
+                      onDragLeave={() => setDragOver(prev => ({ ...prev, back: false }))}
+                      onDrop={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, back: false })); handleDrop('back', e.dataTransfer); }}
+                    >
                       <div className="image-preview">
                         {backPreview ? (
                           <img src={backPreview} alt="Aperçu arrière" />
@@ -962,6 +1075,7 @@ const AdminModels = () => {
                           hidden
                         />
                       </label>
+                      {uploadErrors.back && <small className="error-text">{uploadErrors.back}</small>}
                       <input 
                         type="text" 
                         placeholder="Ou URL image"

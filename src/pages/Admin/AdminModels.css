@@ -309,6 +309,16 @@
   margin-bottom: 8px;
   background: #f9fafb;
 }
+.color-side-preview.drag-over, .image-upload.drag-over .image-preview {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+/* Indication visuelle sur le conteneur d’upload en drag */
+.image-upload.drag-over {
+  outline: 2px dashed #3b82f6;
+  outline-offset: 2px;
+}
 .color-side-preview img {
   max-width: 100%;
   max-height: 100%;
@@ -331,3 +341,113 @@
 @media (max-width: 640px) {
   .color-side-grid { grid-template-columns: 1fr; }
 }
+/* Tableau des modèles */
+.models-table thead th {
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.models-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+.models-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* Cellule modèle */
+.model-cell { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+}
+.model-image { 
+  width: 60px; 
+  height: 60px; 
+  border-radius: 0.5rem; 
+  overflow: hidden; 
+  background: #f3f4f6; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
+}
+.model-image img { width: 100%; height: 100%; object-fit: cover; }
+.model-details h4 { margin: 0 0 0.125rem 0; font-weight: 600; color: #111827; }
+.model-sub { color: #6b7280; font-size: 0.875rem; }
+.no-image { color: #9ca3af; font-size: 1.5rem; }
+
+/* Tags */
+.type-tag, .gender-tag, .category-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.type-tag { background: #e0f2fe; color: #0369a1; }
+.gender-tag { background: #fce7f3; color: #9d174d; }
+.category-tag { background: #e0e7ff; color: #3730a3; }
+.price-cell { font-weight: 600; color: #059669; font-size: 1.05rem; }
+
+/* Listes couleurs et tailles */
+.colors-list, .sizes-list { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.color-pill, .size-pill { 
+  display: inline-block; 
+  padding: 0.25rem 0.5rem; 
+  border: 1px solid #e5e7eb; 
+  border-radius: 9999px; 
+  background: #f9fafb; 
+  color: #374151; 
+  font-size: 0.75rem; 
+}
+
+/* Statuts */
+.status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
+.status-active { background: #d1fae5; color: #065f46; }
+.status-inactive { background: #fee2e2; color: #991b1b; }
+
+/* Actions */
+.actions-cell { width: 100px; }
+.action-btn { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  width: 32px; 
+  height: 32px; 
+  border: none; 
+  border-radius: 0.375rem; 
+  background: #e5e7eb; 
+  color: #374151; 
+  cursor: pointer; 
+  transition: background 0.2s ease; 
+}
+.action-btn:hover { background: #d1d5db; }
+.action-btn.delete { background: #fee2e2; color: #991b1b; }
+.action-btn.delete:hover { background: #fecaca; }
+
+/* Bouton fermer du modal */
+.close-btn { background: none; border: none; font-size: 1.25rem; color: #6b7280; cursor: pointer; padding: 0.25rem; border-radius: 0.25rem; transition: color 0.2s ease; }
+.close-btn:hover { color: #374151; }
+
+/* Aides et erreurs */
+.help-text { color: #6b7280; font-size: 0.875rem; }
+.error-text { color: #dc2626; font-size: 0.875rem; }
+
+/* Hover boutons */
+.btn-primary:hover { background: #059669; }
+.btn-secondary:hover { background: #f3f4f6; }
+.upload-btn:hover { border-color: #6b7280; }
+
+/* Responsive header & actions */
+@media (max-width: 640px) {
+  .models-header { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .add-model-btn { width: 100%; justify-content: center; }
+  .actions-cell { width: auto; }
+}
+
+@media (max-width: 640px) { .type-filter { min-width: 140px; } }

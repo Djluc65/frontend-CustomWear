@@ -25,12 +25,14 @@ import AdminRoute from './components/Admin/AdminRoute';
 import AdminLayout from './components/Admin/AdminLayout';
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
-  import AdminProducts from './pages/Admin/AdminProducts';
-  import AdminOrders from './pages/Admin/AdminOrders';
-  import AdminUsers from './pages/Admin/AdminUsers';
-  import AdminAnalytics from './pages/Admin/AdminAnalytics';
-  import AdminSettings from './pages/Admin/AdminSettings';
-  import AdminModels from './pages/Admin/AdminModels';
+import AdminProducts from './pages/Admin/AdminProducts';
+import AdminOrders from './pages/Admin/AdminOrders';
+import AdminUsers from './pages/Admin/AdminUsers';
+import AdminAnalytics from './pages/Admin/AdminAnalytics';
+import AdminSettings from './pages/Admin/AdminSettings';
+import AdminProductCreate from './pages/Admin/AdminProductCreate';
+import AdminModels from './pages/Admin/AdminModels';
+import AdminProductEdit from './pages/Admin/AdminProductEdit';
 
 // Import des styles
 import 'react-toastify/dist/ReactToastify.css';
@@ -52,6 +54,9 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="products/create" element={<AdminProductCreate />} />
+          <Route path="products/new" element={<AdminProductCreate />} />
+          <Route path="products/:id/edit" element={<AdminProductEdit />} />
           <Route path="models" element={<AdminModels />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="users" element={<AdminUsers />} />
@@ -67,8 +72,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/products" element={<Products />} />
-              <Route path="/products/:category" element={<Products />} />
-              <Route path="/models" element={<Models />} />
+                <Route path="/products/:category" element={<Products />} />
+                <Route path="/models" element={<Models />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />

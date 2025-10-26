@@ -9,6 +9,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: 0; /* supprime tout espacement entre enfants directs */
 }
 
 .product-card:hover {
@@ -21,13 +22,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 0; /* aucun espace entre sections */
 }
 
 /* Image Container */
 .product-image-container {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: 280px; /* was 360px */
   overflow: hidden;
   background: #f8f9fa;
 }
@@ -142,13 +144,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 0; /* force aucun espacement vertical */
 }
 
 .product-info > * {
   margin: 0 !important;
   padding: 0 !important;
-  margin-left: 10px !important;
-  margin-right: 10px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .product-category {
@@ -156,34 +159,40 @@
   color: #3498db;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0; /* was 0.5px */
   margin-bottom: 0;
+  position: relative;
+  top: 10px;
+  left: 20px;
+  display: block; /* force ligne dédiée */
 }
 
 .product-name {
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* was 1.2rem */
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 0;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  position: relative;
+  bottom: 5px;
+  left: 20px;
+  line-height: 1; /* was 1.25 */
+  display: block;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-description {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  line-height: 1.5;
-  margin-bottom: 0;
-  flex: 1;
+  position: relative;
+  left: 20px;
+  bottom: 15px;
+  width: 80%;
 }
 
 /* Rating */
 .product-rating {
   display: flex;
-  align-items: center;
+  flex-direction: column; /* une info par ligne: étoiles puis avis */
+  align-items: flex-start;
   gap: 0;
   margin-bottom: 0;
 }
@@ -219,26 +228,33 @@
 .rating-text {
   font-size: 0.8rem;
   color: #95a5a6;
+  display: block; /* force ligne dédiée */
 }
 
 /* Pricing */
 .product-pricing {
   display: flex;
-  align-items: center;
+  flex-direction: column; /* original + current sur deux lignes, sans espace */
+  align-items: flex-start;
   gap: 0;
   margin-bottom: 0;
 }
 
 .current-price {
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #27ae60;
+  display: block; /* force ligne dédiée */
+  position: relative;
+  left: 20px;
+  bottom: 30px;
 }
 
 .original-price {
   font-size: 1rem;
   color: #95a5a6;
   text-decoration: line-through;
+  display: block; /* force ligne dédiée */
 }
 
 /* Availability */
@@ -250,17 +266,27 @@
   font-size: 0.85rem;
   color: #27ae60;
   font-weight: 500;
+  display: flex; /* force ligne dédiée */
+  position: relative;
+  left: 20px;
+  bottom: 40px;
+  max-width: 200px;
 }
 
 .out-of-stock {
   font-size: 0.85rem;
   color: #e74c3c;
   font-weight: 500;
+  display: flex; /* force ligne dédiée */
+  position: relative;
+  left: 20px;
+  bottom: 40px;
+  max-width: 120px;
 }
 
 /* Customization Badge */
 .customization-badge {
-  display: inline-flex;
+  display: block; /* une ligne dédiée pour le badge */
   align-items: center;
   gap: 0;
   background: linear-gradient(135deg, #9b59b6, #8e44ad);
@@ -295,8 +321,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  /* gap: 8px; */
   font-size: 0.95rem;
+  position: relative;
+  left: 50px;
+  bottom: 25px;
+  width: 70%;
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
@@ -361,7 +391,7 @@
   }
 
   .product-actions {
-    gap: 10px;
+    /* gap: 10px; */
   }
 
   .action-btn {
@@ -454,4 +484,36 @@
   height: 3px;
   background: linear-gradient(90deg, #27ae60, #229954);
   z-index: 1;
+}
+
+/* Reset des espacements entre les enfants directs de .product-card */
+.product-card > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* Reset des marges/paddings pour les textes dans la carte */
+.product-card p,
+.product-card h1,
+.product-card h2,
+.product-card h3,
+.product-card h4,
+.product-card h5,
+.product-card h6,
+.product-card span,
+.product-card small,
+.product-card label,
+.product-card .product-name,
+.product-card .product-category,
+.product-card .product-description,
+.product-card .rating-text,
+.product-card .current-price,
+.product-card .original-price,
+.product-card .in-stock,
+.product-card .out-of-stock,
+.product-card .customization-badge {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1;
 }

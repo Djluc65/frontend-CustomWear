@@ -1,595 +1,388 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiPlus, 
-  FiSearch, 
-  FiFilter, 
-  FiEdit2, 
-  FiTrash2, 
-  FiEye,
-  FiX,
-  FiUpload,
-  FiChevronLeft,
-  FiChevronRight,
-  FiImage,
-  FiPackage
-} from 'react-icons/fi';
-import { 
-  fetchAllProducts, 
-  createProduct, 
-  updateProduct, 
-  deleteProduct 
-} from '../../store/slices/adminSlice';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiPlus, FiTrash2, FiSearch, FiPackage, FiRefreshCcw, FiEdit2 } from 'react-icons/fi';
 import { adminAPI } from '../../services/api';
 import './AdminProducts.css';
 
+const CATEGORIES = [
+  { slug: 't-shirts', name: 'T-shirts' },
+  { slug: 'vestes', name: 'Vêstes' },
+  { slug: 'casquettes', name: 'Casquettes' },
+  { slug: 'bonnets', name: 'Bonnets' },
+  { slug: 'vaisselle', name: 'Vaisselle' }
+];
+
+const STATUSES = [
+  { value: 'draft', label: 'Brouillon' },
+  { value: 'active', label: 'Actif' },
+  { value: 'inactive', label: 'Inactif' },
+  { value: 'discontinued', label: 'Arrêté' }
+];
+
+const PAGE_SIZE = 12;
+
 const AdminProducts = () => {
-  const dispatch = useDispatch();
-  const { products: productsState, loading, error } = useSelector(state => state.admin);
-  const products = productsState?.items || [];
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [status, setStatus] = useState('all');
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
     name: '',
     description: '',
-    price: '',
-    category: '',
-    stock: '',
-    images: [],
-    status: 'active'
+    shortDescription: '',
+    category: 't-shirts',
+    priceBase: '',
+    featured: false,
+    status: 'draft'
   });
-  const [selectedImages, setSelectedImages] = useState([]);
-  const [imagePreview, setImagePreview] = useState([]);
 
-  const productsPerPage = 10;
-
-  // Catégories conformes au backend
-  const categories = [
-    { id: 'all', name: 'Toutes les catégories' },
-    { id: 't-shirts', name: 'T-shirts' },
-    { id: 'vestes', name: 'Vestes' },
-    { id: 'casquettes', name: 'Casquettes' },
-    { id: 'vaisselle', name: 'Vaisselle' }
-  ];
+  const fetchProducts = async (opts = {}) => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = {
+        search: (opts.search ?? search) || undefined,
+        category: (opts.category ?? category) !== 'all' ? (opts.category ?? category) : undefined,
+        status: (opts.status ?? status) !== 'all' ? (opts.status ?? status) : undefined,
+        page: opts.page ?? page,
+        limit: PAGE_SIZE
+      };
+      
+      // Clean up undefined params
+      Object.keys(params).forEach(key => {
+        if (params[key] === undefined) {
+          delete params[key];
+        }
+      });
+      
+      const res = await adminAPI.getAllProducts(params);
+      
+      // Handle the response format from backend: { success: true, data: { products: [...], pagination: {...} } }
+      if (res?.data?.success && res?.data?.data) {
+        const responseData = res.data.data;
+        const products = responseData.products || [];
+        const pagination = responseData.pagination || {};
+        
+        setProducts(Array.isArray(products) ? products : []);
+        setTotalPages(pagination.totalPages || 1);
+      } else {
+        // Fallback for unexpected response format
+        console.warn('[AdminProducts] Unexpected response format:', res?.data);
+        setProducts([]);
+        setTotalPages(1);
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Erreur lors du chargement des produits';
+      console.error('[AdminProducts] fetch error:', msg);
+      setError(msg);
+      setProducts([]); // Ensure products is always an array even on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    dispatch(fetchAllProducts({ page: 1, limit: 50 }));
-  }, [dispatch]);
+    fetchProducts({ page: 1 });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleCategoryFilter = (category) => {
-    setCategoryFilter(category);
-    setCurrentPage(1);
-  };
-
-  const handleStatusFilter = (status) => {
-    setStatusFilter(status);
-    setCurrentPage(1);
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedImages(files);
-    
-    // Créer des URLs de prévisualisation
-    const previews = files.map(file => URL.createObjectURL(file));
-    setImagePreview(previews);
-    
-    // Mettre à jour formData avec les noms des fichiers
-    setFormData({
-      ...formData,
-      images: files.map(file => file.name)
-    });
-  };
-
-  const removeImage = (index) => {
-    const newSelectedImages = selectedImages.filter((_, i) => i !== index);
-    const newPreviews = imagePreview.filter((_, i) => i !== index);
-    
-    setSelectedImages(newSelectedImages);
-    setImagePreview(newPreviews);
-    setFormData({
-      ...formData,
-      images: newSelectedImages.map(file => file.name)
-    });
-  };
-
-  const handleAddProduct = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      category: '',
-      stock: '',
-      images: [],
-      status: 'active'
-    });
-    setSelectedImages([]);
-    setImagePreview([]);
-    setShowModal(true);
-  };
-
-  const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description,
-      price: (product.price?.base ?? product.price ?? '').toString(),
-      category: typeof product.category === 'string' ? product.category : (product.category?.name || ''),
-      stock: (product.stock ?? product.totalStock ?? 0).toString(),
-      images: product.images || [],
-      status: product.status || 'active'
-    });
-    // Pour l'édition, on ne charge pas les images existantes dans selectedImages
-    // car elles sont déjà stockées côté serveur
-    setSelectedImages([]);
-    setImagePreview([]);
-    setShowModal(true);
-  };
-
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-      try {
-        await dispatch(deleteProduct(productId)).unwrap();
-        dispatch(fetchAllProducts({ page: 1, limit: 50 }));
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-      }
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setPage(1);
+    fetchProducts({ page: 1, search });
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setCategory('all');
+    setStatus('all');
+    setPage(1);
+    fetchProducts({ search: '', category: 'all', status: 'all', page: 1 });
+  };
+
+  const handleDelete = async (id) => {
+    const ok = window.confirm('Supprimer ce produit ? Cette action est irréversible.');
+    if (!ok) return;
     try {
-      const rawPrice = String(formData.price || '').replace(',', '.');
-      const parsedPrice = parseFloat(rawPrice);
-      if (Number.isNaN(parsedPrice)) {
-        throw new Error('Prix invalide. Utilisez 12,50 ou 12.50');
-      }
-      const productData = {
-        ...formData,
-        price: { base: parsedPrice }
+      await adminAPI.deleteProduct(id);
+      setProducts(prev => prev.filter(p => p._id !== id));
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Suppression échouée';
+      window.alert(msg);
+    }
+  };
+
+  const generateSku = (name) => {
+    const base = (name || 'PRD').toString().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${base}-${Date.now().toString().slice(-4)}-${suffix}`;
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.name || !form.description || !form.priceBase) {
+      window.alert('Veuillez renseigner le nom, la description et le prix de base');
+      return;
+    }
+    try {
+      setCreating(true);
+      const payload = {
+        name: form.name,
+        description: form.description,
+        shortDescription: form.shortDescription || '',
+        category: form.category,
+        gender: 'unisexe',
+        brand: '',
+        sku: generateSku(form.name),
+        images: [],
+        price: { base: Number(form.priceBase), currency: 'EUR' },
+        variants: [],
+        customization: { isCustomizable: false, options: {} },
+        specifications: {},
+        seo: {},
+        tags: [],
+        status: form.status || 'draft',
+        featured: !!form.featured
       };
-
-      // Normaliser et appliquer des valeurs par défaut pour éviter les erreurs côté serveur
-      productData.name = (productData.name || '').trim();
-      productData.description = (productData.description || '').trim() || 'Description produit';
-      productData.category = (productData.category || '').trim();
-
-      // Si des images ont été sélectionnées, les uploader d'abord
-      if (selectedImages && selectedImages.length > 0) {
-        const uploadRes = await adminAPI.uploadImages(selectedImages);
-        const urls = uploadRes?.data?.data?.urls || [];
-        productData.images = urls.map((url, idx) => ({ url, isPrimary: idx === 0 }));
-      }
-
-      if (editingProduct) {
-        await dispatch(updateProduct({ 
-          id: editingProduct._id, 
-          productData 
-        })).unwrap();
-        window.alert('Produit modifié');
-      } else {
-        await dispatch(createProduct(productData)).unwrap();
-        window.alert('Produit ajouté');
-      }
-
-      setShowModal(false);
-      dispatch(fetchAllProducts({ page: 1, limit: 50 }));
-    } catch (error) {
-      const backendMsg = error?.response?.data?.message || error?.message || 'Erreur lors de la sauvegarde du produit';
-      console.error('Erreur lors de la sauvegarde:', backendMsg, error);
-      window.alert(backendMsg);
+      const res = await adminAPI.createProduct(payload);
+      const created = res?.data?.data || res?.data || payload;
+      setProducts(prev => [created, ...prev]);
+      setShowCreate(false);
+      setForm({ name: '', description: '', shortDescription: '', category: 't-shirts', priceBase: '', featured: false, status: 'draft' });
+      window.alert('Produit créé (brouillon)');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Création échouée';
+      window.alert(msg);
+    } finally {
+      setCreating(false);
     }
   };
 
-  const closeModal = () => {
-    // Nettoyer les URLs de prévisualisation pour éviter les fuites mémoire
-    imagePreview.forEach(url => URL.revokeObjectURL(url));
-    setImagePreview([]);
-    setSelectedImages([]);
-    setShowModal(false);
-    setEditingProduct(null);
+  const paginatedLabel = useMemo(() => {
+    const current = page;
+    const total = totalPages;
+    return `Page ${current} / ${total}`;
+  }, [page, totalPages]);
+
+  const goPage = (next) => {
+    const newPage = Math.max(1, Math.min(totalPages, next));
+    setPage(newPage);
+    fetchProducts({ page: newPage });
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      active: { label: 'Actif', class: 'status-active' },
-      inactive: { label: 'Inactif', class: 'status-inactive' },
-      draft: { label: 'Brouillon', class: 'status-draft' }
-    };
-    
-    const config = statusConfig[status] || statusConfig.draft;
-    return <span className={`status-badge ${config.class}`}>{config.label}</span>;
+  const formatDate = (d) => {
+    if (!d) return '-';
+    try { return new Date(d).toLocaleDateString('fr-FR'); } catch { return '-'; }
   };
 
-  // Calcul de la pagination (robuste aux éléments invalides)
-  const safeProducts = Array.isArray(products) ? products.filter(p => p && typeof p === 'object') : [];
-  if (process.env.NODE_ENV === 'development') {
-    const invalidItems = (Array.isArray(products) ? products : []).filter(p => !p || typeof p !== 'object' || typeof p.name !== 'string');
-    if (invalidItems.length) {
-      // Aide au diagnostic pour les données mal formées
-      // Affiche jusqu’à 3 éléments problématiques
-      console.warn('[AdminProducts] Produits invalides détectés:', invalidItems.slice(0, 3));
+  const renderSizes = (p) => {
+    if (Array.isArray(p?.sizes) && p.sizes.length) return p.sizes.join(', ');
+    if (Array.isArray(p?.variants) && p.variants.length) {
+      const uniq = Array.from(new Set(p.variants.map(v => v.size).filter(Boolean)));
+      return uniq.length ? uniq.join(', ') : '-';
     }
-  }
-  const filteredProducts = safeProducts.filter(product => {
-    const name = typeof product.name === 'string' ? product.name : '';
-    const description = typeof product.description === 'string' ? product.description : '';
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          description.toLowerCase().includes(searchTerm.toLowerCase());
-    const categoryValue = typeof product.category === 'string' ? product.category : product.category?.name;
-    const matchesCategory = categoryFilter === 'all' || categoryValue === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
-
-  const totalProducts = filteredProducts.length;
-  const totalPages = Math.ceil(totalProducts / productsPerPage);
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
-
-  const pagination = {
-    total: totalProducts,
-    totalPages,
-    currentPage,
-    hasNext: currentPage < totalPages,
-    hasPrev: currentPage > 1
+    return '-';
   };
-
-  if (loading && products.length === 0) {
-    return (
-      <div className="admin-products">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Chargement des produits...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="admin-products">
-      {/* Header */}
-      <div className="products-header">
-        <div className="header-left">
-          <h1>Gestion des Produits</h1>
-          <p>{pagination?.total || 0} produits au total</p>
+    <div className="admin-products-page">
+      <div className="admin-products-header">
+        <div className="title">
+          <FiPackage />
+          <h1>Produits</h1>
         </div>
-        <button className="add-product-btn" onClick={handleAddProduct}>
-          <FiPlus />
-          Ajouter un Produit
-        </button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={handleClearFilters} title="Réinitialiser">
+            <FiRefreshCcw />
+            Réinitialiser
+          </button>
+          <Link to="/admin/products/new" className="btn-primary" style={{ textDecoration: 'none' }}>
+            <FiPlus />
+            Ajouter un produit
+          </Link>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="products-filters">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder="Rechercher un produit..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="search-input"
+      <form className="filters-bar" onSubmit={handleSearchSubmit}>
+        <div className="search-input">
+          <FiSearch className="icon" />
+          <input 
+            type="text" 
+            placeholder="Rechercher par nom, description, tags…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
-        <div className="filter-group">
-          <FiFilter className="filter-icon" />
-          <select
-            value={categoryFilter}
-            onChange={(e) => handleCategoryFilter(e.target.value)}
-            className="category-filter"
-          >
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <select
-            value={statusFilter}
-            onChange={(e) => handleStatusFilter(e.target.value)}
-            className="status-filter"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="active">Actif</option>
-            <option value="inactive">Inactif</option>
-            <option value="draft">Brouillon</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Products Table */}
-      <div className="products-table-container">
-        <table className="products-table">
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Catégorie</th>
-              <th>Prix</th>
-              <th>Stock</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentProducts.map((product) => (
-              <motion.tr
-                key={product._id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <td className="product-info">
-                  <div className="product-cell">
-                    <div className="product-image">
-                      {product.images && product.images.length > 0 ? (
-                        <img src={product.images[0]?.url || product.images[0]} alt={product.name} />
-                      ) : (
-                        <div className="no-image">
-                          <FiImage />
-                        </div>
-                      )}
-                    </div>
-                    <div className="product-details">
-                      <h4>{product.name}</h4>
-                      <p>{product.description?.substring(0, 50)}...</p>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-tag">
-                    {typeof product.category === 'string' ? product.category : (product.category?.name || 'Non catégorisé')}
-                  </span>
-                </td>
-                <td className="price-cell">
-                  {Number(product.price?.base ?? product.price ?? 0).toLocaleString('fr-FR')} €
-                </td>
-                <td className="stock-cell">
-                  <span className={`stock-badge ${((product.stock ?? product.totalStock ?? 0) < 10) ? 'low-stock' : ''}`}>
-                    {product.stock !== undefined ? product.stock : (product.totalStock ?? '-')}
-                  </span>
-                </td>
-                <td>
-                  {getStatusBadge(product.status || 'active')}
-                </td>
-                <td className="actions-cell">
-                  <div className="action-buttons">
-                    <button
-                      className="action-btn view-btn"
-                      title="Voir"
-                    >
-                      <FiEye />
-                    </button>
-                    <button
-                      className="action-btn edit-btn"
-                      onClick={() => handleEditProduct(product)}
-                      title="Modifier"
-                    >
-                      <FiEdit2 />
-                    </button>
-                    <button
-                      className="action-btn delete-btn"
-                      onClick={() => handleDeleteProduct(product._id)}
-                      title="Supprimer"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-
-        {products.length === 0 && !loading && (
-          <div className="empty-state">
-            <FiPackage className="empty-icon" />
-            <h3>Aucun produit trouvé</h3>
-            <p>Commencez par ajouter votre premier produit</p>
-            <button className="add-product-btn" onClick={handleAddProduct}>
-              <FiPlus />
-              Ajouter un Produit
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {Math.ceil(products.length / productsPerPage) > 1 && (
-        <div className="pagination">
-          <button
-            className="pagination-btn"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            <FiChevronLeft />
-            Précédent
+        <div className="filters-group">
+          <label>
+            Catégorie
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="all">Toutes</option>
+              {CATEGORIES.map(c => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Statut
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="all">Tous</option>
+              {STATUSES.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="btn">
+            Filtrer
           </button>
-          
-          <div className="pagination-info">
-            Page {currentPage} sur {Math.ceil(products.length / productsPerPage)}
-          </div>
-          
-          <button
-            className="pagination-btn"
-            disabled={currentPage === Math.ceil(products.length / productsPerPage)}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Suivant
-            <FiChevronRight />
-          </button>
+        </div>
+      </form>
+
+      {loading && (
+        <div className="loading-state">
+          <div className="spinner" />
+          <p>Chargement des produits…</p>
+        </div>
+      )}
+      {error && (
+        <div className="error-state">
+          <h3>Erreur</h3>
+          <p>{error}</p>
         </div>
       )}
 
-      {/* Modal pour ajouter/modifier un produit */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeModal}
-          >
-            <motion.div
-              className="modal-content"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h2>{editingProduct ? 'Modifier le Produit' : 'Ajouter un Produit'}</h2>
-                <button className="close-btn" onClick={closeModal}>
-                  <FiX />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="product-form">
-                <div className="form-group">
-                  <label>Nom du produit</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows="4"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Images du produit</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    className="file-input"
-                  />
-                  <small className="form-help">Vous pouvez sélectionner plusieurs images (formats: JPG, PNG, GIF)</small>
-                  
-                  {imagePreview.length > 0 && (
-                    <div className="image-preview-container">
-                      {imagePreview.map((preview, index) => (
-                        <div key={index} className="image-preview-item">
-                          <img src={preview} alt={`Aperçu ${index + 1}`} className="image-preview" />
-                          <button
-                            type="button"
-                            className="remove-image-btn"
-                            onClick={() => removeImage(index)}
-                            title="Supprimer cette image"
-                          >
-                            <FiX />
-                          </button>
+      {!loading && !error && (
+        <div className="products-table-wrapper">
+          {products.length === 0 ? (
+            <div className="no-products">
+              <h3>Aucun produit</h3>
+              <p>Essayez d’ajouter un produit ou de modifier les filtres.</p>
+            </div>
+          ) : (
+            <table className="products-table">
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Catégorie</th>
+                  <th>Taille</th>
+                  <th>Prix</th>
+                  <th>Stock</th>
+                  <th>Date d’ajout</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p._id}>
+                    <td>
+                      <div className="prod-cell">
+                        <div className="prod-image">
+                          {p?.primaryImage?.url ? (
+                            <img src={p.primaryImage.url} alt={p.name} />
+                          ) : (
+                            <div className="no-image" />
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <div className="prod-meta">
+                          <div className="prod-name">{p.name}</div>
+                          <div className="prod-sku">SKU: {p.sku}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{typeof p.category === 'object' ? (p.category?.name || '-') : (p.category || '-')}</td>
+                    <td>{renderSizes(p)}</td>
+                    <td className="price-cell">{Number(p?.price?.base ?? 0).toFixed(2)} €</td>
+                    <td>{p.totalStock ?? 0}</td>
+                    <td>{formatDate(p.createdAt)}</td>
+                    <td>
+                      <span className={`status-badge ${((p.status || '').toLowerCase() === 'active') ? 'status-active' : 'status-inactive'}`}>
+                        {((p.status || '').toLowerCase() === 'active') ? 'Actif' : 'Inactif'}
+                      </span>
+                    </td>
+                    <td className="actions-cell">
+                      <Link to={`/admin/products/${p._id}/edit`} className="action-btn" title="Modifier" style={{ textDecoration: 'none' }}>
+                        <FiEdit2 />
+                      </Link>
+                      <button className="action-btn delete" title="Supprimer" onClick={() => handleDelete(p._id)}>
+                        <FiTrash2 />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Prix (€)</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]+([.,][0-9]{1,2})?"
-                      name="price"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      placeholder="ex: 12,50 ou 12.50"
-                      required
-                    />
-                  </div>
+      <div className="pagination">
+        <button className="btn" onClick={() => goPage(page - 1)} disabled={page <= 1}>Précédent</button>
+        <span className="page-label">{paginatedLabel}</span>
+        <button className="btn" onClick={() => goPage(page + 1)} disabled={page >= totalPages}>Suivant</button>
+      </div>
 
-                  <div className="form-group">
-                    <label>Stock</label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
+      {showCreate && (
+        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Créer un produit (brouillon)</h2>
+            <form className="form-grid" onSubmit={handleCreate}>
+              <label>
+                Nom
+                <input type="text" value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} />
+              </label>
+              <label className="full">
+                Description
+                <textarea rows={3} value={form.description} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} />
+              </label>
+              <label>
+                Description courte
+                <input type="text" value={form.shortDescription} onChange={(e) => setForm(prev => ({ ...prev, shortDescription: e.target.value }))} />
+              </label>
+              <label>
+                Catégorie
+                <select value={form.category} onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}>
+                  {CATEGORIES.map(c => (
+                    <option key={c.slug} value={c.slug}>{c.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Prix de base (€)
+                <input type="number" min="0" step="0.01" value={form.priceBase} onChange={(e) => setForm(prev => ({ ...prev, priceBase: e.target.value }))} />
+              </label>
+              <label>
+                Statut
+                <select value={form.status} onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}>
+                  {STATUSES.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="checkbox">
+                <input type="checkbox" checked={form.featured} onChange={(e) => setForm(prev => ({ ...prev, featured: e.target.checked }))} />
+                Mettre en avant
+              </label>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Catégorie</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    required
-                  >
-                    <option value="">Sélectionner une catégorie</option>
-                    <option value="t-shirts">T-shirts</option>
-                    <option value="vestes">Vestes</option>
-                    <option value="casquettes">Casquettes</option>
-                    <option value="vaisselle">Vaisselle</option>
-                  </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Statut</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    >
-                      <option value="active">Actif</option>
-                      <option value="inactive">Inactif</option>
-                      <option value="draft">Brouillon</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="modal-actions">
-                  <button type="button" className="cancel-btn" onClick={closeModal}>
-                    Annuler
-                  </button>
-                  <button type="submit" className="save-btn">
-                    {editingProduct ? 'Modifier' : 'Ajouter'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="form-actions">
+                <button type="button" className="btn" onClick={() => setShowCreate(false)}>Annuler</button>
+                <button type="submit" className="btn-primary" disabled={creating}>{creating ? 'Création…' : 'Créer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
 
 export default AdminProducts;

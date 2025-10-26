@@ -45,3 +45,7 @@
 .btn-primary { background: #3b82f6; color: white; }
 .btn-secondary { background: #e5e7eb; color: #111827; }
 .save-hint { color: #16a34a; font-weight: 600; }
+
+/* Grille de formulaire de tarification */
+.pricing-form-grid { display: grid; grid-template-columns: 1fr; gap: 0.5rem; }
+.pricing-section-title { font-weight: 600; color: #0f172a; margin-bottom: 0.25rem; }

@@ -68,12 +68,11 @@ const Cart = () => {
               <div className="item-details">
                 <h3>{item.name}</h3>
                 <p className="item-variant">
-                  {item.variant && (
-                    <>
-                      {item.variant.size && `Taille: ${item.variant.size}`}
-                      {item.variant.color && ` - Couleur: ${item.variant.color}`}
-                    </>
+                  {(
+                    (item.size && `Taille: ${item.size}`) ||
+                    (item.color && !item.size && `Couleur: ${item.color}`)
                   )}
+                  {item.size && item.color && ` - Couleur: ${item.color}`}
                 </p>
                 {item.customization && (
                   <p className="item-customization">

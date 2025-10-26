@@ -330,7 +330,7 @@ const AdminOrders = () => {
                       </button>
                       <button
                         className="action-btn edit-btn"
-                        title="Modifier"
+                        title="Modifie"
                       >
                         <FiEdit3 />
                       </button>

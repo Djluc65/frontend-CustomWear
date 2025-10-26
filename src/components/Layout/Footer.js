@@ -17,7 +17,7 @@ const Footer = () => {
             </h3>
             <p className="footer-description">
               Votre destination pour la personnalisation et l'impression de produits de qualité. 
-              Créez des designs uniques sur t-shirts, vestes, casquettes et vaisselle.
+              Créez des designs uniques sur t-shirts, vestes, casquettes, bonnets et vaisselle.
             </p>
             <div className="social-links">
               <a href="#" className="social-link" aria-label="Facebook">

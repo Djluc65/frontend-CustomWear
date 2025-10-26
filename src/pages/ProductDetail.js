@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FiShoppingCart, FiHeart, FiShare2, FiStar, FiMinus, FiPlus } from 'react-icons/fi';
@@ -10,10 +10,12 @@ import { toast } from 'react-toastify';
 import { usersAPI } from '../services/api';
 import './ProductDetail.css';
 import ProductSlideshow from '../components/Products/ProductSlideshow';
+import { productsAPI } from '../services/api';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   
   const { currentProduct, isLoading, error } = useSelector(state => state.products);
@@ -22,6 +24,7 @@ const ProductDetail = () => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
   const [customization, setCustomization] = useState({
     text: '',
     color: '#000000',
@@ -30,6 +33,10 @@ const ProductDetail = () => {
   const [showCustomization, setShowCustomization] = useState(false);
   const [liked, setLiked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  // État du formulaire d'avis
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -39,12 +46,27 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (currentProduct && currentProduct.variants && currentProduct.variants.length > 0) {
-      setSelectedVariant(currentProduct.variants[0]);
+      const params = new URLSearchParams(location.search || '');
+      const preColor = params.get('color');
+      const preSize = params.get('size');
+      const preImg = params.get('img');
+
+      let initial = currentProduct.variants.find(v => {
+        const colorOk = preColor ? (v.color === preColor) : true;
+        const sizeOk = preSize ? (v.size === preSize) : true;
+        return colorOk && sizeOk;
+      });
+      if (!initial) initial = currentProduct.variants[0];
+      setSelectedVariant(initial);
+
+      if (preImg) {
+        setSelectedImageUrl(preImg);
+      }
     }
     if (currentProduct) {
       setLiked(Boolean(currentProduct.likedByUser));
     }
-  }, [currentProduct]);
+  }, [currentProduct, location.search]);
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
@@ -56,7 +78,11 @@ const ProductDetail = () => {
       productId: currentProduct._id,
       variantId: selectedVariant._id,
       quantity,
-      customization: showCustomization ? customization : null
+      customization: showCustomization ? customization : null,
+      product: currentProduct,
+      image: selectedCartImageUrl,
+      color: selectedColorName,
+      size: selectedVariant?.size
     };
 
     dispatch(addToCart(cartItem));
@@ -163,30 +189,13 @@ const ProductDetail = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="product-detail-loading">
-        <div className="loading-spinner"></div>
-        <p>Chargement du produit...</p>
-      </div>
-    );
-  }
 
-  if (error || !currentProduct) {
-    return (
-      <div className="product-detail-error">
-        <h2>Produit non trouvé</h2>
-        <p>{error || 'Ce produit n\'existe pas ou a été supprimé.'}</p>
-        <button onClick={() => navigate('/products')}>
-          Retour aux produits
-        </button>
-      </div>
-    );
-  }
-
-  const averageRating = currentProduct.reviews?.length > 0 
-    ? currentProduct.reviews.reduce((sum, review) => sum + review.rating, 0) / currentProduct.reviews.length 
+  const reviews = Array.isArray(currentProduct?.reviews) ? currentProduct.reviews : [];
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
+  // L’utilisateur a-t-il déjà laissé un avis ?
+  const userHasReviewed = !!user && reviews.some(r => String(r.user?._id || r.user) === String(user._id));
 
   // Helper: safely format price values
   const formatPrice = (value) => {
@@ -219,6 +228,14 @@ const ProductDetail = () => {
     return typeof color === 'string' ? color : (color.name || '');
   };
 
+  // Affichage lisible du genre
+  const formatGender = (g) => {
+    if (!g) return '';
+    const map = { unisexe: 'Unisexe', homme: 'Homme', femme: 'Femme', enfant: 'Enfant' };
+    const key = String(g).toLowerCase();
+    return map[key] || (key.charAt(0).toUpperCase() + key.slice(1));
+  };
+
   // Compute a safe minimum price across variants
   const minVariantPrice = (() => {
     if (Array.isArray(currentProduct?.variants) && currentProduct.variants.length > 0) {
@@ -230,10 +247,222 @@ const ProductDetail = () => {
     return null;
   })();
 
-  // Effective product-level price (base/sale)
+  // Effective product-level price (supports number or object)
   const effectiveProductPrice = (
-    currentProduct?.price?.sale ?? currentProduct?.price?.base ?? null
+    currentProduct?.effectivePrice ?? (
+      (typeof currentProduct?.price === 'number')
+        ? currentProduct.price
+        : (currentProduct?.price?.sale ?? currentProduct?.price?.base ?? null)
+    )
   );
+
+  // Couleur sélectionnée (nom) et images à afficher selon la couleur
+  const selectedColorName = getColorName(selectedVariant?.color);
+
+  // Normaliser toutes les images du produit (chaînes ou objets)
+  const allImages = Array.isArray(currentProduct?.images)
+    ? currentProduct.images
+        .map(img => {
+          if (!img) return null;
+          if (typeof img === 'string') return { url: img };
+          return {
+            url: img.url || img.secure_url || '',
+            color: typeof img.color === 'object' ? (img.color?.name || '') : (img.color || ''),
+            side: img.side || '',
+            isPrimary: Boolean(img.isPrimary),
+          };
+        })
+        .filter(i => i && i.url)
+    : [];
+
+  // Filtrer d'abord les images sur la couleur sélectionnée (fallback sur toutes si aucune)
+  const colorFilteredImages = selectedColorName
+    ? allImages.filter(img => img.color === selectedColorName)
+    : allImages;
+  const sourceImages = colorFilteredImages.length > 0 ? colorFilteredImages : allImages;
+
+  // Trier: prioriser la couleur sélectionnée, le côté 'front', puis primaire
+  const displayImages = [...sourceImages].sort((a, b) => {
+    const score = (img) => {
+      const colorScore = selectedColorName && img.color === selectedColorName ? 2 : 0;
+      const frontScore = String(img.side).toLowerCase() === 'front' ? 1 : 0;
+      const primaryScore = img.isPrimary ? 3 : 0;
+      return primaryScore + colorScore + frontScore;
+    };
+    return score(b) - score(a);
+  });
+
+  // --- Ajouts: sélecteurs Couleur/Taille et lien avec vignettes ---
+  const unique = (arr) => Array.from(new Set((arr || []).filter(Boolean)));
+  const colorFromImage = (img) => (typeof img?.color === 'string' ? img.color : (img?.color?.name || ''));
+
+  const availableColors = unique((currentProduct?.variants || []).map(v => getColorName(v.color)));
+  const availableSizesForColor = (colorName) => {
+    const variants = Array.isArray(currentProduct?.variants) ? currentProduct.variants : [];
+    return unique(variants.filter(v => getColorName(v.color) === colorName).map(v => v.size));
+  };
+  const availableSizes = selectedColorName ? availableSizesForColor(selectedColorName) : unique((currentProduct?.variants || []).map(v => v.size));
+
+  const findVariant = (colorName, size) => {
+    const variants = Array.isArray(currentProduct?.variants) ? currentProduct.variants : [];
+    const byColorAndSize = variants.find(v => getColorName(v.color) === colorName && v.size === size);
+    if (byColorAndSize) return byColorAndSize;
+    if (colorName) {
+      const byColor = variants.find(v => getColorName(v.color) === colorName);
+      if (byColor) return byColor;
+    }
+    if (size) {
+      const bySize = variants.find(v => v.size === size);
+      if (bySize) return bySize;
+    }
+    return variants[0] || null;
+  };
+
+  const handleColorSelect = (colorName) => {
+    const desiredSize = selectedVariant?.size;
+    const next = findVariant(colorName, desiredSize);
+    if (next) {
+      setSelectedVariant(next);
+      // Réinitialiser l’image sélectionnée pour afficher la première vignette de la couleur
+      setSelectedImage(0);
+      setSelectedImageUrl(null);
+    }
+  };
+
+  const handleSizeSelect = (size) => {
+    const colorName = selectedColorName || availableColors[0] || '';
+    const next = findVariant(colorName, size);
+    if (next) setSelectedVariant(next);
+  };
+
+  const handleThumbnailClick = (image, index) => {
+    setSelectedImage(index);
+    setSelectedImageUrl(getImageUrl(image));
+    const imgColor = colorFromImage(image);
+    if (imgColor && imgColor !== selectedColorName) {
+      handleColorSelect(imgColor);
+    }
+  };
+
+  // Rendre cliquables les vignettes de “Toutes les images” et sélectionner couleur
+  const handleAllImageClick = (image) => {
+    const targetUrl = getImageUrl(image);
+    const targetColor = colorFromImage(image);
+
+    // Met à jour la variante si la couleur diffère
+    if (targetColor && targetColor !== selectedColorName) {
+      const nextVar = findVariant(targetColor, selectedVariant?.size);
+      if (nextVar) setSelectedVariant(nextVar);
+    }
+
+    // Définit l’URL et tente de positionner l’index sur l’image cliquée
+    setSelectedImageUrl(targetUrl);
+
+    const futureSource = targetColor
+      ? allImages.filter(img => colorFromImage(img) === targetColor)
+      : allImages;
+
+    const score = (img, preferredColor) => {
+      const colorScore = preferredColor && colorFromImage(img) === preferredColor ? 2 : 0;
+      const frontScore = String(img.side).toLowerCase() === 'front' ? 1 : 0;
+      const primaryScore = img.isPrimary ? 3 : 0;
+      return primaryScore + colorScore + frontScore;
+    };
+
+    const futureDisplay = [...futureSource].sort((a, b) => {
+      return score(b, targetColor) - score(a, targetColor);
+    });
+
+    const idx = futureDisplay.findIndex(img => getImageUrl(img) === targetUrl);
+    setSelectedImage(idx >= 0 ? idx : 0);
+  };
+
+  const selectedCartImageUrl = displayImages.length > 0
+    ? getImageUrl(displayImages[Math.min(selectedImage, displayImages.length - 1)])
+    : getImageUrl(currentProduct?.images?.[0]);
+
+  // Stabiliser l'image sélectionnée quand l'ordre/liste change
+  useEffect(() => {
+    if (!Array.isArray(displayImages) || displayImages.length === 0) {
+      setSelectedImage(0);
+      return;
+    }
+    if (selectedImageUrl) {
+      const idx = displayImages.findIndex(img => getImageUrl(img) === selectedImageUrl);
+      if (idx >= 0) {
+        if (idx !== selectedImage) setSelectedImage(idx);
+        return;
+      }
+      const safeIndex = Math.min(selectedImage, displayImages.length - 1);
+      if (safeIndex !== selectedImage) setSelectedImage(safeIndex);
+    } else {
+      if (selectedImage >= displayImages.length) setSelectedImage(0);
+    }
+  }, [displayImages, selectedImageUrl]);
+
+  // Retours précoces placés après hooks pour respecter les règles
+  if (isLoading) {
+    return (
+      <div className="product-detail-loading">
+        <div className="loading-spinner"></div>
+        <p>Chargement du produit...</p>
+      </div>
+    );
+  }
+
+  if (error || !currentProduct) {
+    return (
+      <div className="product-detail-error">
+        <h2>Produit non trouvé</h2>
+        <p>{error || 'Ce produit n\'existe pas ou a été supprimé.'}</p>
+        <button onClick={() => navigate(location.state?.fromProducts || '/products')}>
+          Retour aux produits
+        </button>
+      </div>
+    );
+  }
+
+  const handleBuyNow = () => {
+    // Ajoute au panier la sélection actuelle puis va au paiement
+    handleAddToCart();
+    navigate('/checkout');
+  };
+
+  // Soumission d’un avis
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.info('Veuillez vous connecter pour laisser un avis.');
+      navigate('/auth');
+      return;
+    }
+    if (userHasReviewed) {
+      toast.info('Vous avez déjà laissé un avis pour ce produit.');
+      return;
+    }
+    if (reviewRating < 1 || reviewRating > 5) {
+      toast.error('Veuillez choisir une note entre 1 et 5.');
+      return;
+    }
+    if (!reviewComment.trim()) {
+      toast.error('Veuillez écrire un commentaire.');
+      return;
+    }
+    try {
+      setIsSubmittingReview(true);
+      await productsAPI.addReview(id, { rating: reviewRating, comment: reviewComment.trim() });
+      toast.success('Merci pour votre avis !');
+      setReviewComment('');
+      setReviewRating(0);
+      // Recharger le produit pour voir l’avis ajouté
+      dispatch(fetchProductById(id));
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Impossible d’envoyer votre avis';
+      toast.error(msg);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   return (
     <div className="product-detail">
@@ -242,20 +471,20 @@ const ProductDetail = () => {
         <div className="product-images">
           <div className="main-image">
             <ProductSlideshow
-              images={currentProduct.images}
+              images={displayImages}
               startIndex={selectedImage}
               onIndexChange={setSelectedImage}
-              autoPlay={true}
+              autoPlay={false}
               interval={3000}
               transition="fade"
             />
           </div>
           <div className="image-thumbnails">
-            {currentProduct.images.map((image, index) => (
+            {displayImages.map((image, index) => (
               <button
                 key={index}
                 className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
-                onClick={() => setSelectedImage(index)}
+                onClick={() => handleThumbnailClick(image, index)}
               >
                 <img src={getImageUrl(image)} alt={`${currentProduct.name} ${index + 1}`} />
               </button>
@@ -276,31 +505,27 @@ const ProductDetail = () => {
                   />
                 ))}
               </div>
-              <span>({currentProduct.reviews?.length || 0} avis)</span>
+              <span product-avis>({currentProduct.reviews?.length || 0} avis)</span>
             </div>
           </div>
 
           <div className="product-price">
-            {selectedVariant ? (
-              <>
-                <span className="current-price">
-                  {formatPrice(selectedVariant?.price)} €
-                </span>
-                {selectedVariant?.compareAtPrice != null && (
-                  <span className="compare-price">
-                    {formatPrice(selectedVariant.compareAtPrice)} €
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className="price-range">
-                {minVariantPrice != null 
-                  ? `À partir de ${formatPrice(minVariantPrice)} €`
-                  : (effectiveProductPrice != null 
-                      ? `Prix: ${formatPrice(effectiveProductPrice)} €`
-                      : 'Prix indisponible')}
-              </span>
-            )}
+            {(() => {
+              const hasDiscount = (currentProduct?.discountPercentage ?? 0) > 0;
+              const basePrice = (currentProduct?.price?.base ?? currentProduct?.price ?? effectiveProductPrice);
+              const finalPrice = (effectiveProductPrice ?? basePrice);
+              if (finalPrice != null) {
+                return hasDiscount && basePrice != null && basePrice !== finalPrice ? (
+                  <>
+                    <span className="compare-price">{formatPrice(basePrice)} €</span>
+                    <span className="current-price">{formatPrice(finalPrice)} €</span>
+                  </>
+                ) : (
+                  <span className="current-price">{formatPrice(finalPrice)} €</span>
+                );
+              }
+              return <span className="price-range">Prix indisponible</span>;
+            })()}
           </div>
 
           <div className="product-description">
@@ -310,173 +535,128 @@ const ProductDetail = () => {
           {/* Métadonnées du produit */}
           <div className="product-meta">
             <p><strong>Catégorie:</strong> {currentProduct.category}</p>
+            {currentProduct.gender && (
+              <p><strong>Genre:</strong> {formatGender(currentProduct.gender)}</p>
+            )}
+            {Array.isArray(currentProduct.colors) && currentProduct.colors.length > 0 && (
+              <p><strong>Couleurs:</strong> {joinList(currentProduct.colors)}</p>
+            )}
+            {selectedVariant?.size && (
+              <p><strong>Taille sélectionnée:</strong> {selectedVariant.size}</p>
+            )}
             {currentProduct.sku && (
               <p><strong>SKU:</strong> {currentProduct.sku}</p>
             )}
             <p><strong>Quantité totale:</strong> {currentProduct.totalStock ?? 0}</p>
           </div>
 
-          {/* Sélection des variantes */}
-          {currentProduct.variants && currentProduct.variants.length > 0 && (
+          {/* Sélecteurs Couleur et Taille */}
+          {availableColors.length > 0 && (
             <div className="product-variants">
-              <h3>Options disponibles</h3>
+              <h3>Couleur</h3>
               <div className="variants-grid">
-                {currentProduct.variants.map((variant) => (
+                {availableColors.map((color) => (
                   <button
-                    key={variant._id}
-                    className={`variant-option ${selectedVariant?._id === variant._id ? 'selected' : ''}`}
-                    onClick={() => setSelectedVariant(variant)}
-                    disabled={variant.stock === 0}
+                     className={`variant-option ${selectedColorName === color ? 'selected' : ''}`}
+                     onClick={() => handleColorSelect(color)}
                   >
                     <div className="variant-info">
-                      <span className="variant-name">
-                        {variant.size && `Taille: ${variant.size}`}
-                        {getColorName(variant.color) && ` - Couleur: ${getColorName(variant.color)}`}
-                      </span>
-                      <span className="variant-price">{formatPrice(variant?.price)} €</span>
+                      <span className="variant-name">{color}</span>
                     </div>
-                    {variant.stock === 0 && <span className="out-of-stock">Rupture</span>}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Personnalisation */}
-          {isCustomizable && (
-            <div className="customization-section">
-              <div className="customization-header">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={showCustomization}
-                    onChange={(e) => setShowCustomization(e.target.checked)}
-                  />
-                  Personnaliser ce produit
-                </label>
+          {availableSizes.length > 0 && (
+            <div className="product-variants">
+              <h3>Taille</h3>
+              <div className="variants-grid">
+                {availableSizes.map((size) => {
+                  const candidate = findVariant(selectedColorName || availableColors[0] || '', size);
+                  const disabled = !candidate;
+                  const selected = selectedVariant?.size === size;
+                  return (
+                    <button
+                       className={`variant-option ${selected ? 'selected' : ''}`}
+                       onClick={() => handleSizeSelect(size)}
+                       disabled={disabled}
+                     >
+                      <div className="variant-info">
+                        <span className="variant-name">{`${size}`}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              
-              {showCustomization && (
-                <motion.div 
-                  className="customization-options"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <div className="custom-text">
-                    <label>Texte personnalisé</label>
-                    <input
-                      type="text"
-                      value={customization.text}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, text: e.target.value }))}
-                      placeholder="Votre texte ici..."
-                      maxLength={50}
-                    />
-                  </div>
-                  
-                  <div className="custom-color">
-                    <label>Couleur du texte</label>
-                    <input
-                      type="color"
-                      value={customization.color}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, color: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <button className="customize-advanced" onClick={handleCustomize}>
-                    Personnalisation avancée
-                  </button>
-                </motion.div>
-              )}
             </div>
           )}
 
-          {/* Quantité et ajout au panier */}
-          <div className="product-actions">
-            <div className="quantity-selector">
-              <label>Quantité</label>
-              <div className="quantity-controls">
-                <button 
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <FiMinus />
-                </button>
-                <span>{quantity}</span>
-                <button 
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= (selectedVariant?.stock || 1)}
-                >
-                  <FiPlus />
-                </button>
-              </div>
-            </div>
-
-            <div className="action-buttons">
-              <button 
-                className="add-to-cart-btn"
-                onClick={handleAddToCart}
-                disabled={!selectedVariant || selectedVariant.stock === 0}
-              >
-                <FiShoppingCart />
-                Ajouter au panier
+          {/* Sélecteur de quantité */}
+          <div className="quantity-selector">
+            <label>Quantité</label>
+            <div className="quantity-controls">
+              <button onClick={() => handleQuantityChange(-1)} aria-label="Diminuer quantité">
+                <FiMinus />
               </button>
-              
-              <button className={`wishlist-btn ${liked ? 'active' : ''}`} onClick={handleWishlistToggle}>
-                <FiHeart />
+              <span>{quantity}</span>
+              <button onClick={() => handleQuantityChange(1)} aria-label="Augmenter quantité">
+                <FiPlus />
               </button>
-              
-              <div className="share-container">
-                <button className="share-btn" onClick={handleShareClick} title="Partager">
-                  <FiShare2 />
-                </button>
-                {showShareMenu && (
-                  <div className="share-menu">
-                    <button className="share-item whatsapp" onClick={() => openShare('whatsapp')} title="Partager sur WhatsApp">
-                      <FaWhatsapp />
-                      <span>WhatsApp</span>
-                    </button>
-                    <button className="share-item facebook" onClick={() => openShare('facebook')} title="Partager sur Facebook">
-                      <FaFacebookF />
-                      <span>Facebook</span>
-                    </button>
-                    <button className="share-item telegram" onClick={() => openShare('telegram')} title="Partager sur Telegram">
-                      <FaTelegramPlane />
-                      <span>Telegram</span>
-                    </button>
-                    <button className="share-item instagram" onClick={() => openShare('instagram')} title="Partager sur Instagram">
-                      <FaInstagram />
-                      <span>Instagram</span>
-                    </button>
-                    <button className="share-item tiktok" onClick={() => openShare('tiktok')} title="Partager sur TikTok">
-                      <FaTiktok />
-                      <span>TikTok</span>
-                    </button>
-                    <button className="share-item copy" onClick={copyLink} title="Copier le lien">
-                      <FaLink />
-                      <span>Copier</span>
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
-          {/* Stock info */}
-          {selectedVariant && (
-            <div className="stock-info">
-              {selectedVariant.stock > 0 ? (
-                <span className="in-stock">
-                  ✓ En stock ({selectedVariant.stock} disponible{selectedVariant.stock > 1 ? 's' : ''})
-                </span>
-              ) : (
-                <span className="out-of-stock">
-                  ✗ Rupture de stock
-                </span>
-              )}
-            </div>
-          )}
+          {/* Boutons d’action */}
+          <div className="action-buttons">
+            <button
+              className="add-to-cart-btn"
+              onClick={handleAddToCart}
+              disabled={!selectedVariant}
+              title="Ajouter au panier"
+            >
+              <FiShoppingCart /> Ajouter au panier
+            </button>
+            <button
+              className="add-to-cart-btn buy-now-btn"
+              onClick={handleBuyNow}
+              disabled={!selectedVariant}
+              title="Acheter maintenant"
+            >
+              Acheter maintenant
+            </button>
+            <button
+              className={`wishlist-btn ${liked ? 'active' : ''}`}
+              onClick={handleWishlistToggle}
+              aria-pressed={liked}
+              title={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <FiHeart />
+            </button>
+            <button className="share-btn" onClick={handleShareClick} title="Partager">
+              <FiShare2 />
+            </button>
+          </div>
         </div>
+        {/* Galerie complète des images */}
+        {allImages.length > 0 && (
+          <div className="all-images-gallery">
+            <h3>Toutes les images</h3>
+            <div className="all-images-grid">
+              {allImages.map((image, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="all-image-item"
+                  onClick={() => handleAllImageClick(image)}
+                  aria-label={`Afficher image ${idx + 1}`}
+                >
+                  <img src={getImageUrl(image)} alt={`${currentProduct.name} ${idx + 1}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Avis clients */}
@@ -504,6 +684,45 @@ const ProductDetail = () => {
         </div>
       )}
 
+      {/* Formulaire pour laisser un avis */}
+      <div className="review-form">
+        <h3>Laisser un avis</h3>
+        {!user && (
+          <p className="auth-warning">Connectez-vous pour donner votre avis.</p>
+        )}
+        {user && userHasReviewed && (
+          <p className="auth-warning">Vous avez déjà laissé un avis pour ce produit.</p>
+        )}
+        {user && !userHasReviewed && (
+          <form onSubmit={handleSubmitReview}>
+            <div className="rating-input">
+              {[1,2,3,4,5].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  className={`star ${reviewRating >= val ? 'selected' : ''}`}
+                  onClick={() => setReviewRating(val)}
+                  aria-label={`Note ${val}`}
+                >
+                  <FiStar />
+                </button>
+              ))}
+              <span className="rating-label">{reviewRating > 0 ? `${reviewRating}/5` : 'Choisissez une note'}</span>
+            </div>
+            <div className="comment-input">
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Votre avis sur le produit"
+                rows={4}
+              />
+            </div>
+            <button className="submit-review-btn" type="submit" disabled={isSubmittingReview}>
+              {isSubmittingReview ? 'Envoi…' : 'Envoyer mon avis'}
+            </button>
+          </form>
+        )}
+      </div>
       {/* Informations détaillées */}
       <div className="product-details-expanded">
         <h2>Informations détaillées</h2>

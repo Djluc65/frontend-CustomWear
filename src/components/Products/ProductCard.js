@@ -8,19 +8,34 @@ import { toast } from 'react-toastify';
 import './ProductCard.css';
 import { usersAPI } from '../../services/api';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, activeColor }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
   const [liked, setLiked] = useState(false);
 
-  const primaryImageUrl = product?.images?.[0]?.url || product?.image || '/api/placeholder/300/300';
+  // Sélection d'image principale en fonction de la couleur active
+  const getPrimaryImageUrl = () => {
+    const imgs = Array.isArray(product?.images) ? product.images : [];
+    const normColor = String(activeColor || '').toLowerCase();
+    if (normColor) {
+      const byColorFront = imgs.find(img => String(img?.color || '').toLowerCase() === normColor && String(img?.side || '').toLowerCase() === 'front');
+      if (byColorFront?.url) return byColorFront.url;
+      const byColorAny = imgs.find(img => String(img?.color || '').toLowerCase() === normColor);
+      if (byColorAny?.url) return byColorAny.url;
+    }
+    const primary = imgs.find(img => img?.isPrimary && img?.url);
+    if (primary?.url) return primary.url;
+    return imgs[0]?.url || product?.image || '/api/placeholder/300/300';
+  };
+
+  const primaryImageUrl = getPrimaryImageUrl();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const effectivePrice = (product?.price?.sale ?? product?.price?.base ?? 0);
+    const effectivePrice = (product?.effectivePrice ?? product?.price?.sale ?? product?.price?.base ?? product?.price ?? 0);
 
     const cartItem = {
       id: product._id,
@@ -28,7 +43,9 @@ const ProductCard = ({ product }) => {
       price: effectivePrice,
       image: primaryImageUrl,
       category: product.category,
-      quantity: 1
+      quantity: 1,
+      color: (activeColor || (Array.isArray(product?.colors) ? product.colors[0] : null)),
+      size: Array.isArray(product?.sizes) ? product.sizes[0] : null
     };
 
     dispatch(addToCart(cartItem));
@@ -108,6 +125,14 @@ const ProductCard = ({ product }) => {
     }
 
     return stars;
+  };
+
+  // Affichage lisible du genre
+  const formatGender = (g) => {
+    if (!g) return '';
+    const map = { unisexe: 'Unisexe', homme: 'Homme', femme: 'Femme', enfant: 'Enfant' };
+    const key = String(g).toLowerCase();
+    return map[key] || (key.charAt(0).toUpperCase() + key.slice(1));
   };
 
   return (
@@ -191,6 +216,11 @@ const ProductCard = ({ product }) => {
             {product.category}
           </div>
 
+          {/* Genre */}
+          {/* {product?.gender && (
+            <div className="product-gender">Genr: {formatGender(product.gender)}</div>
+          )} */}
+
           {/* Nom du produit */}
           <h3 className="product-name">
             {product.name}
@@ -220,20 +250,19 @@ const ProductCard = ({ product }) => {
 
           {/* Prix */}
           <div className="product-pricing">
-            {product?.price?.sale && product?.price?.base && product.price.sale < product.price.base ? (
-              <>
-                <span className="original-price">
-                  {formatPrice(product.price.base)}
-                </span>
-                <span className="current-price">
-                  {formatPrice(product.price.sale)}
-                </span>
-              </>
-            ) : (
-              <span className="current-price">
-                {formatPrice(product?.price?.sale ?? product?.price?.base ?? 0)}
-              </span>
-            )}
+            {(() => {
+              const priceCurrent = (product?.effectivePrice ?? product?.price?.sale ?? product?.price?.base ?? product?.price ?? 0);
+              const hasDiscount = (product?.discountPercentage ?? 0) > 0;
+              const basePrice = (product?.price?.base ?? product?.price ?? priceCurrent);
+              return hasDiscount ? (
+                <>
+                  <span className="original-price">{formatPrice(basePrice)}</span>
+                  <span className="current-price">{formatPrice(priceCurrent)}</span>
+                </>
+              ) : (
+                <span className="current-price">{formatPrice(priceCurrent)}</span>
+              );
+            })()}
           </div>
 
           {/* Disponibilité */}

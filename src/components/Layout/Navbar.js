@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import './Navbar.css';
 
@@ -17,6 +17,10 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const isOnHomePage = location.pathname === '/';
+  const isOnProductsPage = location.pathname.startsWith('/products');
+  const isOnModelsPage = location.pathname.startsWith('/models');
+  const isOnCustomizePage = location.pathname.startsWith('/customize');
   
   const { isAuthenticated, user } = useSelector(state => state.auth);
   const { totalQuantity } = useSelector(state => state.cart);
@@ -38,8 +42,10 @@ const Navbar = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    const term = searchQuery.trim();
+    if (term) {
+      const target = (isOnModelsPage || isOnCustomizePage) ? '/models' : '/products';
+      navigate(`${target}?search=${encodeURIComponent(term)}`);
       setSearchQuery('');
       setIsMenuOpen(false);
     }
@@ -47,20 +53,20 @@ const Navbar = () => {
 
   // Recherche en temps réel: naviguer vers /products avec le terme saisi
   useEffect(() => {
-    // Ne pas déclencher si la valeur est vide; possibilité de nettoyer
     if (searchQuery === '') return;
 
-    // Debounce pour limiter la navigation
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
     const timer = setTimeout(() => {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      const term = searchQuery.trim();
+      const target = (isOnModelsPage || isOnCustomizePage) ? '/models' : '/products';
+      navigate(`${target}?search=${encodeURIComponent(term)}`);
     }, 300);
     setDebounceTimer(timer);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, navigate]);
+  }, [searchQuery, navigate, isOnModelsPage, isOnCustomizePage]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -136,12 +142,19 @@ const Navbar = () => {
 
         {/* Menu Desktop */}
         <div className="navbar-menu">
-          <Link to="/" className="navbar-link">Accueil</Link>
-          <Link to="/products" className="navbar-link">Produits</Link>
-          <Link to="/products/t-shirts" className="navbar-link">T-shirts</Link>
-          <Link to="/products/vestes" className="navbar-link">Vestes</Link>
-          <Link to="/products/casquettes" className="navbar-link">Casquettes</Link>
-          <Link to="/products/vaisselle" className="navbar-link">Vaisselle</Link>
+          <Link to="/" className="navbar-link">
+            <FaHome className="navbar-icon" />
+            Accueil
+          </Link>
+          <Link to="/products" className="navbar-link">
+            <FaBox className="navbar-icon" />
+            Produits disponibles
+          </Link>
+          <Link to="/models" className="navbar-link">
+            <FaPalette className="navbar-icon" />
+            Produits personnalisables
+          </Link>
+          
         </div>
 
         {/* Barre de recherche déplacée vers la sous-barre ci-dessous */}
@@ -170,12 +183,19 @@ const Navbar = () => {
                 aria-expanded={isUserDropdownOpen}
               >
                 <FaUser />
-                <span className="user-name">{user?.name}</span>
+                {/* <span className="user-name">{user?.name}</span> */}
               </button>
               <div className={`user-dropdown ${isUserDropdownOpen ? 'open' : ''}`}>
-                <Link to="/profile" className="dropdown-link">Mon Profil</Link>
-                <Link to="/orders" className="dropdown-link">Mes Commandes</Link>
+                <Link to="/profile" className="dropdown-link">
+                  <FaUserCircle className="dropdown-icon" />
+                  Mon Profil
+                </Link>
+                <Link to="/orders" className="dropdown-link">
+                  <FaClipboardList className="dropdown-icon" />
+                  Mes Commandes
+                </Link>
                 <button onClick={handleLogout} className="dropdown-link logout-btn">
+                  <FaSignOutAlt className="dropdown-icon" />
                   Déconnexion
                 </button>
               </div>
@@ -188,8 +208,14 @@ const Navbar = () => {
               </Link>
               {/* Liens texte (desktop) */}
               <div className="auth-links">
-                <Link to="/auth" className="navbar-link">Connexion</Link>
-                <Link to="/auth?mode=register" className="navbar-button">Inscription</Link>
+                <Link to="/auth" className="navbar-link">
+                  <FaSignInAlt className="navbar-icon" />
+                  Connexion
+                </Link>
+                <Link to="/auth?mode=register" className="navbar-button">
+                  <FaUserPlus className="navbar-icon" />
+                  Inscription
+                </Link>
               </div>
             </>
           )}
@@ -208,7 +234,7 @@ const Navbar = () => {
           <form className="search-bar" onSubmit={handleSearch}>
             <input 
               type="text" 
-              placeholder="Rechercher un produit..." 
+              placeholder={(isOnModelsPage || isOnCustomizePage) ? "Rechercher un modèle..." : "Rechercher un produit..."} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
             /> 
@@ -228,7 +254,7 @@ const Navbar = () => {
           <form onSubmit={handleSearch}>
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder={(isOnModelsPage || isOnCustomizePage) ? "Rechercher un modèle..." : "Rechercher..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="mobile-search-input"
@@ -241,42 +267,62 @@ const Navbar = () => {
         
         <div className="mobile-menu-links">
           <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+            <FaHome className="mobile-icon" />
             Accueil
           </Link>
           <Link to="/products" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
-            Tous les Produits
+            <FaBox className="mobile-icon" />
+            Produits disponibles
           </Link>
-          <Link to="/products/t-shirts" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
-            T-shirts
+
+          <Link to="/models" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+            <FaPalette className="mobile-icon" />
+            Produits personnalisables
           </Link>
-          <Link to="/products/vestes" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
-            Vestes
-          </Link>
-          <Link to="/products/casquettes" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
-            Casquettes
-          </Link>
-          <Link to="/products/vaisselle" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
-            Vaisselle
-          </Link>
+          
+          {!isOnModelsPage && !isOnCustomizePage && !isOnHomePage && !isOnProductsPage && (
+            <>
+              <Link to="/products/t-shirts" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                T-shirts
+              </Link>
+              <Link to="/products/vestes" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                Vestes
+              </Link>
+              <Link to="/products/casquettes" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                Casquettes
+              </Link>
+              <Link to="/products/bonnets" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                Bonnets
+              </Link>
+              <Link to="/products/vaisselle" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                Vaisselle
+              </Link>
+            </>
+          )}
           
           {isAuthenticated ? (
             <>
               <Link to="/profile" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                <FaUserCircle className="mobile-icon" />
                 Mon Profil
               </Link>
               <Link to="/orders" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                <FaClipboardList className="mobile-icon" />
                 Mes Commandes
               </Link>
               <button onClick={handleLogout} className="mobile-link logout-mobile">
+                <FaSignOutAlt className="mobile-icon" />
                 Déconnexion
               </button>
             </>
           ) : (
             <>
               <Link to="/auth" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                <FaSignInAlt className="mobile-icon" />
                 Connexion
               </Link>
               <Link to="/auth?mode=register" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+                <FaUserPlus className="mobile-icon" />
                 Inscription
               </Link>
             </>
