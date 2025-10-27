@@ -78,6 +78,9 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
+  /* Mobile-first: assurer une cible tactile minimale */
+  min-height: 44px;
+  font-size: 0.95rem;
 }
 
 .filter-toggle:hover,
@@ -404,5 +407,19 @@
   
   .products-controls {
     gap: 0.5rem;
+  }
+}
+
+/* Smartphone: bouton responsive et désactivé */
+@media (max-width: 480px) {
+  .filter-toggle {
+    width: 100%;
+    justify-content: center;
+    /* Désactiver l’interaction sur smartphone */
+    pointer-events: none;
+    cursor: not-allowed;
+    opacity: 0.6;
+    touch-action: none;
+    user-select: none;
   }
 }
