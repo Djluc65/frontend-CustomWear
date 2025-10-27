@@ -395,12 +395,12 @@
 @media (max-width: 480px) {
   .filter-toggle {
     width: auto;
-    max-width: 100px;
+    max-width: 70px;
     flex: 0 0 auto;
     justify-content: center;
     /* Désactiver l’interaction sur smartphone */
-    pointer-events: none;
-    cursor: not-allowed;
+    pointer-events: auto;
+    cursor: pointer;
     opacity: 0.6;
     /* touch-action: none; */
     user-select: none;
