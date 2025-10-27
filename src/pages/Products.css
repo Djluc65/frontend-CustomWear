@@ -411,9 +411,9 @@
 }
 
 /* Smartphone: bouton responsive et désactivé */
-@media (max-width: 180px) {
+@media (max-width: 10px) {
   .filter-toggle {
-    width: 100%;
+    width: 20%;
     justify-content: center;
     /* Désactiver l’interaction sur smartphone */
     pointer-events: none;
