@@ -411,7 +411,7 @@
 }
 
 /* Smartphone: bouton responsive et désactivé */
-@media (max-width: 480px) {
+@media (max-width: 180px) {
   .filter-toggle {
     width: 100%;
     justify-content: center;
@@ -419,7 +419,7 @@
     pointer-events: none;
     cursor: not-allowed;
     opacity: 0.6;
-    touch-action: none;
-    user-select: none;
+    /* touch-action: none;
+    user-select: none; */
   }
 }
