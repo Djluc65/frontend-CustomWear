@@ -219,7 +219,7 @@ const Products = () => {
             <FiSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Rechercher un produit (titre, description, tags)"
+              placeholder="Rechercher un produit (titre, tags, etc...)"
               value={localFilters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
             />
