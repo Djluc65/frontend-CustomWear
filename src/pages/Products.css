@@ -398,12 +398,6 @@
     max-width: 70px;
     flex: 0 0 auto;
     justify-content: center;
-    /* Désactiver l’interaction sur smartphone */
-    pointer-events: auto;
-    cursor: pointer;
-    opacity: 0.6;
-    /* touch-action: none; */
-    user-select: none;
   }
   .products-grid.grid,
   .products-grid.with-sidebar.grid {

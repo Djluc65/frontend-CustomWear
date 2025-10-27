@@ -75,7 +75,7 @@ const Products = () => {
   ]));
 
   const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState({
     search: searchParams.get('search') || '',
     category: category || searchParams.get('category') || '',
@@ -88,6 +88,12 @@ const Products = () => {
     color: searchParams.get('color') || '',
     size: searchParams.get('size') || ''
   });
+
+  // Sur desktop, ouvrir les filtres par défaut; sur mobile/tablette, les laisser fermés
+  useEffect(() => {
+    const isDesktop = window?.innerWidth >= 1024;
+    setShowFilters(isDesktop);
+  }, []);
 
   // Synchroniser le filtre de catégorie avec l'URL lorsque l'utilisateur
   // clique sur une catégorie dans la barre de navigation.
