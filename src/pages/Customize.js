@@ -3,7 +3,7 @@ import { useLocation, NavLink, useNavigate } from 'react-router-dom';
 import { modelsAPI, productsAPI } from '../services/api';
 import { sortSizes } from '../utils/sizes';
 import './Customize.css';
-import './Models.css';
+
 import CustomizationPricing from '../components/Customization/CustomizationPricing';
 import CustomizationSelector from '../components/Customization/CustomizationSelector';
 import { useDispatch } from 'react-redux';

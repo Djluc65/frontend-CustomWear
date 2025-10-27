@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useSearchParams } from 'react-router-dom';
 import { modelsAPI } from '../services/api';
 import './Customize.css';
-import './Models.css';
+
 import { compareSizes } from '../utils/sizes';
 
 const Models = () => {

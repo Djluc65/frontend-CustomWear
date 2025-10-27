@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { FaShoppingCart, FaHeart, FaEye, FaStar } from 'react-icons/fa';
 import { addToCart } from '../../store/slices/cartSlice';
 import { toast } from 'react-toastify';
-import './ProductCard.css';
 import { usersAPI } from '../../services/api';
 
 const ProductCard = ({ product, activeColor }) => {
@@ -112,16 +111,16 @@ const ProductCard = ({ product, activeColor }) => {
     const hasHalfStar = rating % 1 !== 0;
 
     for (let i = 0; i < fullStars; i++) {
-      stars.push(<FaStar key={i} className="star filled" />);
+      stars.push(<FaStar key={i} className="w-4 h-4" />);
     }
 
     if (hasHalfStar) {
-      stars.push(<FaStar key="half" className="star half" />);
+      stars.push(<FaStar key="half" className="w-4 h-4 opacity-70" />);
     }
 
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
-      stars.push(<FaStar key={`empty-${i}`} className="star empty" />);
+      stars.push(<FaStar key={`empty-${i}`} className="w-4 h-4 opacity-40" />);
     }
 
     return stars;
@@ -137,48 +136,37 @@ const ProductCard = ({ product, activeColor }) => {
 
   return (
     <motion.div
-      className="product-card"
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.3 }}
+      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition flex flex-col overflow-hidden"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.25 }}
     >
-      <Link to={`/product/${product._id}`} className="product-link">
-        <div
-          className="product-image-container"
-          style={{
-            backgroundImage: `url(${primaryImageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        >
+      <Link to={`/product/${product._id}`} className="no-underline text-inherit">
+        <div className="relative w-full h-56 sm:h-64 bg-gray-100">
           <img
             src={primaryImageUrl}
             alt={product.name}
-            className="product-image"
+            className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
             decoding="async"
             sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, 300px"
           />
-          
-          {/* Badge de réduction */}
+
           {product?.discountPercentage > 0 && (
-            <div className="discount-badge">
+            <div className="absolute top-2 left-2 px-2 py-1 bg-red-600 text-white text-xs rounded">
               -{product.discountPercentage}%
             </div>
           )}
 
-          {/* Badge nouveau */}
           {product.isNew && (
-            <div className="new-badge">
+            <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs rounded">
               Nouveau
             </div>
           )}
 
-          {/* Overlay avec actions */}
-          <div className="product-overlay">
-            <div className="product-actions">
+          <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition">
+            <div className="absolute bottom-2 right-2 flex items-center gap-2">
               <motion.button
-                className={`action-btn wishlist-btn ${liked ? 'active' : ''}`}
+                className={`p-2 rounded-full bg-white/90 text-slate-700 hover:bg-white ${liked ? 'ring-2 ring-pink-500' : ''}`}
                 onClick={handleWishlist}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -186,9 +174,9 @@ const ProductCard = ({ product, activeColor }) => {
               >
                 <FaHeart />
               </motion.button>
-              
+
               <motion.button
-                className="action-btn view-btn"
+                className="p-2 rounded-full bg-white/90 text-slate-700 hover:bg-white"
                 onClick={handleView}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -196,9 +184,9 @@ const ProductCard = ({ product, activeColor }) => {
               >
                 <FaEye />
               </motion.button>
-              
+
               <motion.button
-                className="action-btn cart-btn"
+                className="p-2 rounded-full bg-white/90 text-slate-700 hover:bg-white"
                 onClick={handleAddToCart}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -210,25 +198,21 @@ const ProductCard = ({ product, activeColor }) => {
           </div>
         </div>
 
-        <div className="product-info">
-          {/* Catégorie */}
-          <div className="product-category">
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
             {product.category}
           </div>
 
-          {/* Genre */}
           {/* {product?.gender && (
-            <div className="product-gender">Genr: {formatGender(product.gender)}</div>
+            <div className="text-xs text-slate-600">Genre: {formatGender(product.gender)}</div>
           )} */}
 
-          {/* Nom du produit */}
-          <h3 className="product-name">
+          <h3 className="text-base font-semibold text-slate-900 mt-1">
             {product.name}
           </h3>
 
-          {/* Description courte */}
           {product.description && (
-            <p className="product-description">
+            <p className="text-sm text-slate-700 mt-1">
               {product.description.length > 80 
                 ? `${product.description.substring(0, 80)}...` 
                 : product.description
@@ -236,62 +220,57 @@ const ProductCard = ({ product, activeColor }) => {
             </p>
           )}
 
-          {/* Évaluation */}
           {product.rating && (
-            <div className="product-rating">
-              <div className="stars">
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 text-yellow-500">
                 {renderStars(product.rating)}
               </div>
-              <span className="rating-text">
+              <span className="text-xs text-slate-600">
                 ({product.reviewCount || 0} avis)
               </span>
             </div>
           )}
 
-          {/* Prix */}
-          <div className="product-pricing">
+          <div className="mt-2 flex items-baseline gap-2">
             {(() => {
               const priceCurrent = (product?.effectivePrice ?? product?.price?.sale ?? product?.price?.base ?? product?.price ?? 0);
               const hasDiscount = (product?.discountPercentage ?? 0) > 0;
               const basePrice = (product?.price?.base ?? product?.price ?? priceCurrent);
               return hasDiscount ? (
                 <>
-                  <span className="original-price">{formatPrice(basePrice)}</span>
-                  <span className="current-price">{formatPrice(priceCurrent)}</span>
+                  <span className="text-sm line-through text-slate-500">{formatPrice(basePrice)}</span>
+                  <span className="text-lg font-bold text-slate-900">{formatPrice(priceCurrent)}</span>
                 </>
               ) : (
-                <span className="current-price">{formatPrice(priceCurrent)}</span>
+                <span className="text-lg font-bold text-slate-900">{formatPrice(priceCurrent)}</span>
               );
             })()}
           </div>
 
-          {/* Disponibilité */}
-          <div className="product-availability">
+          <div className="mt-2">
             {(product?.totalStock ?? 0) > 0 ? (
-              <span className="in-stock">
+              <span className="text-xs text-green-700 font-medium">
                 ✓ En stock ({product.totalStock} disponibles)
               </span>
             ) : (
-              <span className="out-of-stock">
+              <span className="text-xs text-red-700 font-medium">
                 ✗ Rupture de stock
               </span>
             )}
           </div>
 
-          {/* Options de personnalisation */}
           {product.customizable && (
-            <div className="customization-badge">
-              <span className="customize-icon">🎨</span>
-              Personnalisable
+            <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-slate-700">
+              <span>🎨</span>
+              <span>Personnalisable</span>
             </div>
           )}
         </div>
       </Link>
 
-      {/* Bouton d'ajout au panier en bas */}
-      <div className="product-footer">
+      <div className="p-4 border-t">
         <motion.button
-          className="add-to-cart-btn"
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleAddToCart}
           disabled={(product?.totalStock ?? 0) === 0}
           whileHover={{ scale: (product?.totalStock ?? 0) > 0 ? 1.02 : 1 }}
