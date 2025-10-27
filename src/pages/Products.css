@@ -399,6 +399,21 @@
     flex: 0 0 auto;
     justify-content: center;
   }
+  
+  .view-controls {
+    width: auto;
+    max-width: 70px;
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+
+  .search-icon{
+    width: auto;
+    max-width: 400px;
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+
   .products-grid.grid,
   .products-grid.with-sidebar.grid {
     grid-template-columns: repeat(2, 1fr);
