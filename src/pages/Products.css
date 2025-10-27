@@ -392,10 +392,10 @@
   }
 }
 
-@media (max-width: 280px) {
+@media (max-width: 480px) {
   .filter-toggle {
     width: auto;
-    max-width: 160px;
+    max-width: 100px;
     flex: 0 0 auto;
     justify-content: center;
     /* Désactiver l’interaction sur smartphone */
