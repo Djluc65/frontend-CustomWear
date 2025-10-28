@@ -1033,6 +1033,12 @@
     flex-direction: column;
   }
 
+  .quantity-controls {
+    width: auto;
+    max-width: 250px;
+    flex: 0 0 auto;
+  }
+
   .add-to-cart-btn {
     width: auto;
     max-width: 220px;
