@@ -318,6 +318,8 @@
 
 .action-buttons {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
@@ -1029,6 +1031,17 @@
   
   .action-buttons {
     flex-direction: column;
+  }
+
+  .add-to-cart-btn {
+    width: 100px;
+  }
+
+  .share-btn {
+    width: 30px;
+  }
+  .wishlist-btn { 
+    width: 30px;
   }
   
   .add-to-cart-btn {

@@ -409,7 +409,7 @@
 
   .search-bar{
     width: auto;
-    max-width: 400px;
+    max-width: 350px;
     flex: 0 0 auto;
     justify-content: center;
   }
