@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Configuration axios (alignée sur le backend port 5001)
-const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5001') + '/api';
+// Configuration axios (normalisation de l'URL de base)
+const RAW_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL : `${RAW_API_URL}/api`;
 
 // Actions asynchrones
 export const loginUser = createAsyncThunk(

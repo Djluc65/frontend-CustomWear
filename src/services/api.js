@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 // Configuration de base pour axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+// Fallback dynamique: utilise l'IP/hôte courant et le port backend 5003 si REACT_APP_API_URL est absent
+const HOSTNAME = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : 'localhost';
+const DEFAULT_API_PORT = 5003;
+const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${HOSTNAME}:${DEFAULT_API_PORT}`;
 
 // Instance axios avec configuration de base
 const api = axios.create({

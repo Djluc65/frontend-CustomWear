@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useSearchParams } from 'react-router-dom';
 import { modelsAPI } from '../services/api';
 import './Customize.css';
+import './Models.css';
 
 import { compareSizes } from '../utils/sizes';
 
@@ -275,7 +276,7 @@ const Models = () => {
       {activeModels.length === 0 ? (
         <div className="alert alert-info">Aucun modèle actif pour le moment.</div>
       ) : (
-        <div className="d-flex gap-3">
+        <div className="models-content">
           <aside className="filters-sidebar" aria-label="Filtres modèles">
             <div
               className={`filter-section${openSections.categories ? ' open' : ''}`}

@@ -2,8 +2,11 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 // Configuration axios
+// Fallback dynamique: utilise l'IP/hôte courant et le port backend 5003 si REACT_APP_API_URL est absent
+const HOSTNAME = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : 'localhost';
+const DEFAULT_API_PORT = 5003;
+const RAW_API_URL = process.env.REACT_APP_API_URL || `http://${HOSTNAME}:${DEFAULT_API_PORT}`;
 // Normalise l'URL de base pour éviter les 404 si REACT_APP_API_URL ne contient pas "/api"
-const RAW_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL : `${RAW_API_URL}/api`;
 
 // Actions asynchrones

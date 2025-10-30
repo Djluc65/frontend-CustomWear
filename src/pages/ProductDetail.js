@@ -553,7 +553,7 @@ const ProductDetail = () => {
           {/* Sélecteurs Couleur et Taille */}
           {availableColors.length > 0 && (
             <div className="product-variants">
-              <h3>Couleur</h3>
+              <h3 className="variant-color">Couleur</h3>
               <div className="variants-grid">
                 {availableColors.map((color) => (
                   <button
@@ -571,8 +571,8 @@ const ProductDetail = () => {
 
           {availableSizes.length > 0 && (
             <div className="product-variants">
-              <h3>Taille</h3>
-              <div className="variants-grid">
+              <h3 className="variant-size">Taille</h3>
+              <div className="variants-grid-size">
                 {availableSizes.map((size) => {
                   const candidate = findVariant(selectedColorName || availableColors[0] || '', size);
                   const disabled = !candidate;
@@ -595,7 +595,7 @@ const ProductDetail = () => {
 
           {/* Sélecteur de quantité */}
           <div className="quantity-selector">
-            <label>Quantité</label>
+            <label style={{ fontWeight: 'bold', fontSize: '18px' }}>Quantité</label>
             <div className="quantity-controls">
               <button onClick={() => handleQuantityChange(-1)} aria-label="Diminuer quantité">
                 <FiMinus />
