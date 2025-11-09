@@ -11,6 +11,23 @@ const Cart = () => {
   const navigate = useNavigate();
   const { items, total, itemCount } = useSelector(state => state.cart);
 
+  // Totaux agrégés (modèles et personnalisation) pour le panier
+  const modelTotal = items.reduce((sum, item) => {
+    const quantity = Number(item.quantity || 1);
+    const baseModelUnit = (typeof item?.customization?.totals?.baseModelPrice === 'number')
+      ? item.customization.totals.baseModelPrice
+      : Number(item.price || 0);
+    return sum + baseModelUnit * quantity;
+  }, 0);
+
+  const customizationTotal = items.reduce((sum, item) => {
+    const quantity = Number(item.quantity || 1);
+    const customizationUnit = (typeof item?.customization?.totals?.customizationPrice === 'number')
+      ? item.customization.totals.customizationPrice
+      : 0;
+    return sum + customizationUnit * quantity;
+  }, 0);
+
   const handleQuantityChange = (itemId, newQuantity) => {
     if (newQuantity <= 0) {
       dispatch(removeFromCart(itemId));
@@ -98,8 +115,36 @@ const Cart = () => {
               </div>
               
               <div className="item-price">
-                <span className="unit-price">{item.price.toFixed(2)} €</span>
-                <span className="total-price">{(item.price * item.quantity).toFixed(2)} €</span>
+                {/* <span className="unit-price">{item.price.toFixed(2)} €</span>
+                {item?.customization?.totals && (
+                  <span className="unit-price" style={{ display: 'block' }}>
+                    Modèle: {(Number(item.customization.totals.baseModelPrice || 0)).toFixed(2)} €
+                    {' '}•{' '}
+                    Perso: {(Number(item.customization.totals.customizationPrice || 0)).toFixed(2)} €
+                  </span>
+                )}
+                {item?.customization?.totals ? (
+                  <span className="unit-price" style={{ display: 'block' }}>
+                    Total (Modèle + Perso): {(Number(
+                      item.customization.totals.grandTotal !== undefined
+                        ? item.customization.totals.grandTotal
+                        : (Number(item.customization.totals.baseModelPrice || 0) + Number(item.customization.totals.customizationPrice || 0))
+                    )).toFixed(2)} €
+                  </span>
+                ) : (
+                  <span className="unit-price" style={{ display: 'block' }}>
+                    Total (Modèle + Perso): {(Number(item.price || 0)).toFixed(2)} €
+                  </span>
+                )} */}
+                <span className="total-price">{(
+                  (
+                    item?.customization?.totals?.grandTotal !== undefined
+                      ? Number(item.customization.totals.grandTotal)
+                      : (item?.customization?.totals && (item.customization.totals.baseModelPrice !== undefined || item.customization.totals.customizationPrice !== undefined))
+                        ? (Number(item.customization.totals.baseModelPrice || 0) + Number(item.customization.totals.customizationPrice || 0))
+                        : Number(item.price || 0)
+                  ) * Number(item.quantity || 1)
+                ).toFixed(2)} €</span>
               </div>
               
               <button 
@@ -123,7 +168,8 @@ const Cart = () => {
           
           <div className="summary-line">
             <span>Sous-total</span>
-            <span>{total.toFixed(2)} €</span>
+            {/* <span>{total.toFixed(2)} €</span> */}
+             <span>{(modelTotal + customizationTotal).toFixed(2)} €</span>
           </div>
           
           <div className="summary-line">
@@ -133,7 +179,7 @@ const Cart = () => {
           
           <div className="summary-line total">
             <span>Total</span>
-            <span>{total.toFixed(2)} €</span>
+            <span>{(modelTotal + customizationTotal).toFixed(2)} €</span>
           </div>
           
           <button onClick={handleCheckout} className="checkout-btn">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, NavLink, useNavigate } from 'react-router-dom';
-import { modelsAPI, productsAPI } from '../services/api';
+import { modelsAPI, productsAPI, customizationPricingAPI } from '../services/api';
 import { sortSizes } from '../utils/sizes';
 import './Customize.css';
 
@@ -67,14 +67,34 @@ const Customize = () => {
   const navigate = useNavigate();
   const [computedTotals, setComputedTotals] = useState({ customizationPrice: 0, baseModelPrice: Number(DEFAULT_MODEL_PLACEHOLDER.basePrice), grandTotal: Number(DEFAULT_MODEL_PLACEHOLDER.basePrice) });
 
-  const handleAddToCartCustomized = () => {
+  const handleAddToCartCustomized = async () => {
     try {
-      const totalPrice = Number(computedTotals?.grandTotal ?? (Number(selectedModel?.basePrice) || Number(DEFAULT_MODEL_PLACEHOLDER.basePrice)));
+      // Déterminer la sélection côté client
+      const textFront = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'front' && (t?.visible ?? true));
+      const textBack = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'back' && (t?.visible ?? true));
+      const imageFront = Boolean(uploadedImageUrl && imageVisible && imageSide === 'front');
+      const imageBack = Boolean(uploadedImageUrl && imageVisible && imageSide === 'back');
+      const baseModelPrice = Number(selectedModel?.basePrice) || Number(DEFAULT_MODEL_PLACEHOLDER.basePrice);
+
+      // Calcul serveur (source de vérité)
+      let serverTotals = null;
+      try {
+        const resp = await customizationPricingAPI.calculatePrice({ textFront, textBack, imageFront, imageBack, baseModelPrice });
+        serverTotals = resp?.data?.data?.totals || null;
+      } catch (calcErr) {
+        console.warn('[Customize] calculatePrice API failed, fallback to client totals', calcErr?.response?.data || calcErr);
+      }
+
+      const totalPrice = Number(
+        (serverTotals?.grandTotal ?? computedTotals?.grandTotal ?? baseModelPrice)
+      );
+
       const currentSideImage = (
         (selectedModel?.imagesByColor?.[selectedColor]?.[showBack ? 'back' : 'front']) ||
         (selectedModel?.images?.[showBack ? 'back' : 'front']) ||
         null
       );
+
       const payload = {
         productId: selectedModel?._id,
         quantity: 1,
@@ -84,14 +104,8 @@ const Customize = () => {
         size: selectedSize,
         customization: {
           selection: {
-            text: {
-              front: Array.isArray(textLayers) && textLayers.some(t => t?.side === 'front' && (t?.visible ?? true)),
-              back: Array.isArray(textLayers) && textLayers.some(t => t?.side === 'back' && (t?.visible ?? true)),
-            },
-            image: {
-              front: Boolean(uploadedImageUrl && imageVisible && imageSide === 'front'),
-              back: Boolean(uploadedImageUrl && imageVisible && imageSide === 'back'),
-            },
+            text: { front: textFront, back: textBack },
+            image: { front: imageFront, back: imageBack },
           },
           textLayers,
           image: {
@@ -99,13 +113,13 @@ const Customize = () => {
             side: imageSide || (showBack ? 'back' : 'front'),
             visible: Boolean(imageVisible),
           },
-          totals: computedTotals,
+          totals: serverTotals || computedTotals || { baseModelPrice, customizationPrice: 0, grandTotal: baseModelPrice },
           technique: selectedTechnique,
         },
         product: {
           _id: selectedModel?._id,
           name: selectedModel?.name,
-          price: { base: Number(selectedModel?.basePrice) || Number(DEFAULT_MODEL_PLACEHOLDER.basePrice) },
+          price: { base: baseModelPrice },
           images: selectedModel?.images,
           category: selectedModel?.category,
         }
@@ -165,6 +179,10 @@ const Customize = () => {
 
   const [previewMode, setPreviewMode] = useState(false);
   const [canvasZoom, setCanvasZoom] = useState(1);
+  // Unité des règles de mesure
+  const [rulerUnit, setRulerUnit] = useState('px'); // 'px' ou 'cm'
+  // Repères utilisateur (guides)
+  const [guideLines, setGuideLines] = useState([]); // {id, type: 'vertical'|'horizontal', percent, side}
 
   const pushHistory = (label) => {
     setHistory(prev => [...prev, JSON.stringify(textLayers)]);
@@ -348,10 +366,26 @@ const Customize = () => {
     updateTextLayer(id, { rotation: angle }, 'Rotation prédéfinie');
   };
 
+  // CRUD des repères utilisateur
+  const addGuideLine = (type) => {
+    const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const percent = 50;
+    const side = showBack ? 'back' : 'front';
+    setGuideLines(prev => [...prev, { id, type, percent, side }]);
+  };
+  const updateGuideLine = (id, updates) => {
+    setGuideLines(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+  };
+  const deleteGuideLine = (id) => {
+    setGuideLines(prev => prev.filter(g => g.id !== id));
+  };
+
   // Sauvegarde/partage et export
   const serializeCustomization = () => ({
     selectedColor,
     showBack,
+    rulerUnit,
+    guideLines,
     textLayers,
     uploadedImageUrl,
     imageXPercent,
@@ -378,7 +412,9 @@ const Customize = () => {
       if (!raw) { toast.info('Aucune sauvegarde trouvée.'); return; }
       const data = JSON.parse(raw);
       setTextLayers(data.textLayers || []);
+      setGuideLines(data.guideLines || []);
       if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
+      if (data.rulerUnit) setRulerUnit(data.rulerUnit);
       if (data.selectedColor) setSelectedColor(data.selectedColor);
       if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
       if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
@@ -413,6 +449,8 @@ const Customize = () => {
     try { localStorage.setItem('cw_auto_customization', JSON.stringify(serializeCustomization())); } catch(e) {}
   }, [
     textLayers,
+    guideLines,
+    rulerUnit,
     selectedColor,
     showBack,
     uploadedImageUrl,
@@ -434,7 +472,9 @@ const Customize = () => {
       try {
         const data = JSON.parse(decodeURIComponent(atob(c)));
         setTextLayers(data.textLayers || []);
+        setGuideLines(data.guideLines || []);
         if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
+        if (data.rulerUnit) setRulerUnit(data.rulerUnit);
         if (data.selectedColor) setSelectedColor(data.selectedColor);
         if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
         if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
@@ -525,6 +565,30 @@ const Customize = () => {
           ctx.fillText(text, 0, 0);
           ctx.restore();
         }
+      }
+      // Repères utilisateur
+      const userGuides = guideLines.filter(g => (showBack ? g.side==='back' : g.side==='front'));
+      if (userGuides.length) {
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.6;
+        for (const g of userGuides) {
+          if (g.type === 'vertical') {
+            const x = (g.percent/100) * size;
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
+          } else {
+            const y = (g.percent/100) * size;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
       }
       const data = canvas.toDataURL('image/png');
       const a = document.createElement('a'); a.href = data; a.download = 'customwear-apercu.png'; a.click();
@@ -691,6 +755,37 @@ const Customize = () => {
     setUploadedImageUrl(url);
   };
 
+  // Supprimer le fond de l'image uploadée (client-side)
+  const [bgRemoving, setBgRemoving] = useState(false);
+  const handleRemoveBackground = async () => {
+    if (!uploadedImageUrl) {
+      toast.error("Veuillez uploader une image d’abord.");
+      return;
+    }
+    try {
+      setBgRemoving(true);
+      const blob = await fetch(uploadedImageUrl).then(r => r.blob());
+      if (blob && blob.type === 'image/svg+xml') {
+        toast.error('La suppression de fond ne supporte pas les images SVG.');
+        setBgRemoving(false);
+        return;
+      }
+      const { removeBackground } = await import('@imgly/background-removal');
+      const resultBlob = await removeBackground(blob, { model: 'medium' });
+      const nextUrl = URL.createObjectURL(resultBlob);
+      if (uploadedImageUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(uploadedImageUrl); } catch (e) {}
+      }
+      setUploadedImageUrl(nextUrl);
+      toast.success('Fond supprimé avec succès !');
+    } catch (err) {
+      console.error('[Customize] removeBackground error', err);
+      toast.error('Échec de la suppression du fond. Réessayez avec une image différente.');
+    } finally {
+      setBgRemoving(false);
+    }
+  };
+
   return (
     <div className="customize-page">
       <div className="customize-header">
@@ -795,6 +890,9 @@ const Customize = () => {
               <div className="quick-actions">
                 <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
                 <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
+                <button className="chip" disabled={!uploadedImageUrl || bgRemoving} onClick={handleRemoveBackground}>
+                  {bgRemoving ? 'Suppression du fond…' : 'Supprimer le fond'}
+                </button>
               </div>
               <div className="form-group">
                 <label>Taille</label>
@@ -1044,6 +1142,19 @@ const Customize = () => {
                 <input type="range" min="0.5" max="3" step="0.05" value={canvasZoom} onChange={(e)=>setCanvasZoom(Number(e.target.value))} />
                 <span>{Math.round(canvasZoom*100)}%</span>
               </div>
+              <div className="unit-controls">
+                <span>Unité des règles</span>
+                <select value={rulerUnit} onChange={(e)=>setRulerUnit(e.target.value)}>
+                  <option value="px">Pixels</option>
+                  <option value="cm">Centimètres</option>
+                </select>
+              </div>
+              {!previewMode && (
+                <div className="guide-controls">
+                  <button className="chip" onClick={()=>addGuideLine('vertical')}>Ajouter repère vertical</button>
+                  <button className="chip" onClick={()=>addGuideLine('horizontal')}>Ajouter repère horizontal</button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1075,6 +1186,10 @@ const Customize = () => {
             setEditingTextId={setEditingTextId}
             previewMode={previewMode}
             canvasZoom={canvasZoom}
+            rulerUnit={rulerUnit}
+            guideLines={guideLines}
+            updateGuideLine={updateGuideLine}
+            deleteGuideLine={deleteGuideLine}
           />
         </div>
 
@@ -1221,7 +1336,7 @@ const Customize = () => {
 export default Customize;
 
 // Composant d'aperçu isolé et mémoïsé (défini avant usage)
-const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uploadedImageUrl, imageXPercent, imageYPercent, imageScale, imageRotation, imageVisible, imageLocked, imageOpacity, imageFlipX, imageZIndex, imageSide, setImageXPercent, setImageYPercent, setImageRotation, canvasRef, textLayers, selectedTextId, setSelectedTextId, updateTextLayer, editingTextId, setEditingTextId, previewMode, canvasZoom }) => {
+const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uploadedImageUrl, imageXPercent, imageYPercent, imageScale, imageRotation, imageVisible, imageLocked, imageOpacity, imageFlipX, imageZIndex, imageSide, setImageXPercent, setImageYPercent, setImageRotation, canvasRef, textLayers, selectedTextId, setSelectedTextId, updateTextLayer, editingTextId, setEditingTextId, previewMode, canvasZoom, rulerUnit, guideLines, updateGuideLine, deleteGuideLine }) => {
   // Priorité : images par couleur > images par défaut > placeholder
   const colorImages = selectedModel?.imagesByColor?.[selectedColor];
   const defaultImages = selectedModel?.images;
@@ -1354,6 +1469,43 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
   const nearCenterX = selected ? Math.abs((selected.xPercent ?? 0) - 50) < 1 : false;
   const nearCenterY = selected ? Math.abs((selected.yPercent ?? 0) - 50) < 1 : false;
 
+  // Règles de mesure (px/cm)
+  const canvasW = canvasRef.current?.clientWidth || 0;
+  const canvasH = canvasRef.current?.clientHeight || 0;
+  const PX_PER_CM = 37.795; // ~96 dpi / 2.54 cm
+  const minorStepPx = rulerUnit === 'cm' ? PX_PER_CM * 0.5 : 50; // 0.5cm ou 50px
+  const majorStepPx = rulerUnit === 'cm' ? PX_PER_CM * 1.0 : 100; // 1cm ou 100px
+  const xTicks = Array.from({ length: Math.max(1, Math.floor(canvasW / minorStepPx) + 1) }, (_, i) => Math.round(i * minorStepPx));
+  const yTicks = Array.from({ length: Math.max(1, Math.floor(canvasH / minorStepPx) + 1) }, (_, i) => Math.round(i * minorStepPx));
+
+  // Drag des repères utilisateur
+  const onGuidePointerDown = (g, e) => {
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const startX = e.clientX; const startY = e.clientY;
+    const orig = g.percent;
+    const onMove = (ev) => {
+      if (g.type === 'vertical') {
+        const dxPx = ev.clientX - startX;
+        const dxPercent = (dxPx / rect.width) * 100;
+        const nx = Math.max(0, Math.min(100, orig + dxPercent));
+        updateGuideLine(g.id, { percent: nx });
+      } else {
+        const dyPx = ev.clientY - startY;
+        const dyPercent = (dyPx / rect.height) * 100;
+        const ny = Math.max(0, Math.min(100, orig + dyPercent));
+        updateGuideLine(g.id, { percent: ny });
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
   return (
     <div className={`canvas-container ${previewMode ? 'preview-mode' : ''}`} ref={canvasRef} onPointerDown={() => setEditingTextId(null)} style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}>
       <img className="product-base" src={baseSrc} alt="Base produit" />
@@ -1432,8 +1584,60 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
         </div>
       ))}
 
+      {/* Guides dynamiques pour texte sélectionné */}
       {nearCenterX && <div className="guide-line vertical" />}
       {nearCenterY && <div className="guide-line horizontal" />}
+      {/* Guides dynamiques pour l'image */}
+      {uploadedImageUrl && (Math.abs(imageXPercent - 50) < 1) && <div className="guide-line vertical" />}
+      {uploadedImageUrl && (Math.abs(imageYPercent - 50) < 1) && <div className="guide-line horizontal" />}
+      {/* Safe-area et axes centraux permanents (édition uniquement) */}
+      {!previewMode && (
+        <>
+          <div className="safe-area" aria-hidden="true" />
+          <div className="guide-line vertical" aria-hidden="true" />
+          <div className="guide-line horizontal" aria-hidden="true" />
+        </>
+      )}
+      {/* Règles: horizontale (bas / X) et verticale (gauche / Y) avec px et cm */}
+      {!previewMode && (
+        <>
+          <div className="ruler ruler-bottom" aria-hidden="true">
+            {xTicks.map((x) => (
+              <React.Fragment key={`rx-${x}`}>
+                <div className="ruler-tick" style={{ left: `${x}px` }} />
+                {(x % Math.round(majorStepPx) === 0) && (
+                  <div className="ruler-label" style={{ left: `${x}px` }}>
+                    {rulerUnit === 'px' ? `${x}px` : `${(x / PX_PER_CM).toFixed(1)}cm`}
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+          <div className="ruler ruler-left" aria-hidden="true">
+            {yTicks.map((y) => (
+              <React.Fragment key={`ry-${y}`}>
+                <div className="ruler-tick" style={{ top: `${y}px` }} />
+                {(y % Math.round(majorStepPx) === 0) && (
+                  <div className="ruler-label" style={{ top: `${y}px` }}>
+                    {rulerUnit === 'px' ? `${y}px` : `${(y / PX_PER_CM).toFixed(1)}cm`}
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+          {/* Repères utilisateur */}
+          {guideLines?.filter(g => (showBack ? g.side==='back' : g.side==='front')).map(g => (
+            <div
+              key={g.id}
+              className={`user-guide ${g.type}`}
+              style={g.type==='vertical' ? { left: `${g.percent}%` } : { top: `${g.percent}%` }}
+              onPointerDown={(e)=>onGuidePointerDown(g,e)}
+            >
+              <button className="guide-delete" title="Supprimer" onClick={(e)=>{ e.stopPropagation(); deleteGuideLine(g.id); }}>×</button>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 });

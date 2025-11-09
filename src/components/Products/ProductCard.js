@@ -268,7 +268,8 @@ const ProductCard = ({ product, activeColor }) => {
         </div>
       </Link>
 
-      <div className="p-4 border-t">
+      {/* Bouton "Ajouter au panier" supprimé selon la demande */}
+       {/* <div className="p-4 border-t">
         <motion.button
           className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleAddToCart}
@@ -279,7 +280,7 @@ const ProductCard = ({ product, activeColor }) => {
           <FaShoppingCart />
           {(product?.totalStock ?? 0) > 0 ? 'Ajouter au panier' : 'Rupture de stock'}
         </motion.button>
-      </div>
+      </div> */}
     </motion.div>
   );
 };
