@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Alert } from '../components/ui/alert';
+import { Checkbox } from '../components/ui/checkbox';
+import { Select } from '../components/ui/select';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { useLocation, NavLink, useNavigate } from 'react-router-dom';
-import { modelsAPI, productsAPI, customizationPricingAPI } from '../services/api';
+import { modelsAPI, productsAPI, customizationPricingAPI, customizationsAPI } from '../services/api';
 import { sortSizes } from '../utils/sizes';
 import './Customize.css';
 
@@ -154,6 +161,22 @@ const Customize = () => {
     save: false,
   });
   const togglePanel = (key) => setPanelOpen(prev => ({ ...prev, [key]: !prev[key] }));
+  // Barre contextuelle à côté du panel gauche
+  const [contextOpen, setContextOpen] = useState(false);
+  const [activeContextSection, setActiveContextSection] = useState(null); // 'produit' | 'image' | 'texte' | 'save'
+  // Références pour scroll vers les sections du panneau gauche
+  const produitRef = useRef(null);
+  const imageRef = useRef(null);
+  const texteRef = useRef(null);
+  const saveRef = useRef(null);
+  const scrollToSection = (key) => {
+    const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
+    const target = map[key];
+    if (target && target.current) {
+      try { target.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    }
+    setPanelOpen(prev => ({ ...prev, [key]: true }));
+  };
   const [imageXPercent, setImageXPercent] = useState(50);
   const [imageYPercent, setImageYPercent] = useState(50);
   const [imageScale, setImageScale] = useState(1);
@@ -183,6 +206,20 @@ const Customize = () => {
   const [rulerUnit, setRulerUnit] = useState('px'); // 'px' ou 'cm'
   // Repères utilisateur (guides)
   const [guideLines, setGuideLines] = useState([]); // {id, type: 'vertical'|'horizontal', percent, side}
+
+  // Améliorations Sauvegarde/Aperçu
+  const [savedName, setSavedName] = useState('');
+  const [savedList, setSavedList] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cw_customizations');
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch(_) { return []; }
+  });
+  const [hasAutoDraft, setHasAutoDraft] = useState(() => Boolean(localStorage.getItem('cw_auto_customization')));
+  const [previewSize, setPreviewSize] = useState(2048);
+  const [includeGuides, setIncludeGuides] = useState(false);
+  const [serverLoadId, setServerLoadId] = useState('');
 
   const pushHistory = (label) => {
     setHistory(prev => [...prev, JSON.stringify(textLayers)]);
@@ -400,10 +437,158 @@ const Customize = () => {
     imageSide,
   });
 
+  // Helpers pour sauvegarde serveur
+  const extractPrimaryTextConfig = (side) => {
+    try {
+      const visible = textLayers.filter(t => (t.side === side) && (t.visible ?? true));
+      const t = visible[0];
+      if (!t) return null;
+      const alignMap = { left: 'left', center: 'center', right: 'right' };
+      return {
+        content: t.content || '',
+        font: (t.fontFamily || 'Arial'),
+        fontSize: Number(t.fontSize || 24),
+        color: t.color || '#000000',
+        rotation: Number(t.rotation || 0),
+        align: alignMap[t.align || 'center'] || 'center',
+        position: { x: Number(t.xPercent || 50), y: Number(t.yPercent || 50) },
+        side: side || 'front'
+      };
+    } catch (_) { return null; }
+  };
+
+  const imageUrlToDataUrl = async (url, targetWidth = 1024) => {
+    if (!url) return null;
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.crossOrigin = 'anonymous';
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = url;
+    });
+    const ratio = img.height / img.width;
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth; canvas.height = Math.round(targetWidth * ratio);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  };
+
+  const buildServerPayload = async () => {
+    const side = showBack ? 'back' : 'front';
+    const primaryText = extractPrimaryTextConfig(side);
+    const dataUrl = await imageUrlToDataUrl(uploadedImageUrl || null, 1024);
+    const productColorHex = getColorHex(selectedColor) || '#ffffff';
+    return {
+      productId: selectedModel?._id,
+      productType: selectedModel?.category || selectedModel?.type || 't-shirts',
+      productColor: productColorHex,
+      text: primaryText || undefined,
+      image: {
+        dataUrl: dataUrl || undefined,
+        size: Number((imageScale || 1) * 100),
+        rotation: Number(imageRotation || 0),
+        position: { x: Number(imageXPercent || 50), y: Number(imageYPercent || 50) },
+        side: imageSide || side,
+      },
+      background: undefined,
+    };
+  };
+
+  const saveCustomizationServer = async () => {
+    try {
+      if (!selectedModel?._id) {
+        toast.error('Modèle introuvable. Choisissez un produit.');
+        return;
+      }
+      const payload = await buildServerPayload();
+      const res = await customizationsAPI.saveCustomization(payload);
+      const serverId = res?.data?.data?.id || res?.data?.data?._id || res?.data?.data?.customization?._id;
+      if (!serverId) {
+        toast.error("Réponse inattendue du serveur. L’ID est manquant.");
+        return;
+      }
+      const name = (savedName && savedName.trim()) ? savedName.trim() : `Création ${new Date().toLocaleString()}`;
+      const entry = { id: 'srv_' + serverId, name, timestamp: Date.now(), data: serializeCustomization(), serverId };
+      setSavedList(prev => {
+        const merged = [entry, ...prev].slice(0, 20);
+        try { localStorage.setItem('cw_customizations', JSON.stringify(merged)); } catch(_) {}
+        return merged;
+      });
+      const link = `${window.location.origin}${window.location.pathname}?custom=${serverId}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(link); } catch (_) {}
+      }
+      toast.success('Création enregistrée en ligne. Lien copié dans le presse-papiers.');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Erreur lors de la sauvegarde en ligne';
+      console.error('[saveCustomizationServer] error', err);
+      toast.error(msg);
+    }
+  };
+
+  const loadCustomizationServerById = async (id) => {
+    try {
+      const cleanId = (id || '').trim();
+      if (!cleanId) { toast.error('ID de sauvegarde requis.'); return; }
+      const res = await customizationsAPI.getCustomization(cleanId);
+      const doc = res?.data?.data;
+      if (!doc) { toast.error('Personnalisation introuvable.'); return; }
+      const text = doc.text || null;
+      const image = doc.image || null;
+      const colorHex = doc.productColor || '#ffffff';
+      const colorName = Object.entries(COLOR_NAME_TO_HEX).find(([name, hex]) => String(hex).toLowerCase() === String(colorHex).toLowerCase())?.[0] || selectedColor;
+      setSelectedColor(colorName);
+      if (text) {
+        const newText = {
+          id: 'srv_text_' + Date.now(),
+          content: text.content || '',
+          fontFamily: text.font || 'Arial',
+          fontSize: Number(text.fontSize || 24),
+          color: text.color || '#000000',
+          rotation: Number(text.rotation || 0),
+          align: text.align || 'center',
+          xPercent: Number(text.position?.x || 50),
+          yPercent: Number(text.position?.y || 50),
+          side: text.side || 'front',
+          zIndex: 3,
+          visible: true,
+        };
+        setTextLayers(prev => [newText, ...prev]);
+        setShowBack((text.side || 'front') === 'back');
+      }
+      if (image) {
+        setUploadedImageUrl(image.dataUrl || uploadedImageUrl);
+        setImageScale(Number((image.size || 100) / 100));
+        setImageRotation(Number(image.rotation || 0));
+        setImageXPercent(Number(image.position?.x || 50));
+        setImageYPercent(Number(image.position?.y || 50));
+        setImageSide(image.side || (showBack ? 'back' : 'front'));
+        setShowBack((image.side || 'front') === 'back');
+      }
+      toast.success('Création chargée depuis le serveur.');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Erreur lors du chargement en ligne';
+      console.error('[loadCustomizationServerById] error', err);
+      toast.error(msg);
+    }
+  };
+
   const saveCustomizationLocal = () => {
     try {
-      localStorage.setItem('cw_customization', JSON.stringify(serializeCustomization()));
-      toast.success('Création sauvegardée.');
+      const data = serializeCustomization();
+      // Sauvegarde simple pour compatibilité
+      localStorage.setItem('cw_customization', JSON.stringify(data));
+      // Sauvegarde avancée : liste nommée persistante (max 20)
+      const id = 'sv_' + Date.now();
+      const name = (savedName && savedName.trim()) ? savedName.trim() : `Création ${new Date().toLocaleString()}`;
+      const next = { id, name, timestamp: Date.now(), data };
+      setSavedList(prev => {
+        const merged = [next, ...prev].slice(0, 20);
+        try { localStorage.setItem('cw_customizations', JSON.stringify(merged)); } catch(_) {}
+        return merged;
+      });
+      toast.success('Création sauvegardée dans vos sauvegardes.');
     } catch(e) { console.error('Save error', e); toast.error('Erreur lors de la sauvegarde.'); }
   };
   const loadCustomizationLocal = () => {
@@ -432,6 +617,50 @@ const Customize = () => {
       toast.success('Création chargée.');
     } catch(e) { console.error('Load error', e); toast.error('Erreur lors du chargement.'); }
   };
+  const loadSavedById = (id) => {
+    const found = savedList.find(s => s.id === id);
+    if (!found) { toast.error('Sauvegarde introuvable.'); return; }
+    const data = found.data || {};
+    try {
+      setTextLayers(data.textLayers || []);
+      setGuideLines(data.guideLines || []);
+      if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
+      if (data.rulerUnit) setRulerUnit(data.rulerUnit);
+      if (data.selectedColor) setSelectedColor(data.selectedColor);
+      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
+      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
+      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
+      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
+      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
+      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
+      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
+      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
+      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
+      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
+      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      setSelectedTextId(null);
+      setEditingTextId(null);
+      toast.success(`Sauvegarde "${found.name}" chargée.`);
+    } catch(e) { console.error('Load saved error', e); toast.error('Erreur lors du chargement de la sauvegarde.'); }
+  };
+  const deleteSavedById = (id) => {
+    setSavedList(prev => {
+      const next = prev.filter(s => s.id !== id);
+      try { localStorage.setItem('cw_customizations', JSON.stringify(next)); } catch(_) {}
+      return next;
+    });
+    toast.success('Sauvegarde supprimée.');
+  };
+  const renameSavedById = (id, name) => {
+    const newName = (name || '').trim();
+    if (!newName) { toast.error('Nom invalide.'); return; }
+    setSavedList(prev => {
+      const next = prev.map(s => s.id === id ? { ...s, name: newName } : s);
+      try { localStorage.setItem('cw_customizations', JSON.stringify(next)); } catch(_) {}
+      return next;
+    });
+    toast.success('Sauvegarde renommée.');
+  };
   const generateShareLink = async () => {
     try {
       const payload = btoa(encodeURIComponent(JSON.stringify(serializeCustomization())));
@@ -447,6 +676,7 @@ const Customize = () => {
   };
   useEffect(() => {
     try { localStorage.setItem('cw_auto_customization', JSON.stringify(serializeCustomization())); } catch(e) {}
+    setHasAutoDraft(true);
   }, [
     textLayers,
     guideLines,
@@ -502,7 +732,7 @@ const Customize = () => {
   const downloadPreviewImage = async () => {
     const baseSrc = getBaseImageSrc();
     const canvas = document.createElement('canvas');
-    const size = 2048;
+    const size = Number(previewSize) || 2048;
     canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
     const loadImg = (src) => new Promise((resolve, reject) => { const img = new Image(); img.crossOrigin='anonymous'; img.onload=()=>resolve(img); img.onerror=reject; img.src=src; });
@@ -567,7 +797,7 @@ const Customize = () => {
         }
       }
       // Repères utilisateur
-      const userGuides = guideLines.filter(g => (showBack ? g.side==='back' : g.side==='front'));
+      const userGuides = includeGuides ? guideLines.filter(g => (showBack ? g.side==='back' : g.side==='front')) : [];
       if (userGuides.length) {
         ctx.save();
         ctx.strokeStyle = '#ef4444';
@@ -591,9 +821,75 @@ const Customize = () => {
         ctx.restore();
       }
       const data = canvas.toDataURL('image/png');
-      const a = document.createElement('a'); a.href = data; a.download = 'customwear-apercu.png'; a.click();
+      const safeName = (savedName && savedName.trim()) ? savedName.trim().toLowerCase().replace(/\s+/g,'-') : 'creation';
+      const a = document.createElement('a'); a.href = data; a.download = `customwear-${safeName}-${size}px.png`; a.click();
       toast.success('Aperçu téléchargé.');
     } catch(e) { console.error('Preview download error', e); toast.error("Erreur lors du téléchargement de l'aperçu."); }
+  };
+
+  const exportCustomizationFile = () => {
+    try {
+      const data = serializeCustomization();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const safeName = (savedName && savedName.trim()) ? savedName.trim().toLowerCase().replace(/\s+/g,'-') : 'creation';
+      const a = document.createElement('a'); a.href = url; a.download = `customwear-${safeName}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success('Fichier exporté.');
+    } catch(e) { console.error('Export error', e); toast.error("Erreur lors de l'export."); }
+  };
+  const importCustomizationFile = async (e) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const data = JSON.parse(text);
+      setTextLayers(data.textLayers || []);
+      setGuideLines(data.guideLines || []);
+      if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
+      if (data.rulerUnit) setRulerUnit(data.rulerUnit);
+      if (data.selectedColor) setSelectedColor(data.selectedColor);
+      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
+      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
+      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
+      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
+      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
+      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
+      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
+      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
+      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
+      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
+      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      setSelectedTextId(null);
+      setEditingTextId(null);
+      toast.success('Création importée.');
+    } catch(e) { console.error('Import error', e); toast.error('Fichier invalide ou import impossible.'); }
+  };
+  const loadAutoDraft = () => {
+    try {
+      const raw = localStorage.getItem('cw_auto_customization');
+      if (!raw) { toast.info('Aucun brouillon auto.'); return; }
+      const data = JSON.parse(raw);
+      setTextLayers(data.textLayers || []);
+      setGuideLines(data.guideLines || []);
+      if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
+      if (data.rulerUnit) setRulerUnit(data.rulerUnit);
+      if (data.selectedColor) setSelectedColor(data.selectedColor);
+      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
+      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
+      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
+      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
+      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
+      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
+      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
+      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
+      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
+      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
+      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      setSelectedTextId(null);
+      setEditingTextId(null);
+      toast.success('Brouillon repris.');
+    } catch(e) { console.error('Auto draft load error', e); toast.error('Impossible de reprendre le brouillon.'); }
   };
 
   // Charger modèles pour permettre le choix de type/genre/catégorie
@@ -803,19 +1099,49 @@ const Customize = () => {
         <NavLink to="/models" className={({ isActive }) => `subnav-link${isActive ? ' active' : ''}`}>Modèles</NavLink>
       </nav>
 
+      {/* Barre de menus au-dessus des panneaux */}
+      <div className="customize-menubar" role="navigation" aria-label="Barre de menus">
+        <button
+          type="button"
+          className={`chip ${activeContextSection === 'produit' ? 'active' : ''}`}
+          onClick={() => { setActiveContextSection('produit'); setContextOpen(true); scrollToSection('produit'); }}
+          aria-pressed={activeContextSection === 'produit'}
+        >Filtrer les modèles</button>
+        <button
+          type="button"
+          className={`chip ${activeContextSection === 'image' ? 'active' : ''}`}
+          onClick={() => { setActiveContextSection('image'); setContextOpen(true); scrollToSection('image'); }}
+          aria-pressed={activeContextSection === 'image'}
+        >Ajouter une image</button>
+        <button
+          type="button"
+          className={`chip ${activeContextSection === 'texte' ? 'active' : ''}`}
+          onClick={() => { setActiveContextSection('texte'); setContextOpen(true); scrollToSection('texte'); }}
+          aria-pressed={activeContextSection === 'texte'}
+        >Ajouter un texte</button>
+        <button
+          type="button"
+          className={`chip ${activeContextSection === 'save' ? 'active' : ''}`}
+          onClick={() => { setActiveContextSection('save'); setContextOpen(true); scrollToSection('save'); }}
+          aria-pressed={activeContextSection === 'save'}
+        >Sauvegarde</button>
+      </div>
+
       <div className="customize-content">
         {/* Panneau gauche: choix modèle et infos */}
         <div className="customize-tools">
+          <div className="container-panel">
+          {activeContextSection === 'produit' && (
           <div
-            className={`panel ${panelOpen.produit ? 'open' : 'collapsed'}`}
-            onClick={() => togglePanel('produit')}
-            role="button"
-            aria-expanded={panelOpen.produit}
+            ref={produitRef}
+            className="panel open"
+            role="region"
+            aria-label="Filtrer les modèles"
           >
-            <div className="panel-header">
+            {/* <div className="panel-header">
               <h3>Filtre les modèles</h3>
               <span className="panel-arrow" aria-hidden="true"></span>
-            </div>
+            </div> */}
             <div className="panel-content" onClick={(e) => e.stopPropagation()}>
               <div className="form-group">
                 <label>Modèle</label>
@@ -870,18 +1196,20 @@ const Customize = () => {
               </div>
             </div>
           </div>
+          )}
 
 
+          {activeContextSection === 'image' && (
           <div
-            className={`panel ${panelOpen.image ? 'open' : 'collapsed'}`}
-            onClick={() => togglePanel('image')}
-            role="button"
-            aria-expanded={panelOpen.image}
+            ref={imageRef}
+            className="panel open"
+            role="region"
+            aria-label="Ajouter une image"
           >
-            <div className="panel-header">
+            {/* <div className="panel-header">
               <h3>Ajouter une image</h3>
               <span className="panel-arrow" aria-hidden="true"></span>
-            </div>
+            </div> */}
             <div className="panel-content" onClick={(e) => e.stopPropagation()}>
               <div className="form-group">
                 <label>Uploader une image (PNG/JPG/SVG)</label>
@@ -940,17 +1268,19 @@ const Customize = () => {
               </div>
             </div>
           </div>
+          )}
 
+          {activeContextSection === 'texte' && (
           <div
-            className={`panel ${panelOpen.texte ? 'open' : 'collapsed'}`}
-            onClick={() => togglePanel('texte')}
-            role="button"
-            aria-expanded={panelOpen.texte}
+            ref={texteRef}
+            className="panel open"
+            role="region"
+            aria-label="Ajouter un texte"
           >
-            <div className="panel-header">
+            {/* <div className="panel-header">
               <h3>Ajouter un texte</h3>
               <span className="panel-arrow" aria-hidden="true"></span>
-            </div>
+            </div> */}
             <div className="panel-content" onClick={(e) => e.stopPropagation()}>
               <div className="form-group">
                 <button type="button" className="chip" onClick={addTextLayer}>Ajouter un texte</button>
@@ -1128,6 +1458,107 @@ const Customize = () => {
               )}
             </div>
           </div>
+          )}
+
+          {activeContextSection === 'save' && (
+            <Card className="panel">
+              {/* <CardHeader>
+              <CardTitle>Sauvegarde</CardTitle>
+            </CardHeader> */}
+            <CardContent>
+            {hasAutoDraft && (
+              <Alert className="mb-2">
+                <span>Un brouillon automatique est disponible.</span>
+                <Button variant="outline" onClick={loadAutoDraft}>Reprendre le brouillon</Button>
+              </Alert>
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Nom de la sauvegarde"
+                value={savedName}
+                onChange={(e) => setSavedName(e.target.value)}
+              />
+              <Button variant="outline" onClick={exportCustomizationFile}>Exporter JSON</Button>
+              <Button asChild>
+                <label style={{ cursor: 'pointer' }}>
+                  Importer JSON
+                  <input type="file" accept="application/json" onChange={importCustomizationFile} style={{ display: 'none' }} />
+                </label>
+              </Button>
+            </div>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label>Résolution d'aperçu</Label>
+                <Select value={previewSize} onChange={(e)=>setPreviewSize(Number(e.target.value))}>
+                  <option value={1024}>1024 px</option>
+                  <option value={2048}>2048 px</option>
+                  <option value={4096}>4096 px</option>
+                </Select>
+              </div>
+              <Checkbox checked={includeGuides} onChange={(e)=>setIncludeGuides(e.target.checked)} label="Inclure les guides sur l'aperçu" />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={saveCustomizationLocal}>Enregistrer la création</Button>
+              <Button variant="outline" onClick={loadCustomizationLocal}>Charger la création</Button>
+              <Button variant="outline" onClick={generateShareLink}>Copier lien de partage</Button>
+              <Button variant="ghost" onClick={downloadPreviewImage}>Télécharger l'aperçu</Button>
+            </div>
+            <div className="mt-4 p-3 border rounded-md">
+              <p className="text-sm font-medium mb-2">Sauvegarde en ligne</p>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={saveCustomizationServer}>Enregistrer sur le compte</Button>
+              </div>
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="md:col-span-2">
+                  <Input value={serverLoadId} onChange={(e)=>setServerLoadId(e.target.value)} placeholder="ID de la création (serveur)" />
+                </div>
+                <div>
+                  <Button variant="outline" onClick={()=>loadCustomizationServerById(serverLoadId)}>Charger depuis ID</Button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Astuce: l’ID est copié après l’enregistrement — collez-le ici pour recharger.</p>
+            </div>
+            {savedList.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-500">Vos sauvegardes</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {savedList.map((s) => (
+                    <li key={s.id} className="flex items-center gap-2 py-2 border-b border-dashed border-gray-200">
+                      <span className="flex-1">
+                        {s.name}
+                        <span className="ml-2 text-gray-400">({new Date(s.timestamp).toLocaleString()})</span>
+                        {s.serverId && (
+                          <span className="block text-xs text-blue-600">ID serveur: {s.serverId}</span>
+                        )}
+                      </span>
+                      <Button size="sm" variant="outline" onClick={() => loadSavedById(s.id)}>Charger</Button>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const nn = window.prompt('Nouveau nom', s.name);
+                        if (nn !== null) renameSavedById(s.id, nn);
+                      }}>Renommer</Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteSavedById(s.id)}>Supprimer</Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="mt-3">
+              <p className="text-sm text-gray-500">Historique des actions</p>
+              <div className="mt-1 flex gap-2">
+                <Button variant="outline" onClick={undo}>Annuler (Ctrl/Cmd+Z)</Button>
+                <Button variant="outline" onClick={redo}>Rétablir (Ctrl/Cmd+Y)</Button>
+              </div>
+              <ul className="list-disc pl-5">
+                {historyActions.slice(-10).map((h, i) => (
+                  <li key={i} className="text-sm text-gray-500">{h}</li>
+                ))}
+              </ul>
+            </div>
+            </CardContent>
+            </Card>
+          )}
+
+          </div>
         </div>
 
         {/* Zone d'aperçu */}
@@ -1296,27 +1727,8 @@ const Customize = () => {
             <p style={{ color: '#6b7280' }}>Aperçu et coûts seront ajoutés ici.</p>
           </div>
 
-          <div className="panel">
-            <h3>Sauvegarde</h3>
-            <div className="options-row">
-              <button className="chip" onClick={saveCustomizationLocal}>Enregistrer la création</button>
-              <button className="chip" onClick={loadCustomizationLocal}>Charger la création</button>
-              <button className="chip" onClick={generateShareLink}>Copier lien de partage</button>
-              <button className="chip" onClick={downloadPreviewImage}>Télécharger l'aperçu</button>
-            </div>
-            <div className="history-log" style={{ marginTop: 8 }}>
-              <p style={{ color: '#6b7280' }}>Historique des actions</p>
-              <div className="options-row">
-                <button className="chip" onClick={undo}>Annuler (Ctrl/Cmd+Z)</button>
-                <button className="chip" onClick={redo}>Rétablir (Ctrl/Cmd+Y)</button>
-              </div>
-              <ul className="history-list">
-                {historyActions.slice(-10).map((h, i) => (
-                  <li key={i} style={{ color: '#6b7280' }}>{h}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {/* <div ref={saveRef}> */}
+          
           <div className="panel">
             <div className="customize-actions">
               <button className="add-to-cart-btn" onClick={handleAddToCartCustomized} title="Ajouter au panier">
