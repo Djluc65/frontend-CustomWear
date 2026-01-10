@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../components/ui/button';
+import { cn } from '../lib/cn';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Alert } from '../components/ui/alert';
@@ -188,6 +189,13 @@ const Customize = () => {
   const [imageFlipX, setImageFlipX] = useState(false);
   const [imageZIndex, setImageZIndex] = useState(2);
   const [imageSide, setImageSide] = useState('front');
+  // Bascule d'affichage des contrôles Image
+  const [imageSizeOpen, setImageSizeOpen] = useState(false);
+  const [imageRotationOpen, setImageRotationOpen] = useState(false);
+  const [imageVisibilityOpen, setImageVisibilityOpen] = useState(false);
+  const [imageOpacityOpen, setImageOpacityOpen] = useState(false);
+  const [imagePositionOpen, setImagePositionOpen] = useState(false);
+  const [imageUploaderOpen, setImageUploaderOpen] = useState(false);
   const canvasRef = useRef(null);
 
   // Texte: calques et édition
@@ -1093,43 +1101,68 @@ const Customize = () => {
           </div>
         </div>
       </div>
-      <nav className="models-subnav" aria-label="Sous-navigation">
-        <NavLink to="/customize" className={({ isActive }) => `subnav-link${isActive ? ' active' : ''}`}>Personnalisation</NavLink>
-        <NavLink to="/products" className={({ isActive }) => `subnav-link${isActive ? ' active' : ''}`}>Produits disponibles</NavLink>
-        <NavLink to="/models" className={({ isActive }) => `subnav-link${isActive ? ' active' : ''}`}>Modèles</NavLink>
+      <nav className="flex items-center space-x-1 border-b pb-2 mb-4 overflow-x-auto md:overflow-visible" aria-label="Sous-navigation">
+        <NavLink to="/customize" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Personnalisation</NavLink>
+        <NavLink to="/products" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Produits disponibles</NavLink>
+        <NavLink to="/models" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Modèles</NavLink>
       </nav>
 
-      {/* Barre de menus au-dessus des panneaux */}
-      <div className="customize-menubar" role="navigation" aria-label="Barre de menus">
-        <button
-          type="button"
-          className={`chip ${activeContextSection === 'produit' ? 'active' : ''}`}
-          onClick={() => { setActiveContextSection('produit'); setContextOpen(true); scrollToSection('produit'); }}
-          aria-pressed={activeContextSection === 'produit'}
-        >Filtrer les modèles</button>
-        <button
-          type="button"
-          className={`chip ${activeContextSection === 'image' ? 'active' : ''}`}
-          onClick={() => { setActiveContextSection('image'); setContextOpen(true); scrollToSection('image'); }}
-          aria-pressed={activeContextSection === 'image'}
-        >Ajouter une image</button>
-        <button
-          type="button"
-          className={`chip ${activeContextSection === 'texte' ? 'active' : ''}`}
-          onClick={() => { setActiveContextSection('texte'); setContextOpen(true); scrollToSection('texte'); }}
-          aria-pressed={activeContextSection === 'texte'}
-        >Ajouter un texte</button>
-        <button
-          type="button"
-          className={`chip ${activeContextSection === 'save' ? 'active' : ''}`}
-          onClick={() => { setActiveContextSection('save'); setContextOpen(true); scrollToSection('save'); }}
-          aria-pressed={activeContextSection === 'save'}
-        >Sauvegarde</button>
+      {/* Barre de menus au-dessus des panneaux (Desktop) / En bas (Mobile) */} 
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-background border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white/80 md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
+        <Button 
+          variant={activeContextSection === 'produit' ? 'default' : 'ghost'} 
+          size="sm" 
+          className={cn("flex-1 md:flex-none", activeContextSection === 'produit' ? "font-bold" : "")} 
+          onClick={() => { setActiveContextSection('produit'); setContextOpen(true); scrollToSection('produit'); }} 
+          aria-pressed={activeContextSection === 'produit'} 
+        > 
+          Modèles 
+        </Button> 
+        <Button 
+          variant={activeContextSection === 'image' ? 'default' : 'ghost'} 
+          size="sm" 
+          className={cn("flex-1 md:flex-none", activeContextSection === 'image' ? "font-bold" : "")} 
+          onClick={() => { setActiveContextSection('image'); setContextOpen(true); scrollToSection('image'); }} 
+          aria-pressed={activeContextSection === 'image'} 
+        > 
+          Image 
+        </Button> 
+        <Button 
+          variant={activeContextSection === 'texte' ? 'default' : 'ghost'} 
+          size="sm" 
+          className={cn("flex-1 md:flex-none", activeContextSection === 'texte' ? "font-bold" : "")} 
+          onClick={() => { setActiveContextSection('texte'); setContextOpen(true); scrollToSection('texte'); }} 
+          aria-pressed={activeContextSection === 'texte'} 
+        > 
+          Texte 
+        </Button> 
+        <Button 
+          variant={activeContextSection === 'save' ? 'default' : 'ghost'} 
+          size="sm" 
+          className={cn("flex-1 md:flex-none", activeContextSection === 'save' ? "font-bold" : "")} 
+          onClick={() => { setActiveContextSection('save'); setContextOpen(true); scrollToSection('save'); }} 
+          aria-pressed={activeContextSection === 'save'} 
+        > 
+          Sauver 
+        </Button> 
       </div>
 
-      <div className="customize-content">
+      <div className={cn("customize-content pb-20 md:pb-0")}>
         {/* Panneau gauche: choix modèle et infos */}
-        <div className="customize-tools">
+        <div className={cn(
+          "customize-tools transition-all duration-300",
+          contextOpen && activeContextSection ? "fixed bottom-[60px] left-0 right-0 z-40 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl h-[50vh] overflow-y-auto p-4 md:static md:h-auto md:bg-transparent md:border-none md:shadow-none md:p-0 md:z-auto" : "hidden md:block"
+        )}>
+          {/* En-tête mobile pour la fenêtre */}
+          <div className="flex md:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
+            <h3 className="font-bold text-lg uppercase">{{
+              produit: 'Modèles',
+              image: 'Image',
+              texte: 'Texte',
+              save: 'Sauvegarder'
+            }[activeContextSection] || activeContextSection}</h3>
+            <Button variant="ghost" size="sm" onClick={() => setContextOpen(false)}>Fermer</Button>
+          </div>
           <div className="container-panel">
           {activeContextSection === 'produit' && (
           <div
@@ -1212,53 +1245,109 @@ const Customize = () => {
             </div> */}
             <div className="panel-content" onClick={(e) => e.stopPropagation()}>
               <div className="form-group">
-                <label>Uploader une image (PNG/JPG/SVG)</label>
-                <input type="file" accept="image/*,.svg" onChange={handleFileUpload} />
-              </div>
-              <div className="quick-actions">
-                <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
-                <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
-                <button className="chip" disabled={!uploadedImageUrl || bgRemoving} onClick={handleRemoveBackground}>
-                  {bgRemoving ? 'Suppression du fond…' : 'Supprimer le fond'}
-                </button>
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImageUploaderOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageUploaderOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4, backgroundColor: imageUploaderOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageUploaderOpen ? '#ffffff' : undefined }}
+                >
+                  Uploader une image (PNG/JPG/SVG)
+                </label>
+                {imageUploaderOpen && (
+                  <>
+                    <input type="file" accept="image/*,.svg" onChange={handleFileUpload} />
+                    <div className="quick-actions" style={{ marginTop: 8 }}>
+                      <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
+                      <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
+                      <button className="chip" disabled={!uploadedImageUrl || bgRemoving} onClick={handleRemoveBackground}>
+                        {bgRemoving ? 'Suppression du fond…' : 'Supprimer le fond'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="form-group">
-                <label>Taille</label>
-                <input type="range" min="0.2" max="3" step="0.05" value={imageScale} onChange={(e) => setImageScale(Number(e.target.value))} />
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImageSizeOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageSizeOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageSizeOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageSizeOpen ? '#ffffff' : undefined  }}
+                >Taille</label>
+                {imageSizeOpen && (
+                  <input type="range" min="0.2" max="3" step="0.05" value={imageScale} onChange={(e) => setImageScale(Number(e.target.value))} />
+                )}
               </div>
               <div className="form-group">
-                <label>Rotation</label>
-                <input type="range" min="-180" max="180" step="1" value={imageRotation} onChange={(e) => setImageRotation(Number(e.target.value))} />
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImageRotationOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageRotationOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageRotationOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageRotationOpen ? '#ffffff' : undefined }}
+                >Rotation</label>
+                {imageRotationOpen && (
+                  <input type="range" min="-180" max="180" step="1" value={imageRotation} onChange={(e) => setImageRotation(Number(e.target.value))} />
+                )}
               </div>
               {/* Nouveaux contrôles avancés */}
               <div className="form-group">
-                <div className="options-row">
-                  <label className="chip"><input type="checkbox" checked={imageVisible} onChange={() => setImageVisible(v => !v)} /> Visible</label>
-                  <button type="button" className={`chip ${imageLocked ? 'active' : ''}`} onClick={() => setImageLocked(v => !v)}>{imageLocked ? 'Déverrouiller' : 'Verrouiller'}</button>
-                  <button type="button" className="chip" onClick={() => setImageSide(s => s === 'front' ? 'back' : 'front')}>{imageSide === 'front' ? 'Envoyer à arrière' : 'Envoyer à avant'}</button>
-                </div>
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImageVisibilityOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageVisibilityOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageVisibilityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageVisibilityOpen ? '#ffffff' : undefined  }}
+                >Visible</label>
+                {imageVisibilityOpen && (
+                  <div className="options-row">
+                    <label className="chip"><input type="checkbox" checked={imageVisible} onChange={() => setImageVisible(v => !v)} /> Visible</label>
+                    <button type="button" className={`chip ${imageLocked ? 'active' : ''}`} onClick={() => setImageLocked(v => !v)}>{imageLocked ? 'Déverrouiller' : 'Verrouiller'}</button>
+                    <button type="button" className="chip" onClick={() => setImageSide(s => s === 'front' ? 'back' : 'front')}>{imageSide === 'front' ? 'Envoyer à arrière' : 'Envoyer à avant'}</button>
+                  </div>
+                )}
               </div>
               <div className="form-group">
-                <label>Opacité</label>
-                <input type="range" min="0" max="1" step="0.05" value={imageOpacity} onChange={(e) => setImageOpacity(Number(e.target.value))} />
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImageOpacityOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageOpacityOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageOpacityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageOpacityOpen ? '#ffffff' : undefined }}
+                >Opacité</label>
+                {imageOpacityOpen && (
+                  <input type="range" min="0" max="1" step="0.05" value={imageOpacity} onChange={(e) => setImageOpacity(Number(e.target.value))} />
+                )}
               </div>
+              
               <div className="form-group">
-                <div className="options-row">
-                  <button type="button" className="chip" onClick={() => setImageFlipX(f => !f)}>{imageFlipX ? 'Annuler flip horizontal' : 'Flip horizontal'}</button>
-                  <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.max(1, z - 1))}>Arrière-plan</button>
-                  <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.min(10, z + 1))}>Premier plan</button>
-                </div>
-                <small style={{ color:'#6b7280' }}>z-index: {imageZIndex} • face: {imageSide}</small>
-              </div>
-              <div className="form-group">
-                <label>Position</label>
-                <div className="options-row">
-                  <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.max(5, p - 5))}>←</button>
-                  <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.min(95, p + 5))}>→</button>
-                  <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.max(5, p - 5))}>↑</button>
-                  <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.min(95, p + 5))}>↓</button>
-                  <button type="button" className="chip" onClick={() => { setImageXPercent(50); setImageYPercent(50); }}>Centrer</button>
-                </div>
+                <label
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setImagePositionOpen(o => !o)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImagePositionOpen(o => !o); }}
+                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imagePositionOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imagePositionOpen ? '#ffffff' : undefined  }}
+                >Position</label>
+                {imagePositionOpen && (
+                  <>
+                    <div className="options-row">
+                      <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.max(5, p - 5))}>←</button>
+                      <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.min(95, p + 5))}>→</button>
+                      <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.max(5, p - 5))}>↑</button>
+                      <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.min(95, p + 5))}>↓</button>
+                      <button type="button" className="chip" onClick={() => { setImageXPercent(50); setImageYPercent(50); }}>Centrer</button>
+                    </div>
+                    <div className="form-group" style={{ marginTop: 8 }}>
+                      <div className="options-row">
+                        <button type="button" className="chip" onClick={() => setImageFlipX(f => !f)}>{imageFlipX ? 'Annuler flip horizontal' : 'Flip horizontal'}</button>
+                        <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.max(1, z - 1))}>Arrière-plan</button>
+                        <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.min(10, z + 1))}>Premier plan</button>
+                      </div>
+                      <small style={{ color:'#6b7280' }}>z-index: {imageZIndex} • face: {imageSide}</small>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="form-group">
                 <div className="options-row">

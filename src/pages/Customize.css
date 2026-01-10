@@ -378,7 +378,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #ef4444;
+  background: dodgerblue;
   opacity: 0.6;
   cursor: col-resize;
 }
@@ -386,7 +386,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #ef4444;
+  background: dodgerblue;
   opacity: 0.6;
   cursor: row-resize;
 }
