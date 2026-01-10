@@ -18,6 +18,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import Customize from './pages/Customize';
+import Search from './pages/Search';
 import TestAdmin from './pages/TestAdmin';
 
 // Import des composants Admin

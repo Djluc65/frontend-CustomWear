@@ -65,18 +65,23 @@ const Footer = () => {
           <div className="footer-section">
             <h4 className="footer-subtitle">Contact</h4>
             <div className="contact-info">
-              <div className="contact-item">
+              <a 
+                href="https://www.google.com/maps/search/?api=1&query=96+Rue+Didot,+75014+Paris" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="contact-item"
+              >
                 <FaMapMarkerAlt className="contact-icon" />
                 <span>96 Rue Didot, 75014 Paris</span>
-              </div>
-              <div className="contact-item">
+              </a>
+              <a href="tel:+33758571187" className="contact-item">
                 <FaPhone className="contact-icon" />
                 <span>+33 7 58 57 11 87</span>
-              </div>
-              <div className="contact-item">
+              </a>
+              <a href="mailto:costomwear75@gmail.com" className="contact-item">
                 <FaEnvelope className="contact-icon" />
                 <span>costomwear75@gmail.com</span>
-              </div>
+              </a>
             </div>
             
             {/* Newsletter */}

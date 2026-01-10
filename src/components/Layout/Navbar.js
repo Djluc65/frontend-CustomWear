@@ -44,7 +44,14 @@ const Navbar = () => {
     e.preventDefault();
     const term = searchQuery.trim();
     if (term) {
-      const target = (isOnModelsPage || isOnCustomizePage) ? '/models' : '/products';
+      let target;
+      if (isOnModelsPage || isOnCustomizePage) {
+        target = '/models';
+      } else if (isOnProductsPage) {
+        target = '/products';
+      } else {
+        target = '/search';
+      }
       navigate(`${target}?search=${encodeURIComponent(term)}`);
       setSearchQuery('');
       setIsMenuOpen(false);
@@ -60,13 +67,20 @@ const Navbar = () => {
     }
     const timer = setTimeout(() => {
       const term = searchQuery.trim();
-      const target = (isOnModelsPage || isOnCustomizePage) ? '/models' : '/products';
+      let target;
+      if (isOnModelsPage || isOnCustomizePage) {
+        target = '/models';
+      } else if (isOnProductsPage) {
+        target = '/products';
+      } else {
+        target = '/search';
+      }
       navigate(`${target}?search=${encodeURIComponent(term)}`);
     }, 300);
     setDebounceTimer(timer);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, navigate, isOnModelsPage, isOnCustomizePage]);
+  }, [searchQuery, navigate, isOnModelsPage, isOnCustomizePage, isOnProductsPage]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
