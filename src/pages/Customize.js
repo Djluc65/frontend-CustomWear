@@ -171,6 +171,11 @@ const Customize = () => {
   const texteRef = useRef(null);
   const saveRef = useRef(null);
   const scrollToSection = (key) => {
+    // Mobile: do not scroll page body, just open the panel
+    if (window.innerWidth < 768) {
+      setPanelOpen(prev => ({ ...prev, [key]: true }));
+      return;
+    }
     const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
     const target = map[key];
     if (target && target.current) {
