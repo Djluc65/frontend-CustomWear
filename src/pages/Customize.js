@@ -172,7 +172,7 @@ const Customize = () => {
   const saveRef = useRef(null);
   const scrollToSection = (key) => {
     // Mobile: do not scroll page body, just open the panel
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 1024) {
       setPanelOpen(prev => ({ ...prev, [key]: true }));
       return;
     }
