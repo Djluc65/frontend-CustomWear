@@ -1159,7 +1159,7 @@ const Customize = () => {
           contextOpen && activeContextSection ? "fixed bottom-[60px] left-0 right-0 z-40 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl h-[50vh] overflow-y-auto p-4 md:static md:h-auto md:bg-transparent md:border-none md:shadow-none md:p-0 md:z-auto" : "hidden md:block"
         )}>
           {/* En-tête mobile pour la fenêtre */}
-          <div className="flex md:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
+          <div className="w-full flex md:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
             <h3 className="font-bold text-lg uppercase">{{
               produit: 'Modèles',
               image: 'Image',
