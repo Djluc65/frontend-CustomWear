@@ -1106,18 +1106,18 @@ const Customize = () => {
           </div>
         </div>
       </div>
-      <nav className="flex items-center space-x-1 border-b pb-2 mb-4 overflow-x-auto md:overflow-visible" aria-label="Sous-navigation">
+      <nav className="flex items-center space-x-1 border-b pb-2 mb-4 overflow-x-auto lg:overflow-visible" aria-label="Sous-navigation">
         <NavLink to="/customize" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Personnalisation</NavLink>
         <NavLink to="/products" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Produits disponibles</NavLink>
         <NavLink to="/models" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Modèles</NavLink>
       </nav>
 
       {/* Barre de menus au-dessus des panneaux (Desktop) / En bas (Mobile) */} 
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white border-t p-2 lg:relative lg:bottom-auto lg:border-t-2 lg:border-b-2 lg:border-gray-300 lg:bg-white lg:p-2 lg:mb-4 lg:justify-start lg:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:shadow-none" role="navigation" aria-label="Barre de menus"> 
         <Button 
           variant={activeContextSection === 'produit' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'produit' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'produit' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('produit'); setContextOpen(true); scrollToSection('produit'); }} 
           aria-pressed={activeContextSection === 'produit'} 
         > 
@@ -1126,7 +1126,7 @@ const Customize = () => {
         <Button 
           variant={activeContextSection === 'image' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'image' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'image' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('image'); setContextOpen(true); scrollToSection('image'); }} 
           aria-pressed={activeContextSection === 'image'} 
         > 
@@ -1135,7 +1135,7 @@ const Customize = () => {
         <Button 
           variant={activeContextSection === 'texte' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'texte' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'texte' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('texte'); setContextOpen(true); scrollToSection('texte'); }} 
           aria-pressed={activeContextSection === 'texte'} 
         > 
@@ -1144,7 +1144,7 @@ const Customize = () => {
         <Button 
           variant={activeContextSection === 'save' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'save' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'save' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('save'); setContextOpen(true); scrollToSection('save'); }} 
           aria-pressed={activeContextSection === 'save'} 
         > 
@@ -1152,14 +1152,14 @@ const Customize = () => {
         </Button> 
       </div>
 
-      <div className={cn("customize-content pb-20 md:pb-0")}>
+      <div className={cn("customize-content pb-20 lg:pb-0")}>
         {/* Panneau gauche: choix modèle et infos */}
         <div className={cn(
           "customize-tools transition-all duration-300",
-          contextOpen && activeContextSection ? "fixed bottom-[60px] left-0 right-0 z-40 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl h-[50vh] overflow-y-auto p-4 md:static md:h-auto md:bg-transparent md:border-none md:shadow-none md:p-0 md:z-auto" : "hidden md:block"
+          contextOpen && activeContextSection ? "fixed bottom-[60px] left-0 right-0 z-40 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl h-[50vh] overflow-y-auto p-4 lg:static lg:h-auto lg:bg-transparent lg:border-none lg:shadow-none lg:p-0 lg:z-auto" : "hidden lg:block"
         )}>
           {/* En-tête mobile pour la fenêtre */}
-          <div className="w-full flex md:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
+          <div className="w-full flex lg:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
             <h3 className="font-bold text-lg uppercase">{{
               produit: 'Modèles',
               image: 'Image',
@@ -1719,7 +1719,7 @@ const Customize = () => {
         </div>
 
         {/* Panneau droit: galerie d'images et actions */}
-        <div className="preview-sidebar-right">
+        <div className="preview-sidebar-right hidden lg:block">
           <div className="panel">
             <h3>Galerie d'images</h3>
             <div className="image-gallery">
