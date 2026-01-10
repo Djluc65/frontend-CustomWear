@@ -17,7 +17,7 @@ import CustomizationSelector from '../components/Customization/CustomizationSele
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import { toast } from 'react-toastify';
-import { FiShoppingCart, FiCreditCard } from 'react-icons/fi';
+import { FiShoppingCart, FiCreditCard, FiFilter, FiImage, FiType, FiSave } from 'react-icons/fi';
 const COLOR_NAME_TO_HEX = {
   'Noir': '#000000',
   'Blanc': '#ffffff',
@@ -1117,38 +1117,38 @@ const Customize = () => {
         <Button 
           variant={activeContextSection === 'produit' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'produit' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'produit' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('produit'); setContextOpen(true); scrollToSection('produit'); }} 
           aria-pressed={activeContextSection === 'produit'} 
         > 
-          Modèles 
+          <FiFilter className="w-4 h-4 mr-2" /> Modèles 
         </Button> 
         <Button 
           variant={activeContextSection === 'image' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'image' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'image' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('image'); setContextOpen(true); scrollToSection('image'); }} 
           aria-pressed={activeContextSection === 'image'} 
         > 
-          Image 
+          <FiImage className="w-4 h-4 mr-2" /> Image 
         </Button> 
         <Button 
           variant={activeContextSection === 'texte' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'texte' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'texte' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('texte'); setContextOpen(true); scrollToSection('texte'); }} 
           aria-pressed={activeContextSection === 'texte'} 
         > 
-          Texte 
+          <FiType className="w-4 h-4 mr-2" /> Texte 
         </Button> 
         <Button 
           variant={activeContextSection === 'save' ? 'default' : 'ghost'} 
           size="sm" 
-          className={cn("flex-1 md:flex-none", activeContextSection === 'save' ? "font-bold" : "")} 
+          className={cn("flex-1 lg:flex-none", activeContextSection === 'save' ? "font-bold" : "")} 
           onClick={() => { setActiveContextSection('save'); setContextOpen(true); scrollToSection('save'); }} 
           aria-pressed={activeContextSection === 'save'} 
         > 
-          Sauver 
+          <FiSave className="w-4 h-4 mr-2" /> Sauver 
         </Button> 
       </div>
 
