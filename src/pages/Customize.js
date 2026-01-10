@@ -1166,7 +1166,7 @@ const Customize = () => {
               texte: 'Texte',
               save: 'Sauvegarder'
             }[activeContextSection] || activeContextSection}</h3>
-            <Button variant="ghost" size="sm" >Fermer</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setContextOpen(false); setActiveContextSection(null); }}>Fermer</Button>
           </div>
           <div className="container-panel">
           {activeContextSection === 'produit' && (
