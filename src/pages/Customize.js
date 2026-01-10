@@ -1152,7 +1152,15 @@ const Customize = () => {
         </Button> 
       </div>
 
-      <div className={cn("customize-content pb-20 md:pb-0")}>
+      <div className={cn("customize-content pb-20 lg:pb-0")}>
+        {/* Overlay mobile pour fermer en cliquant dehors */}
+        {contextOpen && activeContextSection && (
+          <div 
+            className="fixed inset-0 z-30 lg:hidden" 
+            onClick={() => { setContextOpen(false); setActiveContextSection(null); }}
+            aria-hidden="true"
+          />
+        )}
         {/* Panneau gauche: choix modèle et infos */}
         <div className={cn(
           "customize-tools transition-all duration-300",
