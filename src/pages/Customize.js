@@ -1113,7 +1113,7 @@ const Customize = () => {
       </nav>
 
       {/* Barre de menus au-dessus des panneaux (Desktop) / En bas (Mobile) */} 
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-background border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white/80 md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
         <Button 
           variant={activeContextSection === 'produit' ? 'default' : 'ghost'} 
           size="sm" 
