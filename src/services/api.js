@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { store } from '../store/store';
+import { setTokens, logout } from '../store/slices/authSlice';
 
 // Configuration de base pour axios
 // Fallback dynamique: utilise l'IP/hôte courant et le port backend 5003 si REACT_APP_API_URL est absent
@@ -17,7 +19,7 @@ const api = axios.create({
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = store.getState().auth.token || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -44,7 +46,19 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Vérifier les headers pour les nouveaux tokens
+    const headerToken = response.headers['authorization']?.split(' ')[1];
+    const headerRefreshToken = response.headers['x-refresh-token'];
+
+    if (headerToken || headerRefreshToken) {
+      store.dispatch(setTokens({
+        token: headerToken,
+        refreshToken: headerRefreshToken
+      }));
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
@@ -52,13 +66,11 @@ api.interceptors.response.use(
     // Si 401 et on n'a pas déjà essayé un refresh pour cette requête
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = store.getState().auth.refreshToken || localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
         // Pas de refresh token: nettoyer et rediriger
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
+        store.dispatch(logout());
         window.location.href = '/auth';
         return Promise.reject(error);
       }
@@ -79,11 +91,20 @@ api.interceptors.response.use(
       try {
         isRefreshing = true;
         const refreshResponse = await api.post('/api/auth/refresh', { refreshToken });
-        const newToken = refreshResponse?.data?.data?.token || refreshResponse?.data?.token;
+        
+        // Extraction du nouveau token (headers ou body)
+        const headerToken = refreshResponse.headers['authorization']?.split(' ')[1];
+        const bodyToken = refreshResponse.data?.data?.token || refreshResponse.data?.token;
+        const newToken = headerToken || bodyToken;
+        const newRefreshToken = refreshResponse.headers['x-refresh-token'];
 
         if (newToken) {
-          // Mettre à jour le token
-          localStorage.setItem('token', newToken);
+          // Mettre à jour le token via Redux
+          store.dispatch(setTokens({
+            token: newToken,
+            refreshToken: newRefreshToken
+          }));
+          
           api.defaults.headers.Authorization = `Bearer ${newToken}`;
           processQueue(null, newToken);
           // Réessayer la requête originale
@@ -92,17 +113,13 @@ api.interceptors.response.use(
         }
 
         // Pas de token retourné: nettoyage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
+        store.dispatch(logout());
         processQueue(new Error('No token from refresh'), null);
         window.location.href = '/auth';
         return Promise.reject(error);
       } catch (refreshError) {
         // Échec du refresh: nettoyage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
+        store.dispatch(logout());
         processQueue(refreshError, null);
         window.location.href = '/auth';
         return Promise.reject(refreshError);

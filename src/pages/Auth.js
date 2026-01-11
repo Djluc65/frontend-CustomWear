@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiUser, FiShield } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
+import { GoogleLogin } from '@react-oauth/google';
 import { loginUser, registerUser, facebookLogin, googleLogin } from '../store/slices/authSlice';
 import { FaFacebook } from 'react-icons/fa';
 import { createTestAdmin } from '../utils/testAuth';
@@ -97,70 +97,24 @@ const Auth = () => {
     }
   };
 
-  useEffect(() => {
-    // Charger et initialiser Google Identity Services si un Client ID est défini
-    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      console.warn('[Auth] REACT_APP_GOOGLE_CLIENT_ID manquant');
-      return;
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const { credential } = credentialResponse;
+      if (!credential) return;
+      
+      const result = await dispatch(googleLogin(credential)).unwrap();
+      console.log('[Auth] Connexion Google réussie', { user: result?.user });
+      navigate('/');
+    } catch (error) {
+      console.error('[Auth] Google login error', error);
+      const message = typeof error === 'string' ? error : (error?.message || 'Erreur de connexion Google');
+      alert(message);
     }
+  };
 
-    const initializeGoogle = () => {
-      try {
-        if (!window.google?.accounts?.id) return;
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response) => {
-            try {
-              const credential = response?.credential;
-              if (!credential) return;
-              const result = await dispatch(googleLogin(credential)).unwrap();
-              console.log('[Auth] Connexion Google réussie', { user: result?.user });
-              navigate('/');
-            } catch (error) {
-              console.error('[Auth] Google login error', error);
-              const message = typeof error === 'string' ? error : (error?.message || 'Erreur de connexion Google');
-              alert(message);
-            }
-          }
-        });
-        const container = document.getElementById('google-btn-container');
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-            shape: 'rectangular'
-          });
-        }
-      } catch (e) {
-        console.warn('[Auth] Initialisation Google Identity échouée', e);
-      }
-    };
-
-    // Si le SDK est déjà présent (chargé via index.html), initialiser directement
-    if (window.google?.accounts?.id) {
-      initializeGoogle();
-      return;
-    }
-
-    // Sinon, injecter le script et initialiser au chargement
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = initializeGoogle;
-    document.body.appendChild(script);
-    return () => {
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, [dispatch, navigate]);
-
-  const handleGoogleAuth = () => {
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    } else {
-      alert('SDK Google non chargé');
-    }
+  const handleGoogleError = () => {
+    console.error('[Auth] Google Login Failed');
+    alert('Échec de la connexion Google');
   };
 
   useEffect(() => {
@@ -340,11 +294,17 @@ const Auth = () => {
             <span>ou</span>
           </div>
 
-          <button onClick={handleGoogleAuth} className="google-btn">
-            <FcGoogle />
-            <span>Continuer avec Google</span>
-          </button>
-          {/* Suppression du conteneur de bouton Google rendu par Google Identity pour éviter la duplication */}
+          <div className="google-auth-wrapper" style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme="outline"
+              size="large"
+              width="350"
+              text="continue_with"
+              locale="fr"
+            />
+          </div>
 
           <button onClick={handleFacebookAuth} className="facebook-btn">
             <FaFacebook color="#3b82f6" />

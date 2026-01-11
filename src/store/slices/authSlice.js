@@ -12,7 +12,17 @@ export const loginUser = createAsyncThunk(
     try {
       console.log('[authSlice] loginUser request', { email });
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      
+      // Extraction des tokens depuis les headers ou le body
+      const headerToken = response.headers['authorization']?.split(' ')[1];
+      const headerRefreshToken = response.headers['x-refresh-token'];
+      
       const data = response.data?.data || response.data;
+      
+      // Priorité aux headers
+      if (headerToken) data.token = headerToken;
+      if (headerRefreshToken) data.refreshToken = headerRefreshToken;
+      
       console.log('[authSlice] loginUser response', data);
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
@@ -42,7 +52,17 @@ export const registerUser = createAsyncThunk(
         password,
         confirmPassword
       });
+      
+      // Extraction des tokens depuis les headers ou le body
+      const headerToken = response.headers['authorization']?.split(' ')[1];
+      const headerRefreshToken = response.headers['x-refresh-token'];
+      
       const data = response.data?.data || response.data;
+      
+      // Priorité aux headers
+      if (headerToken) data.token = headerToken;
+      if (headerRefreshToken) data.refreshToken = headerRefreshToken;
+
       console.log('[authSlice] registerUser response', data);
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
@@ -66,7 +86,17 @@ export const googleLogin = createAsyncThunk(
     try {
       // Envoyer le token Google au backend
       const response = await axios.post(`${API_URL}/auth/google`, { token: credential });
+      
+      // Extraction des tokens depuis les headers ou le body
+      const headerToken = response.headers['authorization']?.split(' ')[1];
+      const headerRefreshToken = response.headers['x-refresh-token'];
+      
       const data = response.data?.data || response.data;
+      
+      // Priorité aux headers
+      if (headerToken) data.token = headerToken;
+      if (headerRefreshToken) data.refreshToken = headerRefreshToken;
+
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -88,7 +118,17 @@ export const facebookLogin = createAsyncThunk(
     try {
       // Envoyer le token Facebook au backend
       const response = await axios.post(`${API_URL}/auth/facebook`, { accessToken });
+      
+      // Extraction des tokens depuis les headers ou le body
+      const headerToken = response.headers['authorization']?.split(' ')[1];
+      const headerRefreshToken = response.headers['x-refresh-token'];
+      
       const data = response.data?.data || response.data;
+      
+      // Priorité aux headers
+      if (headerToken) data.token = headerToken;
+      if (headerRefreshToken) data.refreshToken = headerRefreshToken;
+
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -215,6 +255,7 @@ export const loginAdmin = createAsyncThunk(
 const initialState = {
   user: null,
   token: localStorage.getItem('token'),
+  refreshToken: localStorage.getItem('refreshToken'),
   isLoading: false,
   isAuthenticated: false,
   error: null
@@ -227,10 +268,21 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
       state.isAuthenticated = false;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
+    },
+    setTokens: (state, action) => {
+      if (action.payload.token) {
+        state.token = action.payload.token;
+        localStorage.setItem('token', action.payload.token);
+      }
+      if (action.payload.refreshToken) {
+        state.refreshToken = action.payload.refreshToken;
+        localStorage.setItem('refreshToken', action.payload.refreshToken);
+      }
     },
     clearError: (state) => {
       state.error = null;
@@ -238,6 +290,9 @@ const authSlice = createSlice({
     loginSuccess: (state, action) => {
       state.token = action.payload.token;
       state.user = action.payload.user;
+      if (action.payload.refreshToken) {
+        state.refreshToken = action.payload.refreshToken;
+      }
       state.isAuthenticated = true;
       state.error = null;
     }
@@ -252,6 +307,9 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.token = action.payload.token;
+        if (action.payload.refreshToken) {
+          state.refreshToken = action.payload.refreshToken;
+        }
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
@@ -268,6 +326,9 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.token = action.payload.token;
+        if (action.payload.refreshToken) {
+          state.refreshToken = action.payload.refreshToken;
+        }
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
@@ -284,6 +345,9 @@ const authSlice = createSlice({
       .addCase(googleLogin.fulfilled, (state, action) => {
         state.isLoading = false;
         state.token = action.payload.token;
+        if (action.payload.refreshToken) {
+          state.refreshToken = action.payload.refreshToken;
+        }
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
@@ -300,6 +364,9 @@ const authSlice = createSlice({
       .addCase(facebookLogin.fulfilled, (state, action) => {
         state.isLoading = false;
         state.token = action.payload.token;
+        if (action.payload.refreshToken) {
+          state.refreshToken = action.payload.refreshToken;
+        }
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
@@ -378,5 +445,5 @@ const authSlice = createSlice({
   }
 });
 
-export const { logout, clearError, loginSuccess } = authSlice.actions;
+export const { logout, clearError, loginSuccess, setTokens } = authSlice.actions;
 export default authSlice.reducer;

@@ -10,6 +10,23 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { items, total } = useSelector(state => state.cart);
   const { user } = useSelector(state => state.auth);
+
+  // Calcul des totaux détaillés (Modèles vs Personnalisation)
+  const cartModelTotal = items.reduce((sum, item) => {
+    const quantity = Number(item.quantity || 1);
+    const baseModelUnit = (typeof item?.customization?.totals?.baseModelPrice === 'number')
+      ? Number(item.customization.totals.baseModelPrice)
+      : Number(item.price || 0);
+    return sum + baseModelUnit * quantity;
+  }, 0);
+
+  const cartCustomizationTotal = items.reduce((sum, item) => {
+    const quantity = Number(item.quantity || 1);
+    const customizationUnit = (typeof item?.customization?.totals?.customizationPrice === 'number')
+      ? Number(item.customization.totals.customizationPrice)
+      : 0;
+    return sum + customizationUnit * quantity;
+  }, 0);
   
   const [step, setStep] = useState(1);
   const [isPaying, setIsPaying] = useState(false);
@@ -299,30 +316,71 @@ const Checkout = () => {
         <div className="order-summary">
           <h2>Résumé de commande</h2>
           <div className="order-items">
-            {items.map(item => (
-              <div key={item.id} className="order-item">
-                <img src={item.image || '/placeholder-product.jpg'} alt={item.name} />
-                <div className="item-info">
-                  <h4>{item.name}</h4>
-                  <p>Quantité: {item.quantity}</p>
+            {items.map(item => {
+              // Calcul du prix total pour cet article (Modèle + Personnalisation)
+              const quantity = Number(item.quantity || 1);
+              let itemTotalPrice = Number(item.price || 0) * quantity;
+              
+              if (item.customization?.totals) {
+                 const base = Number(item.customization.totals.baseModelPrice || 0);
+                 const cust = Number(item.customization.totals.customizationPrice || 0);
+                 itemTotalPrice = (base + cust) * quantity;
+              }
+
+              return (
+                <div key={item.id} className="order-item">
+                  <img src={item.image || '/placeholder-product.jpg'} alt={item.name} />
+                  <div className="item-info">
+                    <h4>{item.name}</h4>
+                    <p>Quantité: {item.quantity}</p>
+                    {item.customization?.totals && (
+                      <div className="item-price-details">
+                        <p className="price-detail">
+                          <span className="label">Modèle:</span>
+                          <span className="value">{Number(item.customization.totals.baseModelPrice).toFixed(2)} €</span>
+                        </p>
+                        <p className="price-detail">
+                          <span className="label">Personnalisation:</span>
+                          <span className="value">{Number(item.customization.totals.customizationPrice).toFixed(2)} €</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <span className="item-total">{itemTotalPrice.toFixed(2)} €</span>
                 </div>
-                <span className="item-total">{(item.price * item.quantity).toFixed(2)} €</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
           <div className="order-totals">
-            <div className="total-line">
-              <span>Sous-total</span>
-              <span>{total.toFixed(2)} €</span>
-            </div>
+            {cartCustomizationTotal > 0 ? (
+              <>
+                {/* <div className="total-line">
+                  <span>Total Modèles</span>
+                  <span>{cartModelTotal.toFixed(2)} €</span>
+                </div> */}
+                {/* <div className="total-line">
+                  <span>Total Personnalisation</span>
+                  <span>{cartCustomizationTotal.toFixed(2)} €</span>
+                </div> */}
+                <div className="total-line" style={{ borderTop: '1px dashed #e1e5e9', marginTop: '0.25rem', paddingTop: '0.5rem' }}>
+                  <span>Sous-total</span>
+                  <span>{(cartModelTotal + cartCustomizationTotal).toFixed(2)} €</span>
+                </div>
+              </>
+            ) : (
+              <div className="total-line">
+                <span>Sous-total</span>
+                <span>{(cartModelTotal + cartCustomizationTotal).toFixed(2)} €</span>
+              </div>
+            )}
             <div className="total-line">
               <span>Livraison</span>
               <span>5.99 €</span>
             </div>
             <div className="total-line final">
               <span>Total</span>
-              <span>{(total + 5.99).toFixed(2)} €</span>
+              <span>{(cartModelTotal + cartCustomizationTotal + 5.99).toFixed(2)} €</span>
             </div>
           </div>
         </div>

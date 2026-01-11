@@ -204,6 +204,21 @@ const Models = () => {
     ));
   };
 
+  const getModelDisplayImage = (model) => {
+    if (selectedColors.length > 0 && model?.imagesByColor) {
+      // Mapping des clés imagesByColor en minuscule pour comparaison
+      const colorKeys = Object.keys(model.imagesByColor);
+      const matchedKey = colorKeys.find(key => 
+        selectedColors.includes(key.toLowerCase()) && model.imagesByColor[key]?.front
+      );
+      
+      if (matchedKey) {
+        return model.imagesByColor[matchedKey].front;
+      }
+    }
+    return model?.images?.front || model?.images?.back || '/logo512.png';
+  };
+
   if (loading) {
     return (
       <div className="models-page container py-4">
@@ -431,7 +446,7 @@ const Models = () => {
               >
                 <div className="model-card-thumb">
                   <img
-                    src={model?.images?.front || model?.images?.back || '/logo512.png'}
+                    src={getModelDisplayImage(model)}
                     alt={model?.name || 'Modèle'}
                     loading="lazy"
                   />
