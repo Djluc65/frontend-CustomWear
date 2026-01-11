@@ -85,7 +85,7 @@ export const googleLogin = createAsyncThunk(
   async (credential, { rejectWithValue }) => {
     try {
       // Envoyer le token Google au backend
-      const response = await axios.post(`${API_URL}/auth/google`, { token: credential });
+      const response = await axios.post(`${API_URL}/auth/google`, { credential });
       
       // Extraction des tokens depuis les headers ou le body
       const headerToken = response.headers['authorization']?.split(' ')[1];
