@@ -7,6 +7,10 @@ import { GoogleLogin } from '@react-oauth/google';
 import { loginUser, registerUser, facebookLogin, googleLogin } from '../store/slices/authSlice';
 import { FaFacebook } from 'react-icons/fa';
 import { createTestAdmin } from '../utils/testAuth';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Card, CardContent } from '../components/ui/card';
 import './Auth.css';
 
 const Auth = () => {
@@ -182,17 +186,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 overflow-hidden shadow-2xl rounded-2xl border-0">
         <motion.div
-          className="auth-form"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="p-8 md:p-12 flex flex-col justify-center order-2 md:order-1 bg-white"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="auth-header">
-            <h1>{isLogin ? 'Connexion' : 'Inscription'}</h1>
-            <p>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isLogin ? 'Connexion' : 'Inscription'}</h1>
+            <p className="text-gray-500">
               {isLogin 
                 ? 'Connectez-vous à votre compte CustomWear' 
                 : 'Créez votre compte CustomWear'
@@ -201,68 +205,72 @@ const Auth = () => {
           </div>
 
           {error && (
-            <div className="error-message">
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm text-center">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="form">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <>
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <FiUser className="input-icon" />
-                    <input
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Input
                       type="text"
                       placeholder="Prénom"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className="pl-10"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <FiUser className="input-icon" />
-                    <input
+                <div className="space-y-2">
+                  <div className="relative">
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Input
                       type="text"
                       placeholder="Nom"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className="pl-10"
                       required
                     />
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
-            <div className="form-group">
-              <div className="input-wrapper">
-                <FiMail className="input-icon" />
-                <input
+            <div className="space-y-2">
+              <div className="relative">
+                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
                   type="email"
                   placeholder="Email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="pl-10"
                   required
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <div className="input-wrapper">
-                <FiLock className="input-icon" />
-                <input
+            <div className="space-y-2">
+              <div className="relative">
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mot de passe"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
+                  className="pl-10 pr-10"
                   required
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -271,84 +279,94 @@ const Auth = () => {
             </div>
 
             {!isLogin && (
-              <div className="form-group">
-                <div className="input-wrapper">
-                  <FiLock className="input-icon" />
-                  <input
+              <div className="space-y-2">
+                <div className="relative">
+                  <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Confirmer le mot de passe"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className="pl-10"
                     required
                   />
                 </div>
               </div>
             )}
 
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'S\'inscrire')}
-            </button>
+            </Button>
           </form>
 
-          <div className="divider">
-            <span>ou</span>
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">ou</span>
+            </div>
           </div>
 
-          <div className="google-auth-wrapper" style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="outline"
-              size="large"
-              width="350"
-              text="continue_with"
-              locale="fr"
-            />
+          <div className="space-y-3">
+            <div className="flex justify-center w-full">
+               <GoogleLogin
+                 onSuccess={handleGoogleSuccess}
+                 onError={handleGoogleError}
+                 theme="outline"
+                 size="large"
+                 width="350"
+                 text="continue_with"
+                 locale="fr"
+               />
+            </div>
+
+            <Button onClick={handleFacebookAuth} variant="outline" className="w-full flex items-center gap-2">
+              <FaFacebook className="text-blue-600 text-lg" />
+              <span>Continuer avec Facebook</span>
+            </Button>
+
+            {ENABLE_TEST_ADMIN && isLogin && (
+              <Button onClick={handleTestAdminLogin} variant="ghost" className="w-full text-gray-600 flex items-center gap-2">
+                <FiShield />
+                <span>Connexion Admin Test</span>
+              </Button>
+            )}
           </div>
 
-          <button onClick={handleFacebookAuth} className="facebook-btn">
-            <FaFacebook color="#3b82f6" />
-            <span>Continuer avec Facebook</span>
-          </button>
-
-          {ENABLE_TEST_ADMIN && isLogin && (
-            <button onClick={handleTestAdminLogin} className="test-admin-btn">
-              <FiShield />
-              <span>Connexion Admin Test</span>
+          <div className="mt-8 text-center text-sm text-gray-600">
+            {isLogin ? 'Pas encore de compte ?' : 'Déjà un compte ?'}{' '}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="font-medium text-blue-600 hover:text-blue-500 hover:underline focus:outline-none"
+            >
+              {isLogin ? 'S\'inscrire' : 'Se connecter'}
             </button>
-          )}
-
-          <div className="auth-switch">
-            <p>
-              {isLogin ? 'Pas encore de compte ?' : 'Déjà un compte ?'}
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="switch-btn"
-              >
-                {isLogin ? 'S\'inscrire' : 'Se connecter'}
-              </button>
-            </p>
           </div>
 
           {isLogin && (
-            <div className="forgot-password">
-              <Link to="/forgot-password">Mot de passe oublié ?</Link>
+            <div className="mt-4 text-center">
+              <Link to="/forgot-password" className="text-sm text-gray-500 hover:text-gray-900 hover:underline">
+                Mot de passe oublié ?
+              </Link>
             </div>
           )}
         </motion.div>
 
         <motion.div
-          className="auth-image"
+          className="hidden md:flex flex-col justify-center items-center bg-gray-50 p-12 order-1 md:order-2 text-center"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <img src="/auth-illustration.svg" alt="CustomWear" />
-          <h2>Personnalisez vos vêtements</h2>
-          <p>Créez des designs uniques et exprimez votre style personnel</p>
+          <img src="/auth-illustration.svg" alt="CustomWear" className="w-full max-w-md mb-8" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Personnalisez vos vêtements</h2>
+          <p className="text-gray-600 max-w-sm">
+            Créez des designs uniques et exprimez votre style personnel avec notre outil de personnalisation avancé.
+          </p>
         </motion.div>
-      </div>
+      </Card>
     </div>
   );
 };
