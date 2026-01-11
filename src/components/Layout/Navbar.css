@@ -366,7 +366,7 @@
   right: 0;
   bottom: 0;
   top: 70px; /* hauteur par défaut du header */
-  background: linear-gradient(135deg, #8e8e8e 0%, #eaeaeb 100%);
+  background: linear-gradient(135deg, #32465b 0%, #32465be1 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.2);
   opacity: 0;
   pointer-events: none;
