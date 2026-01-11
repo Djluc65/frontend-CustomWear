@@ -596,6 +596,7 @@
   .mobile-menu-toggle {
     order: -1;
     margin-right: 10px;
+    background: linear-gradient(135deg, #32465b 0%, #32465be1 100%);
   }
 
   .navbar-container {
