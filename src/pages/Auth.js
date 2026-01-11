@@ -4,6 +4,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiUser, FiShield } from 'react-icons/fi';
 import { GoogleLogin } from '@react-oauth/google';
+import FacebookLogin from '@greatsumini/react-facebook-login';
 import { loginUser, registerUser, facebookLogin, googleLogin } from '../store/slices/authSlice';
 import { FaFacebook } from 'react-icons/fa';
 import { createTestAdmin } from '../utils/testAuth';
@@ -121,62 +122,25 @@ const Auth = () => {
     alert('Échec de la connexion Google');
   };
 
-  useEffect(() => {
-    // Charger et initialiser le SDK Facebook si un App ID est défini
-    const appId = process.env.REACT_APP_FACEBOOK_APP_ID;
-    if (!appId) {
-      console.warn('[Auth] REACT_APP_FACEBOOK_APP_ID manquant');
-      return;
-    }
-
-    if (window.FB) return; // déjà chargé
-
-    window.fbAsyncInit = function() {
-      window.FB.init({
-        appId: appId,
-        cookie: true,
-        xfbml: false,
-        version: 'v19.0'
-      });
-    };
-
-    const script = document.createElement('script');
-    script.src = 'https://connect.facebook.net/fr_FR/sdk.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, []);
-
-  const handleFacebookAuth = async () => {
-    const appId = process.env.REACT_APP_FACEBOOK_APP_ID;
-    if (!appId) {
-      alert('Configuration Facebook manquante');
-      return;
-    }
-    if (!window.FB) {
-      alert('SDK Facebook non chargé');
-      return;
-    }
-
-    window.FB.login(async (response) => {
-      try {
-        if (response?.authResponse?.accessToken) {
-          const accessToken = response.authResponse.accessToken;
-          const result = await dispatch(facebookLogin(accessToken)).unwrap();
-          console.log('[Auth] Connexion Facebook réussie', { user: result?.user, hasToken: Boolean(result?.token) });
-          navigate('/');
-        } else {
-          alert('Connexion Facebook annulée');
-        }
-      } catch (error) {
-        console.error('[Auth] Facebook login error', error);
-        const message = typeof error === 'string' ? error : (error?.message || 'Erreur de connexion Facebook');
-        alert(message);
+  const handleFacebookSuccess = async (response) => {
+    try {
+      if (response?.accessToken) {
+        const result = await dispatch(facebookLogin(response.accessToken)).unwrap();
+        console.log('[Auth] Connexion Facebook réussie', { user: result?.user });
+        navigate('/');
       }
-    }, { scope: 'email,public_profile' });
+    } catch (error) {
+      console.error('[Auth] Facebook login error', error);
+      const message = typeof error === 'string' ? error : (error?.message || 'Erreur de connexion Facebook');
+      alert(message);
+    }
+  };
+
+  const handleFacebookFail = (error) => {
+    console.error('[Auth] Facebook Login Failed', error);
+    // Ne pas afficher d'alerte si l'utilisateur a annulé ou fermé la fenêtre
+    if (error?.status === 'unknown') return;
+    alert('Échec de la connexion Facebook');
   };
 
   const handleTestAdminLogin = () => {
@@ -321,10 +285,20 @@ const Auth = () => {
                />
             </div>
 
-            <Button onClick={handleFacebookAuth} variant="outline" className="w-full flex items-center gap-2">
-              <FaFacebook className="text-blue-600 text-lg" />
-              <span>Continuer avec Facebook</span>
-            </Button>
+            <div className="flex justify-center w-full">
+              <FacebookLogin
+                appId={process.env.REACT_APP_FACEBOOK_APP_ID || "123456789012345"}
+                onSuccess={handleFacebookSuccess}
+                onFail={handleFacebookFail}
+                onProfileSuccess={(response) => console.log('Get Profile Success!', response)}
+                render={({ onClick }) => (
+                  <Button onClick={onClick} variant="outline" className="w-full max-w-[350px] flex items-center justify-center gap-2 h-[40px] border-[#dadce0] hover:bg-slate-50">
+                    <FaFacebook className="text-[#1877F2] text-xl" />
+                    <span className="font-medium text-gray-600">Continuer avec Facebook</span>
+                  </Button>
+                )}
+              />
+            </div>
 
             {ENABLE_TEST_ADMIN && isLogin && (
               <Button onClick={handleTestAdminLogin} variant="ghost" className="w-full text-gray-600 flex items-center gap-2">
