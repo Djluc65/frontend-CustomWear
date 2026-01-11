@@ -50,8 +50,8 @@ const DEFAULT_MODEL_PLACEHOLDER = {
   sizes: ['S', 'M', 'L', 'XL'],
   colors: ['Blanc', 'Noir', 'Bleu'],
   images: {
-    front: 'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg',
-    back: 'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg'
+    // front: 'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg',
+    // back: 'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg'
   },
 };
 
@@ -1400,7 +1400,6 @@ const Customize = () => {
                     <div key={t.id} className={`layer-item ${selectedTextId===t.id ? 'active' : ''}`}>
                       <div className="layer-row">
                         <button type="button" className="chip" onClick={()=>setSelectedTextId(t.id)}>{t.name || `Texte ${idx+1}`}</button>
-                        <input type="text" value={t.name || ''} onChange={(e)=>renameTextLayer(t.id, e.target.value)} placeholder={`Texte ${idx+1}`} style={{ marginLeft: '0.5rem' }} />
                       </div>
                       <div className="layer-actions">
                         <label className="chip"><input type="checkbox" checked={t.visible ?? true} onChange={()=>toggleVisibilityTextLayer(t.id)} /> Visible</label>

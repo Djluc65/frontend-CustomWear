@@ -121,9 +121,15 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow-y: auto;
   width: 280px;
   overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  .customize-tools {
+    max-height: 800px;
+    overflow-y: auto;
+  }
 }
 
 /* Prix inline du modèle */
