@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config';
 
 // Configuration axios
 // Normalise l'URL de base pour garantir la présence de "/api" en production
-const RAW_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL : `${RAW_API_URL}/api`;
+const API_URL = API_BASE_URL.endsWith('/api') ? API_BASE_URL : `${API_BASE_URL}/api`;
 
 // Actions asynchrones
 export const createOrder = createAsyncThunk(

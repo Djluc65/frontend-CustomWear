@@ -10,9 +10,7 @@ import { FaFacebook } from 'react-icons/fa';
 import { createTestAdmin } from '../utils/testAuth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
 import { Card, CardContent } from '../components/ui/card';
-import './Auth.css';
 
 const Auth = () => {
   const dispatch = useDispatch();
@@ -158,12 +156,32 @@ const Auth = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
+          {/* Mobile Toggle for Login/Register */}
+          <div className="flex w-full mb-8 bg-slate-100 p-1 rounded-lg">
+            <Button
+              type="button"
+              variant="ghost"
+              className={`flex-1 ${isLogin ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setIsLogin(true)}
+            >
+              Connexion
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className={`flex-1 ${!isLogin ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setIsLogin(false)}
+            >
+              Inscription
+            </Button>
+          </div>
+
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isLogin ? 'Connexion' : 'Inscription'}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isLogin ? 'Bon retour !' : 'Créer un compte'}</h1>
             <p className="text-gray-500">
               {isLogin 
-                ? 'Connectez-vous à votre compte CustomWear' 
-                : 'Créez votre compte CustomWear'
+                ? 'Connectez-vous pour accéder à vos designs' 
+                : 'Rejoignez la communauté CustomWear'
               }
             </p>
           </div>
@@ -177,29 +195,29 @@ const Auth = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="relative">
-                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
                     <Input
                       type="text"
                       placeholder="Prénom"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-11"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="relative">
-                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
                     <Input
                       type="text"
                       placeholder="Nom"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-11"
                       required
                     />
                   </div>
