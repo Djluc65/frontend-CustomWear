@@ -98,16 +98,16 @@ const AdminLayout = () => {
         `}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
-          <div className={`flex items-center gap-2 font-bold text-xl ${!sidebarOpen && !isMobile ? 'hidden' : ''}`}>
+          <Link to="/" className={`flex items-center gap-2 font-bold text-xl ${!sidebarOpen && !isMobile ? 'hidden' : ''} hover:opacity-80 transition-opacity`}>
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
               C
             </div>
             <span className="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">CustomWear</span>
-          </div>
+          </Link>
           {(!sidebarOpen && !isMobile) && (
-             <div className="w-full flex justify-center">
+             <Link to="/" className="w-full flex justify-center hover:opacity-80 transition-opacity">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold">C</div>
-             </div>
+             </Link>
           )}
           {isMobile && (
             <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white">

@@ -9,18 +9,39 @@ import {
   FiImage,
   FiUpload,
   FiX,
-  FiChevronUp
+  FiChevronUp,
+  FiFilter
 } from 'react-icons/fi';
-import { modelsAPI, adminAPI, productsAPI } from '../../services/api';
-import './AdminModels.css';
+import { modelsAPI, productsAPI } from '../../services/api';
 import { sortSizes } from '../../utils/sizes';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
+import { Card } from '../../components/ui/card';
+
+// Utils
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+};
+
+const toCategorySlug = (cat) => {
+  if (!cat) return '';
+  if (typeof cat === 'object') return cat.slug || '';
+  return String(cat).toLowerCase();
+};
 
 const ALLOWED_TYPES = ['t-shirt', 'sweat', 'hoodie', 'casquette', 'mug'];
 const ALLOWED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
 const ALLOWED_COLORS = ['Noir', 'Blanc', 'Bleu', 'Vert', 'Jaune', 'Rouge', 'Mauve', 'Rose', 'Marron'];
 const ALLOWED_GENDERS = ['unisexe', 'homme', 'femme', 'enfant'];
 
-// Catégories demandées pour l’admin (labels spécifiques)
 const PREFERRED_CATEGORIES = [
   { slug: 't-shirts', name: 'T-shirts' },
   { slug: 'vestes', name: 'Vêstes' },
@@ -58,19 +79,20 @@ const AdminModels = () => {
     imagesByColor: {},
     active: true
   });
+  
+  // File states
   const [frontFile, setFrontFile] = useState(null);
   const [backFile, setBackFile] = useState(null);
   const [frontPreview, setFrontPreview] = useState('');
   const [backPreview, setBackPreview] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  // États pour gestion des uploads par couleur
-  const [colorSideFiles, setColorSideFiles] = useState({}); // { [color]: { front: File|null, back: File|null } }
-  const [colorSidePreviews, setColorSidePreviews] = useState({}); // { [color]: { front: string|null, back: string|null } }
+  const [colorSideFiles, setColorSideFiles] = useState({});
+  const [colorSidePreviews, setColorSidePreviews] = useState({});
 
-  // Nouveaux états pour validation et drag & drop
   const [uploadErrors, setUploadErrors] = useState({ front: '', back: '', byColor: {} });
   const [dragOver, setDragOver] = useState({ front: false, back: false, byColor: {} });
-  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
+  
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
   const ACCEPTED_MIME = ['image/jpeg','image/png','image/webp','image/gif','image/svg+xml'];
 
   useEffect(() => {
@@ -90,25 +112,13 @@ const AdminModels = () => {
     loadModels();
   }, []);
 
-  // Chargement des catégories pour les filtres et le formulaire
   useEffect(() => {
     let cancelled = false;
     const loadCategories = async () => {
       try {
         setCategoriesLoading(true);
         const res = await productsAPI.getCategories();
-        const data = res?.data;
-        const raw = data?.data?.categories || data?.categories || data?.data || [];
-        const cats = Array.isArray(raw)
-          ? raw.map(c => {
-              const slug = String(c.slug || '').trim();
-              const name = c.name || c.slug || '';
-              const finalSlug = slug ? slug.toLowerCase() : slugify(name);
-              return { slug: finalSlug, name };
-            })
-          : [];
         if (!cancelled) {
-          // Toujours afficher les catégories demandées (labels spécifiques)
           setCategories(PREFERRED_CATEGORIES);
           setCategoriesError(null);
         }
@@ -117,16 +127,13 @@ const AdminModels = () => {
           setCategoriesError(err?.response?.data?.message || err?.message || 'Erreur de chargement des catégories');
         }
       } finally {
-        if (!cancelled) {
-          setCategoriesLoading(false);
-        }
+        if (!cancelled) setCategoriesLoading(false);
       }
     };
     loadCategories();
     return () => { cancelled = true; };
   }, []);
 
-  // Afficher le bouton "remonter" selon la position de scroll
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 300);
     window.addEventListener('scroll', onScroll);
@@ -134,9 +141,7 @@ const AdminModels = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleScrollTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handleScrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const toggleColorFilter = (color) => {
     setColorFilter(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
@@ -209,908 +214,431 @@ const AdminModels = () => {
     setShowModal(true);
   };
 
-  const closeModal = () => {
-    if (frontPreview && frontPreview.startsWith('blob:')) URL.revokeObjectURL(frontPreview);
-    if (backPreview && backPreview.startsWith('blob:')) URL.revokeObjectURL(backPreview);
-    // Révoquer toutes les URLs blob des aperçus par couleur
+  const handleDeleteModel = async (id) => {
+    if (!window.confirm('Supprimer ce modèle ?')) return;
     try {
-      Object.values(colorSidePreviews).forEach(sides => {
-        const urls = [sides?.front, sides?.back].filter(Boolean);
-        urls.forEach(url => {
-          if (url && typeof url === 'string' && url.startsWith('blob:')) {
-            URL.revokeObjectURL(url);
-          }
-        });
-      });
-    } catch (_) {}
-    setFrontPreview('');
-    setBackPreview('');
-    setFrontFile(null);
-    setBackFile(null);
-    setColorSideFiles({});
-    setColorSidePreviews({});
-    setUploadErrors({ front: '', back: '', byColor: {} });
-    setDragOver({ front: false, back: false, byColor: {} });
-    setShowModal(false);
-    setEditingModel(null);
-  };
-
-  const toggleSize = (size) => {
-    setForm(prev => {
-      const has = prev.sizes.includes(size);
-      return { ...prev, sizes: has ? prev.sizes.filter(s => s !== size) : [...prev.sizes, size] };
-    });
-  };
-
-  const toggleColor = (color) => {
-    setForm(prev => {
-      const has = prev.colors.includes(color);
-      const nextColors = has ? prev.colors.filter(c => c !== color) : [...prev.colors, color];
-      // Si on retire une couleur, nettoyer ses états
-      if (has) {
-        // Révoquer les blobs
-        const sides = colorSidePreviews[color] || {};
-        [sides?.front, sides?.back].forEach(url => {
-          if (url && url.startsWith('blob:')) {
-            try { URL.revokeObjectURL(url); } catch (_) {}
-          }
-        });
-        const { [color]: _, ...restSideFiles } = colorSideFiles;
-        const { [color]: __, ...restSidePreviews } = colorSidePreviews;
-        const { [color]: ___, ...restImagesByColor } = prev.imagesByColor || {};
-        setColorSideFiles(restSideFiles);
-        setColorSidePreviews(restSidePreviews);
-        return { ...prev, colors: nextColors, imagesByColor: restImagesByColor };
-      }
-      return { ...prev, colors: nextColors };
-    });
-  };
-
-  const validateImageFile = (file) => {
-    if (!file) return 'Fichier invalide';
-    if (!ACCEPTED_MIME.includes(file.type)) return 'Type de fichier non supporté';
-    if (file.size > MAX_IMAGE_SIZE) return 'Fichier trop volumineux (max 5 Mo)';
-    return '';
-  };
-
-  const setColorDrag = (color, side, val) => {
-    setDragOver(prev => ({
-      ...prev,
-      byColor: {
-        ...(prev.byColor || {}),
-        [color]: { ...(prev.byColor?.[color] || {}), [side]: val }
-      }
-    }));
-  };
-
-  const setColorError = (color, side, err) => {
-    setUploadErrors(prev => ({
-      ...prev,
-      byColor: {
-        ...(prev.byColor || {}),
-        [color]: { ...(prev.byColor?.[color] || {}), [side]: err }
-      }
-    }));
-  };
-
-  const handleFileChange = (side, file) => {
-    if (!file) return;
-    const err = validateImageFile(file);
-    if (err) {
-      setUploadErrors(prev => ({ ...prev, [side]: err }));
-      return;
-    }
-    setUploadErrors(prev => ({ ...prev, [side]: '' }));
-    if (side === 'front') {
-      setFrontFile(file);
-      const url = URL.createObjectURL(file);
-      setFrontPreview(url);
-    } else {
-      setBackFile(file);
-      const url = URL.createObjectURL(file);
-      setBackPreview(url);
-    }
-  };
-
-  const handleDrop = (side, dataTransfer) => {
-    const file = Array.from(dataTransfer?.files || [])[0];
-    if (!file) return;
-    handleFileChange(side, file);
-  };
-
-  // Permet d’uploader plusieurs images d’un coup et de remplir front/back
-  const handleMultiFilesUpload = (fileList) => {
-    const files = Array.from(fileList || []);
-    if (files.length === 0) return;
-    try {
-      if (frontPreview && frontPreview.startsWith('blob:')) URL.revokeObjectURL(frontPreview);
-      if (backPreview && backPreview.startsWith('blob:')) URL.revokeObjectURL(backPreview);
-
-      const validFiles = [];
-      for (const f of files) {
-        const err = validateImageFile(f);
-        if (err) {
-          // Assigner erreurs aux slots en fonction de l’ordre
-          if (validFiles.length === 0) {
-            setUploadErrors(prev => ({ ...prev, front: err }));
-          } else {
-            setUploadErrors(prev => ({ ...prev, back: err }));
-          }
-          continue;
-        }
-        validFiles.push(f);
-      }
-
-      const f1 = validFiles[0];
-      if (f1) {
-        setUploadErrors(prev => ({ ...prev, front: '' }));
-        setFrontFile(f1);
-        const url1 = URL.createObjectURL(f1);
-        setFrontPreview(url1);
-      }
-
-      const f2 = validFiles[1];
-      if (f2) {
-        setUploadErrors(prev => ({ ...prev, back: '' }));
-        setBackFile(f2);
-        const url2 = URL.createObjectURL(f2);
-        setBackPreview(url2);
-      }
+      await modelsAPI.deleteModel(id);
+      setModels(prev => prev.filter(m => m._id !== id));
     } catch (err) {
-      console.error('[AdminModels] handleMultiFilesUpload error:', err);
+      alert(err?.response?.data?.message || 'Erreur suppression');
     }
   };
 
-  // Gestion des uploads spécifiques par couleur et par côté (avant/arrière)
-  const handleColorSideFileChange = (color, side, file) => {
+  const validateFile = (file) => {
+    if (!file) return 'Fichier manquant';
+    if (!ACCEPTED_MIME.includes(file.type)) return 'Format non supporté (JPG, PNG, WebP, GIF, SVG)';
+    if (file.size > MAX_IMAGE_SIZE) return 'Fichier trop volumineux (> 5 Mo)';
+    return null;
+  };
+
+  const handleFileChange = (e, side, color = null) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-    const err = validateImageFile(file);
-    if (err) {
-      setColorError(color, side, err);
-      return;
-    }
-    setColorError(color, side, '');
-    // Révoquer ancien blob si présent
-    const prevUrl = colorSidePreviews[color]?.[side];
-    if (prevUrl && typeof prevUrl === 'string' && prevUrl.startsWith('blob:')) {
-      try { URL.revokeObjectURL(prevUrl); } catch (_) {}
-    }
-    const blobUrl = URL.createObjectURL(file);
-    setColorSideFiles(prev => ({
-      ...prev,
-      [color]: { ...(prev[color] || {}), [side]: file }
-    }));
-    setColorSidePreviews(prev => ({
-      ...prev,
-      [color]: { ...(prev[color] || {}), [side]: blobUrl }
-    }));
+    processFile(file, side, color);
   };
 
-  const handleColorSideDrop = (color, side, dt) => {
-    const file = Array.from(dt?.files || [])[0];
-    if (!file) return;
-    const err = validateImageFile(file);
-    if (err) {
-      setColorError(color, side, err);
-      return;
+  const processFile = (file, side, color = null) => {
+    const err = validateFile(file);
+    if (color) {
+      setUploadErrors(prev => ({
+        ...prev,
+        byColor: { ...prev.byColor, [color]: { ...prev.byColor?.[color], [side]: err || '' } }
+      }));
+    } else {
+      setUploadErrors(prev => ({ ...prev, [side]: err || '' }));
     }
-    setColorError(color, side, '');
-    handleColorSideFileChange(color, side, file);
+
+    if (err) return;
+
+    const preview = URL.createObjectURL(file);
+    if (color) {
+      setColorSideFiles(prev => ({
+        ...prev,
+        [color]: { ...prev[color], [side]: file }
+      }));
+      setColorSidePreviews(prev => ({
+        ...prev,
+        [color]: { ...prev[color], [side]: preview }
+      }));
+    } else {
+      if (side === 'front') {
+        setFrontFile(file);
+        setFrontPreview(preview);
+      } else {
+        setBackFile(file);
+        setBackPreview(preview);
+      }
+    }
   };
 
-  const clearColorSidePreview = (color, side) => {
-    const prevUrl = colorSidePreviews[color]?.[side];
-    if (prevUrl && typeof prevUrl === 'string' && prevUrl.startsWith('blob:')) {
-      try { URL.revokeObjectURL(prevUrl); } catch (_) {}
+  const handleDrop = (e, side, color = null) => {
+    e.preventDefault();
+    if (color) {
+      setDragOver(prev => ({ ...prev, byColor: { ...prev.byColor, [color]: { ...prev.byColor?.[color], [side]: false } } }));
+    } else {
+      setDragOver(prev => ({ ...prev, [side]: false }));
     }
-    setColorSideFiles(prev => ({
-      ...prev,
-      [color]: { ...(prev[color] || {}), [side]: null }
-    }));
-    setColorSidePreviews(prev => ({
-      ...prev,
-      [color]: { ...(prev[color] || {}), [side]: '' }
-    }));
-    setColorError(color, side, '');
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file, side, color);
+  };
+
+  const handleDragOver = (e, side, color = null) => {
+    e.preventDefault();
+    if (color) {
+      setDragOver(prev => ({ ...prev, byColor: { ...prev.byColor, [color]: { ...prev.byColor?.[color], [side]: true } } }));
+    } else {
+      setDragOver(prev => ({ ...prev, [side]: true }));
+    }
+  };
+
+  const handleDragLeave = (e, side, color = null) => {
+    e.preventDefault();
+    if (color) {
+      setDragOver(prev => ({ ...prev, byColor: { ...prev.byColor, [color]: { ...prev.byColor?.[color], [side]: false } } }));
+    } else {
+      setDragOver(prev => ({ ...prev, [side]: false }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const rawPrice = String(form.basePrice || '').replace(',', '.');
-      const parsedPrice = parseFloat(rawPrice);
-      if (Number.isNaN(parsedPrice)) {
-        throw new Error('Prix invalide. Utilisez 12,50 ou 12.50');
-      }
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('type', form.type);
+      formData.append('category', form.category);
+      formData.append('gender', form.gender);
+      formData.append('basePrice', form.basePrice);
+      formData.append('active', form.active);
 
-      const payload = {
-        name: (form.name || '').trim(),
-        type: form.type,
-        category: toCategorySlug(form.category),
-        gender: form.gender,
-        basePrice: parsedPrice,
-        sizes: form.sizes,
-        colors: form.colors,
-        images: { ...form.images },
-        active: !!form.active,
-      };
+      form.sizes.forEach(s => formData.append('sizes[]', s));
+      form.colors.forEach(c => formData.append('colors[]', c));
 
-      // Upload des images si des fichiers ont été sélectionnés pour front/back
-      if (frontFile || backFile) {
-        const files = [];
-        const mapping = [];
-        if (frontFile) { files.push(frontFile); mapping.push('front'); }
-        if (backFile) { files.push(backFile); mapping.push('back'); }
+      if (frontFile) formData.append('frontImage', frontFile);
+      if (backFile) formData.append('backImage', backFile);
 
-        const uploadRes = await adminAPI.uploadImages(files);
-        const urls = uploadRes?.data?.data?.urls || uploadRes?.data?.urls || [];
-        mapping.forEach((side, idx) => {
-          payload.images[side] = urls[idx] || payload.images[side];
-        });
-      }
+      // Images par couleur
+      form.colors.forEach(color => {
+        const cFiles = colorSideFiles[color];
+        if (cFiles?.front) formData.append(`color_${color}_front`, cFiles.front);
+        if (cFiles?.back) formData.append(`color_${color}_back`, cFiles.back);
+      });
 
-      // Construire imagesByColor au format { color: { front, back } }
-      const imagesByColor = { ...(form.imagesByColor || {}) };
-      for (const color of form.colors) {
-        const current = imagesByColor[color] || {};
-        const sidesToUpload = [];
-        const mapping = [];
-        const frontColorFile = colorSideFiles[color]?.front;
-        const backColorFile = colorSideFiles[color]?.back;
-        if (frontColorFile) { sidesToUpload.push(frontColorFile); mapping.push('front'); }
-        if (backColorFile) { sidesToUpload.push(backColorFile); mapping.push('back'); }
-        if (sidesToUpload.length > 0) {
-          const resUp = await adminAPI.uploadImages(sidesToUpload);
-          const urls = resUp?.data?.data?.urls || resUp?.data?.urls || [];
-          mapping.forEach((side, idx) => {
-            current[side] = urls[idx] || current[side];
-          });
-        }
-        imagesByColor[color] = current;
-      }
-      payload.imagesByColor = imagesByColor;
-
-      if (editingModel?._id) {
-        const res = await modelsAPI.updateModel(editingModel._id, payload);
-        window.alert('Modèle mis à jour');
-        // Mettre à jour localement
-        const updated = res?.data?.data || res?.data;
-        setModels(prev => prev.map(m => m._id === editingModel._id ? (updated || { ...m, ...payload }) : m));
+      if (editingModel) {
+        const res = await modelsAPI.updateModel(editingModel._id, formData);
+        setModels(prev => prev.map(m => m._id === editingModel._id ? (res.data.data || res.data) : m));
       } else {
-        const res = await modelsAPI.createModel(payload);
-        window.alert('Modèle créé');
-        const created = res?.data?.data || res?.data;
-        setModels(prev => [created || payload, ...prev]);
+        const res = await modelsAPI.createModel(formData);
+        setModels(prev => [...prev, (res.data.data || res.data)]);
       }
-
-      closeModal();
+      setShowModal(false);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Erreur lors de la sauvegarde';
-      console.error('[AdminModels] save error:', msg, err);
-      window.alert(msg);
+      alert(err?.response?.data?.message || 'Erreur sauvegarde');
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleDelete = async (modelId) => {
-    if (!window.confirm('Supprimer ce modèle ?')) return;
-    try {
-      await modelsAPI.deleteModel(modelId);
-      setModels(prev => prev.filter(m => m._id !== modelId));
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Erreur lors de la suppression';
-      console.error('[AdminModels] delete error:', msg, err);
-      window.alert(msg);
-    }
-  };
-
-  function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-  function slugify(s) { return String(s || '').trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'); }
-  function toCategorySlug(value) {
-    if (!value) return '';
-    const lower = String(value).toLowerCase();
-    const found = Array.isArray(categories)
-      ? categories.find(cat => cat.slug === lower || (cat.name || '').toLowerCase() === lower)
-      : null;
-    return found?.slug || slugify(lower);
-  }
-  function getCategoryLabel(value) {
-    if (!value) return '-';
-    const lowerSlug = toCategorySlug(value);
-    const found = categories.find(cat => cat.slug === lowerSlug);
-    return found?.name || value;
-  }
 
   return (
-    <div className="admin-models">
-      <div className="models-header">
-        <div className="header-left">
-          <h1>Modèles de produits</h1>
-          <p>Gérez les modèles (tailles, couleurs, images et prix).</p>
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto min-h-screen bg-slate-50/50">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+            <FiLayers className="text-blue-600" />
+            Gestion des Modèles
+          </h1>
+          <p className="text-slate-500 mt-1">Gérez les modèles de base pour la personnalisation</p>
         </div>
-        <button className="add-model-btn" onClick={handleAddModel}>
-          <FiPlus />
-          <span>Nouveau modèle</span>
-        </button>
+        <Button onClick={handleAddModel} className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-600/20">
+          <FiPlus size={20} />
+          Nouveau Modèle
+        </Button>
       </div>
 
-      <div className="models-filters">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Rechercher un modèle..." 
-            className="search-input" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="filter-group">
-          <span className="filter-label">Type :</span>
-          <select 
-            className="type-filter" 
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="all">Tous</option>
-            {ALLOWED_TYPES.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <span className="filter-label">Genre :</span>
-          <select 
-            className="type-filter" 
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
-          >
-            <option value="all">Tous</option>
-            {ALLOWED_GENDERS.map(g => (
-              <option key={g} value={g}>{capitalize(g)}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <span className="filter-label">Catégorie :</span>
-          <select 
-            className="type-filter"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            disabled={categoriesLoading}
-          >
-            <option value="all">Toutes</option>
-            {categories.map(cat => (
-              <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Panneau Liste des catégories */}
-      <div className="categories-panel" aria-label="Liste des catégories">
-        <div className="panel-header">
-          <FiLayers />
-          <span>Liste des catégories</span>
-        </div>
-        {categoriesLoading && (
-          <div className="panel-loading">Chargement des catégories...</div>
-        )}
-        {categoriesError && (
-          <div className="panel-error">{categoriesError}</div>
-        )}
-        {!categoriesLoading && !categoriesError && (
-          <div className="categories-chips">
-            <button
-              type="button"
-              className={`chip ${categoryFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setCategoryFilter('all')}
-              aria-label="Toutes les catégories"
-            >
-              Toutes
-            </button>
-            {categories.map(cat => {
-              const value = cat.slug;
-              const isActive = String(categoryFilter).toLowerCase() === value;
-              return (
-                <button
-                  key={cat.slug}
-                  type="button"
-                  className={`chip ${isActive ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter(value)}
-                  aria-label={`Catégorie ${cat.name}`}
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
+      {/* Filters */}
+      <Card className="p-4 mb-8 bg-white border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Rechercher un modèle..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-slate-50 border-slate-200"
+            />
           </div>
-        )}
-      </div>
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+            <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="min-w-[140px]">
+              <option value="all">Tous types</option>
+              {ALLOWED_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </Select>
+            <Select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className="min-w-[140px]">
+              <option value="all">Tous genres</option>
+              {ALLOWED_GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+            </Select>
+            <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="min-w-[140px]">
+              <option value="all">Toutes catégories</option>
+              {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            </Select>
+          </div>
+        </div>
+      </Card>
 
-      {/* Panneau Filtres Couleurs */}
-      <div className="categories-panel" aria-label="Filtres couleurs">
-        <div className="panel-header">
-          <FiLayers />
-          <span>Filtres couleurs</span>
-        </div>
-        <div className="categories-chips">
-          <button
-            type="button"
-            className={`chip ${colorFilter.length === 0 ? 'active' : ''}`}
-            onClick={() => setColorFilter([])}
-            aria-label="Toutes les couleurs"
-          >
-            Toutes
-          </button>
-          {ALLOWED_COLORS.map(color => (
-            <button
-              key={color}
-              type="button"
-              className={`chip ${colorFilter.includes(color) ? 'active' : ''}`}
-              onClick={() => toggleColorFilter(color)}
-              aria-label={`Couleur ${color}`}
-            >
-              {color}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Panneau Filtres Tailles */}
-      <div className="categories-panel" aria-label="Filtres tailles">
-        <div className="panel-header">
-          <FiLayers />
-          <span>Filtres tailles</span>
-        </div>
-        <div className="categories-chips">
-          <button
-            type="button"
-            className={`chip ${sizeFilter.length === 0 ? 'active' : ''}`}
-            onClick={() => setSizeFilter([])}
-            aria-label="Toutes les tailles"
-          >
-            Toutes
-          </button>
-          {ALLOWED_SIZES.map(size => (
-            <button
-              key={size}
-              type="button"
-              className={`chip ${sizeFilter.includes(size) ? 'active' : ''}`}
-              onClick={() => toggleSizeFilter(size)}
-              aria-label={`Taille ${size}`}
-            >
-              {size}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="models-table-container">
-        <table className="models-table">
-          <thead>
-            <tr>
-              <th>Modèle</th>
-              <th>Type</th>
-              <th>Catégorie</th>
-              <th>Genre</th>
-              <th>Prix base</th>
-              <th>Couleurs</th>
-              <th>Tailles</th>
-              <th>Actif</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={9}>Chargement...</td></tr>
-            )}
-            {!loading && filteredModels.length === 0 && (
-              <tr><td colSpan={9}>Aucun modèle</td></tr>
-            )}
-            {!loading && filteredModels.map((m) => (
-              <tr key={m._id}>
-                <td>
-                  <div className="model-cell">
-                    <div className="model-image">
-                      {m?.images?.front ? (
-                        <img src={m.images.front} alt={m.name} />
-                      ) : (
-                        <FiImage className="no-image" />
-                      )}
-                    </div>
-                    <div className="model-details">
-                      <h4>{m.name}</h4>
-                      <div className="model-sub">
-                        <span>Front/Back</span>
-                      </div>
+      {/* Grid Content */}
+      {loading ? (
+        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+      ) : error ? (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <AnimatePresence>
+            {filteredModels.map((model) => (
+              <motion.div
+                key={model._id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="group relative bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              >
+                <div className="aspect-square bg-slate-100 relative overflow-hidden group-hover:bg-slate-200 transition-colors">
+                  {model.images?.front ? (
+                    <img src={model.images.front} alt={model.name} className="w-full h-full object-contain p-4" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300"><FiImage size={48} /></div>
+                  )}
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                    <button onClick={() => handleEditModel(model)} className="p-2 bg-white rounded-full text-blue-600 shadow-md hover:bg-blue-50 transition-colors"><FiEdit2 /></button>
+                    <button onClick={() => handleDeleteModel(model._id)} className="p-2 bg-white rounded-full text-red-600 shadow-md hover:bg-red-50 transition-colors"><FiTrash2 /></button>
+                  </div>
+                  {!model.active && (
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-slate-900/50 text-white text-xs rounded-md backdrop-blur-sm">Inactif</div>
+                  )}
+                </div>
+                
+                <div className="p-4">
+                  <h3 className="font-bold text-slate-900 truncate">{model.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                    <span className="capitalize">{model.type}</span>
+                    <span>•</span>
+                    <span className="capitalize">{model.gender}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="font-bold text-blue-600">{model.basePrice} €</span>
+                    <div className="flex gap-1">
+                       {model.colors?.slice(0, 3).map(c => (
+                         <div key={c} className="w-3 h-3 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: c.toLowerCase() === 'noir' ? 'black' : c.toLowerCase() === 'blanc' ? 'white' : c.toLowerCase() }} title={c} />
+                       ))}
+                       {model.colors?.length > 3 && <span className="text-xs text-slate-400">+{model.colors.length - 3}</span>}
                     </div>
                   </div>
-                </td>
-                <td><span className="type-tag">{m.type}</span></td>
-                <td><span className="category-tag">{getCategoryLabel(m.category) || '-'}</span></td>
-                <td><span className="gender-tag">{capitalize(m.gender || '-')}</span></td>
-                <td className="price-cell">{Number(m.basePrice).toFixed(2)} €</td>
-                <td>
-                  <div className="colors-list">
-                    {Array.isArray(m.colors) && m.colors.map((c) => (
-                      <span key={c} className="color-pill">{c}</span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <div className="sizes-list">
-                    {Array.isArray(m.sizes) && sortSizes(m.sizes).map((s) => (
-                      <span key={s} className="size-pill">{s}</span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <span className={`status-badge ${m.active ? 'status-active' : 'status-inactive'}`}>
-                    {m.active ? 'Actif' : 'Inactif'}
-                  </span>
-                </td>
-                <td>
-                  <div className="actions-cell">
-                    <button className="action-btn" onClick={() => handleEditModel(m)}>
-                      <FiEdit2 />
-                    </button>
-                    <button className="action-btn delete" onClick={() => handleDelete(m._id)}>
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                </div>
+              </motion.div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </AnimatePresence>
+        </div>
+      )}
 
-      <AnimatePresence>
-        {showModal && (
-          <motion.div 
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="modal"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-            >
-              <div className="modal-header">
-                <h3>{editingModel ? 'Modifier le modèle' : 'Nouveau modèle'}</h3>
-                <button className="close-btn" onClick={closeModal}><FiX /></button>
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-2xl font-bold text-slate-900">{editingModel ? 'Modifier le modèle' : 'Nouveau modèle'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><FiX size={24} /></button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 md:p-8 overflow-y-auto max-h-[80vh]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Left Column: Info */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Nom du modèle</label>
+                    <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ex: T-Shirt Premium Bio" required />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                      <Select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+                        {ALLOWED_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Genre</label>
+                      <Select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}>
+                        {ALLOWED_GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
+                      <Select value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+                        <option value="">Sélectionner...</option>
+                        {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Prix de base (€)</label>
+                      <Input type="number" step="0.01" value={form.basePrice} onChange={e => setForm({...form, basePrice: e.target.value})} required />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Tailles disponibles</label>
+                    <div className="flex flex-wrap gap-2">
+                      {ALLOWED_SIZES.map(size => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            sizes: prev.sizes.includes(size) ? prev.sizes.filter(s => s !== size) : [...prev.sizes, size]
+                          }))}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+                            form.sizes.includes(size)
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Couleurs disponibles</label>
+                    <div className="flex flex-wrap gap-2">
+                      {ALLOWED_COLORS.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            colors: prev.colors.includes(color) ? prev.colors.filter(c => c !== color) : [...prev.colors, color]
+                          }))}
+                          className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+                            form.colors.includes(color)
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                          }`}
+                        >
+                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color.toLowerCase() === 'noir' ? 'black' : color.toLowerCase() === 'blanc' ? 'white' : color.toLowerCase() }} />
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
+                     <input
+                       type="checkbox"
+                       id="activeCheck"
+                       checked={form.active}
+                       onChange={e => setForm({...form, active: e.target.checked})}
+                       className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                     />
+                     <label htmlFor="activeCheck" className="text-slate-900 font-medium">Modèle actif (visible sur le site)</label>
+                  </div>
+                </div>
+
+                {/* Right Column: Images */}
+                <div className="space-y-6">
+                   <h3 className="font-semibold text-slate-900">Images par défaut</h3>
+                   <div className="grid grid-cols-2 gap-4">
+                     {['front', 'back'].map(side => (
+                       <div key={side} className="space-y-2">
+                         <span className="text-xs font-semibold uppercase text-slate-500">{side === 'front' ? 'Face Avant' : 'Face Arrière'}</span>
+                         <div
+                           className={`relative aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${
+                             dragOver[side] ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'
+                           }`}
+                           onDrop={(e) => handleDrop(e, side)}
+                           onDragOver={(e) => handleDragOver(e, side)}
+                           onDragLeave={(e) => handleDragLeave(e, side)}
+                           onClick={() => document.getElementById(`file-${side}`).click()}
+                         >
+                           {(side === 'front' ? frontPreview : backPreview) ? (
+                             <img src={side === 'front' ? frontPreview : backPreview} alt={side} className="w-full h-full object-contain p-2" />
+                           ) : (
+                             <div className="text-center p-4">
+                               <FiUpload className="mx-auto text-2xl text-slate-400 mb-2" />
+                               <span className="text-xs text-slate-500">Glisser ou cliquer</span>
+                             </div>
+                           )}
+                           <input type="file" id={`file-${side}`} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, side)} />
+                         </div>
+                         {uploadErrors[side] && <p className="text-xs text-red-500">{uploadErrors[side]}</p>}
+                       </div>
+                     ))}
+                   </div>
+                   
+                   {form.colors.length > 0 && (
+                     <div className="mt-8 pt-8 border-t border-slate-100">
+                        <h3 className="font-semibold text-slate-900 mb-4">Images par couleur (optionnel)</h3>
+                        <div className="space-y-6">
+                          {form.colors.map(color => (
+                            <div key={color} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                              <h4 className="font-medium text-slate-800 mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: color.toLowerCase() === 'noir' ? 'black' : color.toLowerCase() === 'blanc' ? 'white' : color.toLowerCase() }}></span>
+                                {color}
+                              </h4>
+                              <div className="grid grid-cols-2 gap-4">
+                                {['front', 'back'].map(side => (
+                                  <div key={`${color}-${side}`} className="relative">
+                                     <div
+                                        className={`h-24 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer bg-white ${
+                                          dragOver.byColor[color]?.[side] ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-400'
+                                        }`}
+                                        onClick={() => document.getElementById(`file-${color}-${side}`).click()}
+                                      >
+                                        {(colorSidePreviews[color]?.[side] || form.imagesByColor?.[color]?.[side]) ? (
+                                          <img src={colorSidePreviews[color]?.[side] || form.imagesByColor?.[color]?.[side]} alt={`${color} ${side}`} className="h-full w-full object-contain p-1" />
+                                        ) : (
+                                          <FiPlus className="text-slate-400" />
+                                        )}
+                                        <input type="file" id={`file-${color}-${side}`} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, side, color)} />
+                                     </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                     </div>
+                   )}
+                </div>
               </div>
 
-              <form className="modal-body" onSubmit={handleSubmit}>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Nom</label>
-                    <input 
-                      type="text" 
-                      value={form.name} 
-                      onChange={(e) => setForm({ ...form, name: e.target.value })} 
-                      required 
-                    />
-                  </div>
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="border-slate-300 text-slate-700 hover:bg-slate-50">Annuler</Button>
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20" disabled={loading}>
+                  {loading ? 'Sauvegarde...' : 'Enregistrer le modèle'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-                  <div className="form-group">
-                    <label>Type</label>
-                    <select 
-                      value={form.type}
-                      onChange={(e) => setForm({ ...form, type: e.target.value })}
-                      required
-                    >
-                      {ALLOWED_TYPES.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Catégorie</label>
-                    <select 
-                      value={toCategorySlug(form.category)}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      required
-                      disabled={categoriesLoading}
-                    >
-                      <option value="">Sélectionnez une catégorie</option>
-                      {categories.map(cat => (
-                        <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                      ))}
-                    </select>
-                    {categoriesError && <small className="error-text">{categoriesError}</small>}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Genre</label>
-                    <select 
-                      value={form.gender}
-                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                      required
-                    >
-                      {ALLOWED_GENDERS.map(g => (
-                        <option key={g} value={g}>{capitalize(g)}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Prix de base (€)</label>
-                    <input 
-                      type="text" 
-                      value={form.basePrice} 
-                      onChange={(e) => setForm({ ...form, basePrice: e.target.value })} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group full">
-                    <label>Tailles disponibles</label>
-                    <div className="checkbox-grid">
-                      {ALLOWED_SIZES.map(size => (
-                        <label key={size} className="checkbox-item">
-                          <input 
-                            type="checkbox"
-                            checked={form.sizes.includes(size)}
-                            onChange={() => toggleSize(size)}
-                          />
-                          <span>{size}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="form-group full">
-                    <label>Couleurs disponibles</label>
-                    <div className="checkbox-grid">
-                      {ALLOWED_COLORS.map(color => (
-                        <label key={color} className="checkbox-item">
-                          <input 
-                            type="checkbox"
-                            checked={form.colors.includes(color)}
-                            onChange={() => toggleColor(color)}
-                          />
-                          <span>{color}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Nouvelles sections d'upload par couleur (avant / arrière) */}
-                  <div className="form-group full">
-                    <label>Images par couleur</label>
-                    {form.colors.length === 0 && (
-                      <small className="help-text">Sélectionnez au moins une couleur pour ajouter des images spécifiques.</small>
-                    )}
-                    {form.colors.map((color) => (
-                      <div key={color} className="color-section">
-                        <div className="color-section-header">
-                          <span className="color-section-title">{color}</span>
-                        </div>
-                        <div className="color-side-grid">
-                          {/* Avant */}
-                          <div className="color-side">
-                            <div 
-                              className={`color-side-preview ${dragOver.byColor?.[color]?.front ? 'drag-over' : ''}`}
-                              onDragOver={(e) => { e.preventDefault(); setColorDrag(color, 'front', true); e.dataTransfer.dropEffect = 'copy'; }}
-                              onDragLeave={() => setColorDrag(color, 'front', false)}
-                              onDrop={(e) => { e.preventDefault(); setColorDrag(color, 'front', false); handleColorSideDrop(color, 'front', e.dataTransfer); }}
-                            >
-                              {colorSidePreviews[color]?.front ? (
-                                <img src={colorSidePreviews[color]?.front} alt={`Aperçu ${color} avant`} />
-                              ) : form.imagesByColor?.[color]?.front ? (
-                                <img src={form.imagesByColor[color].front} alt={`Image ${color} avant`} />
-                              ) : (
-                                <FiImage className="no-image" />
-                              )}
-                            </div>
-                            <div className="color-side-actions">
-                              <label className="upload-btn">
-                                <FiUpload />
-                                <span>Uploader avant</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleColorSideFileChange(color, 'front', e.target.files?.[0])}
-                                  hidden
-                                />
-                              </label>
-                              {colorSidePreviews[color]?.front && (
-                                <button type="button" className="btn-secondary" onClick={() => clearColorSidePreview(color, 'front')}>
-                                  <FiX /> Retirer
-                                </button>
-                              )}
-                            </div>
-                            {uploadErrors.byColor?.[color]?.front && (
-                              <small className="error-text">{uploadErrors.byColor[color].front}</small>
-                            )}
-                            <input 
-                              type="text" 
-                              placeholder="Ou URL avant"
-                              value={form.imagesByColor?.[color]?.front || ''}
-                              onChange={(e) => setForm(prev => ({
-                                ...prev,
-                                imagesByColor: {
-                                  ...(prev.imagesByColor || {}),
-                                  [color]: { ...(prev.imagesByColor?.[color] || {}), front: e.target.value }
-                                }
-                              }))}
-                            />
-                          </div>
-                          {/* Arrière */}
-                          <div className="color-side">
-                            <div 
-                              className={`color-side-preview ${dragOver.byColor?.[color]?.back ? 'drag-over' : ''}`}
-                              onDragOver={(e) => { e.preventDefault(); setColorDrag(color, 'back', true); e.dataTransfer.dropEffect = 'copy'; }}
-                              onDragLeave={() => setColorDrag(color, 'back', false)}
-                              onDrop={(e) => { e.preventDefault(); setColorDrag(color, 'back', false); handleColorSideDrop(color, 'back', e.dataTransfer); }}
-                            >
-                              {colorSidePreviews[color]?.back ? (
-                                <img src={colorSidePreviews[color]?.back} alt={`Aperçu ${color} arrière`} />
-                              ) : form.imagesByColor?.[color]?.back ? (
-                                <img src={form.imagesByColor[color].back} alt={`Image ${color} arrière`} />
-                              ) : (
-                                <FiImage className="no-image" />
-                              )}
-                            </div>
-                            <div className="color-side-actions">
-                              <label className="upload-btn">
-                                <FiUpload />
-                                <span>Uploader arrière</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleColorSideFileChange(color, 'back', e.target.files?.[0])}
-                                  hidden
-                                />
-                              </label>
-                              {colorSidePreviews[color]?.back && (
-                                <button type="button" className="btn-secondary" onClick={() => clearColorSidePreview(color, 'back')}>
-                                  <FiX /> Retirer
-                                </button>
-                              )}
-                            </div>
-                            {uploadErrors.byColor?.[color]?.back && (
-                              <small className="error-text">{uploadErrors.byColor[color].back}</small>
-                            )}
-                            <input 
-                              type="text" 
-                              placeholder="Ou URL arrière"
-                              value={form.imagesByColor?.[color]?.back || ''}
-                              onChange={(e) => setForm(prev => ({
-                                ...prev,
-                                imagesByColor: {
-                                  ...(prev.imagesByColor || {}),
-                                  [color]: { ...(prev.imagesByColor?.[color] || {}), back: e.target.value }
-                                }
-                              }))}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="form-group full">
-                    <label>Uploader en bloc (Front & Back)</label>
-                    <label className="upload-btn">
-                      <FiUpload />
-                      <span>Uploader 2 images</span>
-                      <input 
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleMultiFilesUpload(e.target.files)}
-                        hidden
-                      />
-                    </label>
-                    <small className="help-text">Le premier fichier devient l’avant, le second l’arrière.</small>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Image avant</label>
-                    <div 
-                      className={`image-upload ${dragOver.front ? 'drag-over' : ''}`}
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, front: true })); e.dataTransfer.dropEffect = 'copy'; }}
-                      onDragLeave={() => setDragOver(prev => ({ ...prev, front: false }))}
-                      onDrop={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, front: false })); handleDrop('front', e.dataTransfer); }}
-                    >
-                      <div className="image-preview">
-                        {frontPreview ? (
-                          <img src={frontPreview} alt="Aperçu avant" />
-                        ) : form.images.front ? (
-                          <img src={form.images.front} alt="Aperçu avant" />
-                        ) : (
-                          <FiImage className="no-image" />
-                        )}
-                      </div>
-                      <label className="upload-btn">
-                        <FiUpload />
-                        <span>Uploader</span>
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => handleFileChange('front', e.target.files?.[0])}
-                          hidden
-                        />
-                      </label>
-                      {uploadErrors.front && <small className="error-text">{uploadErrors.front}</small>}
-                      <input 
-                        type="text" 
-                        placeholder="Ou URL image"
-                        value={form.images.front}
-                        onChange={(e) => setForm({ ...form, images: { ...form.images, front: e.target.value } })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Image arrière</label>
-                    <div 
-                      className={`image-upload ${dragOver.back ? 'drag-over' : ''}`}
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, back: true })); e.dataTransfer.dropEffect = 'copy'; }}
-                      onDragLeave={() => setDragOver(prev => ({ ...prev, back: false }))}
-                      onDrop={(e) => { e.preventDefault(); setDragOver(prev => ({ ...prev, back: false })); handleDrop('back', e.dataTransfer); }}
-                    >
-                      <div className="image-preview">
-                        {backPreview ? (
-                          <img src={backPreview} alt="Aperçu arrière" />
-                        ) : form.images.back ? (
-                          <img src={form.images.back} alt="Aperçu arrière" />
-                        ) : (
-                          <FiImage className="no-image" />
-                        )}
-                      </div>
-                      <label className="upload-btn">
-                        <FiUpload />
-                        <span>Uploader</span>
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => handleFileChange('back', e.target.files?.[0])}
-                          hidden
-                        />
-                      </label>
-                      {uploadErrors.back && <small className="error-text">{uploadErrors.back}</small>}
-                      <input 
-                        type="text" 
-                        placeholder="Ou URL image"
-                        value={form.images.back}
-                        onChange={(e) => setForm({ ...form, images: { ...form.images, back: e.target.value } })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Statut</label>
-                    <select 
-                      value={form.active ? 'active' : 'inactive'}
-                      onChange={(e) => setForm({ ...form, active: e.target.value === 'active' })}
-                    >
-                      <option value="active">Actif</option>
-                      <option value="inactive">Inactif</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={closeModal}>Annuler</button>
-                  <button type="submit" className="btn-primary">{editingModel ? 'Mettre à jour' : 'Créer'}</button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
+      {/* Scroll to top */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            onClick={handleScrollTop}
+            className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors z-40"
+          >
+            <FiChevronUp size={24} />
+          </motion.button>
         )}
       </AnimatePresence>
-      {showScrollTop && (
-        <button className="scroll-top-btn" onClick={handleScrollTop} aria-label="Remonter">
-          <FiChevronUp />
-        </button>
-      )}
     </div>
   );
 };

@@ -17,17 +17,21 @@ import {
   FiUsers,
   FiX,
   FiChevronLeft,
-  FiChevronRight
+  FiChevronRight,
+  FiRefreshCcw,
+  FiPhone,
+  FiMapPin
 } from 'react-icons/fi';
-import { 
-  fetchAllUsers, 
-  updateUserStatus 
-} from '../../store/slices/adminSlice';
-import './AdminUsers.css';
+import { fetchAllUsers, updateUserStatus } from '../../store/slices/adminSlice';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
+import { Card } from '../../components/ui/card';
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
-  const { items: users, loading, error } = useSelector(state => state.admin.users);
+  // Utiliser les vraies données si disponibles, sinon mock
+  const { items: realUsers, loading, error } = useSelector(state => state.admin.users);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -99,483 +103,410 @@ const AdminUsers = () => {
       name: 'Sophie Leroy',
       email: 'sophie.leroy@email.com',
       role: 'customer',
-      createdAt: '2024-01-12T11:20:00Z',
-      lastLogin: '2024-01-13T10:15:00Z',
-      orders: 3,
-      totalSpent: 89.99,
+      createdAt: '2024-01-05T14:20:00Z',
+      lastLogin: '2024-01-12T09:30:00Z',
+      orders: 2,
+      totalSpent: 89.90,
       status: 'inactive',
       phone: '+33 4 56 78 90 12',
       address: {
-        street: '321 Rue de Rivoli',
-        city: 'Nice',
-        postalCode: '06000',
+        street: '12 Rue de la République',
+        city: 'Bordeaux',
+        postalCode: '33000',
+        country: 'France'
+      }
+    },
+    {
+      _id: '5',
+      name: 'Lucas Bernard',
+      email: 'lucas.bernard@email.com',
+      role: 'customer',
+      createdAt: '2024-01-12T16:45:00Z',
+      lastLogin: '2024-01-15T11:15:00Z',
+      orders: 8,
+      totalSpent: 412.30,
+      status: 'active',
+      phone: '+33 5 67 89 01 23',
+      address: {
+        street: '34 Quai des Chartrons',
+        city: 'Bordeaux',
+        postalCode: '33000',
         country: 'France'
       }
     }
   ];
 
-  const roleOptions = [
-    { value: '', label: 'Tous les rôles' },
-    { value: 'customer', label: 'Clients' },
-    { value: 'admin', label: 'Administrateurs' }
-  ];
+  const usersList = (realUsers && realUsers.length > 0) ? realUsers : mockUsers;
 
   useEffect(() => {
-    dispatch(fetchAllUsers({ page: 1, limit: 50 }));
+    dispatch(fetchAllUsers());
   }, [dispatch]);
-
-  const getRoleConfig = (role) => {
-    const configs = {
-      customer: { 
-        label: 'Client', 
-        class: 'role-customer', 
-        icon: FiUser,
-        color: '#3b82f6'
-      },
-      admin: { 
-        label: 'Admin', 
-        class: 'role-admin', 
-        icon: FiShield,
-        color: '#ef4444'
-      }
-    };
-    return configs[role] || configs.customer;
-  };
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      active: { 
-        label: 'Actif', 
-        class: 'status-active'
-      },
-      inactive: { 
-        label: 'Inactif', 
-        class: 'status-inactive'
-      }
-    };
-    return configs[status] || configs.active;
-  };
-
-  const handleViewUser = (user) => {
-    setSelectedUser(user);
-    setShowModal(true);
-  };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleRoleFilter = (role) => {
-    setRoleFilter(role);
+  const handleRoleFilter = (e) => {
+    setRoleFilter(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleStatusFilter = (status) => {
-    setStatusFilter(status);
+  const handleStatusFilter = (e) => {
+    setStatusFilter(e.target.value);
     setCurrentPage(1);
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
+
+  const filteredUsers = usersList.filter(user => {
+    const matchesSearch = 
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   const handleUserClick = (user) => {
     setSelectedUser(user);
     setShowModal(true);
   };
 
-  const handleDeleteUser = (userId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-      console.warn('Suppression utilisateur non implémentée côté API. Rafraîchissement de la liste.');
-      // TODO: implémenter deleteUser thunk côté adminSlice puis rafraîchir
-      dispatch(fetchAllUsers({ page: 1, limit: usersPerPage }));
-    }
-  };
-
   const handleStatusChange = async (userId, newStatus) => {
     try {
-      await dispatch(updateUserStatus({ 
-        userId, 
-        status: newStatus 
-      })).unwrap();
-      dispatch(fetchAllUsers({ page: 1, limit: 50 }));
+      await dispatch(updateUserStatus({ userId, status: newStatus })).unwrap();
+      // Mettre à jour localement si nécessaire (si on utilise mockUsers)
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du statut:', error);
+      console.error('Erreur mise à jour statut:', error);
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedUser(null);
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
+      case 'admin': return 'bg-purple-100 text-purple-700';
+      case 'moderator': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
   };
 
-  const filteredUsers = (users || mockUsers).filter(user => {
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || !roleFilter || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || !statusFilter || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  const getStatusBadgeColor = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-700';
+      case 'inactive': return 'bg-slate-100 text-slate-500';
+      case 'banned': return 'bg-red-100 text-red-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
   };
-
-  const totalCustomers = users.filter(user => user.role === 'customer').length;
-  const totalRevenue = users.reduce((sum, user) => sum + user.totalSpent, 0);
-
-  if (loading) {
-    return (
-      <div className="admin-users">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Chargement des utilisateurs...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="admin-users">
-      {/* Header */}
-      <div className="users-header">
-        <div className="header-left">
-          <h1>Gestion des Utilisateurs</h1>
-          <p>{filteredUsers.length} utilisateurs trouvés</p>
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto min-h-screen bg-slate-50/50">
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+            <FiUsers className="text-blue-600" />
+            Utilisateurs
+          </h1>
+          <p className="text-slate-500 mt-1">Gérez vos clients et administrateurs</p>
         </div>
-        <div className="header-stats">
-          <div className="stat-card">
-            <FiUsers className="stat-icon customers" />
-            <div>
-              <span className="stat-value">{totalCustomers}</span>
-              <span className="stat-label">Clients</span>
-            </div>
-          </div>
-          <div className="stat-card">
-            <FiDollarSign className="stat-icon revenue" />
-            <div>
-              <span className="stat-value">{totalRevenue.toLocaleString('fr-FR')} €</span>
-              <span className="stat-label">Chiffre d'affaires</span>
-            </div>
-          </div>
-        </div>
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-600/20">
+          <FiUserPlus size={20} />
+          Ajouter un utilisateur
+        </Button>
       </div>
 
-      {/* Filters */}
-      <div className="users-filters">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
+      <Card className="p-4 mb-8 bg-white border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Rechercher (nom, email)..."
+              value={searchTerm}
+              onChange={handleSearch}
+              className="pl-10 bg-slate-50 border-slate-200"
+            />
+          </div>
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+            <Select value={roleFilter} onChange={handleRoleFilter} className="min-w-[140px]">
+              <option value="all">Tous rôles</option>
+              <option value="customer">Client</option>
+              <option value="admin">Admin</option>
+              <option value="moderator">Modérateur</option>
+            </Select>
+            <Select value={statusFilter} onChange={handleStatusFilter} className="min-w-[140px]">
+              <option value="all">Tous statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+              <option value="banned">Banni</option>
+            </Select>
+            <Button variant="ghost" onClick={clearFilters} className="text-slate-500 hover:text-slate-700">
+              <FiRefreshCcw />
+            </Button>
+          </div>
         </div>
+      </Card>
 
-        <div className="filter-group">
-          <FiFilter className="filter-icon" />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="role-filter"
-          >
-            {roleOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button className="add-user-btn">
-          <FiUserPlus />
-          Ajouter un Utilisateur
-        </button>
-      </div>
-
-      {/* Users Table */}
-      <div className="users-table-container">
-        <table className="users-table">
-          <thead>
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th>Utilisateur</th>
-              <th>Rôle</th>
-              <th>Date d'inscription</th>
-              <th>Dernière connexion</th>
-              <th>Commandes</th>
-              <th>Total dépensé</th>
-              <th>Statut</th>
-              <th>Actions</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Utilisateur</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Rôle</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Statut</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Commandes</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Dépenses</th>
+              <th className="px-6 py-4 font-semibold text-slate-700">Date d'inscription</th>
+              <th className="px-6 py-4 font-semibold text-slate-700 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredUsers.map((user) => {
-              const roleConfig = getRoleConfig(user.role);
-              const statusConfig = getStatusConfig(user.status);
-              const RoleIcon = roleConfig.icon;
-              
-              return (
-                <motion.tr
-                  key={user._id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <td className="user-info">
-                    <div className="user-cell">
-                      <div className="user-avatar">
-                        <FiUser />
-                      </div>
-                      <div className="user-details">
-                        <div className="user-name">{user.name}</div>
-                        <div className="user-email">{user.email}</div>
-                      </div>
+          <tbody className="divide-y divide-slate-100">
+            {currentUsers.map((user) => (
+              <tr key={user._id} className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                      {user.name.charAt(0)}
                     </div>
-                  </td>
-                  <td className="role-cell">
-                    <span className={`role-badge ${roleConfig.class}`}>
-                      <RoleIcon className="role-icon" />
-                      {roleConfig.label}
-                    </span>
-                  </td>
-                  <td className="date-cell">
-                    <FiCalendar className="date-icon" />
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="date-cell">
-                    <FiCalendar className="date-icon" />
-                    {formatDate(user.lastLogin)}
-                  </td>
-                  <td className="orders-cell">
-                    <div className="orders-info">
-                      <FiShoppingBag className="orders-icon" />
-                      <span>{user.orders}</span>
+                    <div>
+                      <div className="font-medium text-slate-900">{user.name}</div>
+                      <div className="text-xs text-slate-500">{user.email}</div>
                     </div>
-                  </td>
-                  <td className="spent-cell">
-                    {user.totalSpent.toLocaleString('fr-FR')} €
-                  </td>
-                  <td className="status-cell">
-                    <div className="status-container">
-                      <span className={`status-badge ${statusConfig.class}`}>
-                        {statusConfig.label}
-                      </span>
-                      <select
-                        value={user.status}
-                        onChange={(e) => handleStatusChange(user._id, e.target.value)}
-                        className="status-select"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="inactive">Inactif</option>
-                      </select>
-                    </div>
-                  </td>
-                  <td className="actions-cell">
-                    <div className="action-buttons">
-                      <button
-                        className="action-btn view-btn"
-                        onClick={() => handleViewUser(user)}
-                        title="Voir les détails"
-                      >
-                        <FiEye />
-                      </button>
-                      <button
-                        className="action-btn edit-btn"
-                        title="Modifier"
-                      >
-                        <FiEdit3 />
-                      </button>
-                      <button
-                        className="action-btn delete-btn"
-                        onClick={() => handleDeleteUser(user._id)}
-                        title="Supprimer"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              );
-            })}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(user.role)}`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(user.status)}`}>
+                    {user.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-slate-600">{user.orders}</td>
+                <td className="px-6 py-4 font-medium text-slate-900">{user.totalSpent?.toFixed(2)} €</td>
+                <td className="px-6 py-4 text-slate-500 text-sm">
+                  {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleUserClick(user)} className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600">
+                      <FiEye />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600">
+                      <FiEdit3 />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-red-600">
+                      <FiTrash2 />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {currentUsers.length === 0 && (
+              <tr><td colSpan="7" className="px-6 py-12 text-center text-slate-500">Aucun utilisateur trouvé</td></tr>
+            )}
           </tbody>
         </table>
+      </div>
 
-        {filteredUsers.length === 0 && (
-          <div className="empty-state">
-            <FiUsers className="empty-icon" />
-            <h3>Aucun utilisateur trouvé</h3>
-            <p>Aucun utilisateur ne correspond à vos critères de recherche</p>
-          </div>
+      {/* Mobile Cards */}
+      <div className="md:hidden grid grid-cols-1 gap-4">
+        {currentUsers.map((user) => (
+          <Card key={user._id} className="p-4">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-lg">
+                  {user.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-900">{user.name}</div>
+                  <div className="text-sm text-slate-500">{user.email}</div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                 <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(user.role)}`}>
+                   {user.role}
+                 </span>
+                 <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(user.status)}`}>
+                   {user.status}
+                 </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div>
+                <span className="text-slate-500 block mb-1">Commandes</span>
+                <span className="font-medium text-slate-900">{user.orders}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block mb-1">Dépenses</span>
+                <span className="font-medium text-slate-900">{user.totalSpent?.toFixed(2)} €</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-slate-500 block mb-1">Inscrit le</span>
+                <span className="font-medium text-slate-900">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 border-t pt-4 border-slate-100">
+              <Button variant="outline" size="sm" onClick={() => handleUserClick(user)} className="flex-1 gap-2">
+                <FiEye /> Détails
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1 gap-2">
+                <FiEdit3 /> Éditer
+              </Button>
+            </div>
+          </Card>
+        ))}
+        {currentUsers.length === 0 && (
+          <div className="text-center py-12 text-slate-500">Aucun utilisateur trouvé</div>
         )}
       </div>
 
-      {/* User Details Modal */}
-      {showModal && selectedUser && (
-        <UserDetailsModal
-          user={selectedUser}
-          onClose={() => setShowModal(false)}
-          onStatusChange={handleStatusChange}
-        />
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+          <Button 
+            variant="outline" 
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+            disabled={currentPage === 1}
+            className="gap-2"
+          >
+            <FiChevronLeft /> Précédent
+          </Button>
+          <span className="text-sm text-slate-600 font-medium">Page {currentPage} / {totalPages}</span>
+          <Button 
+            variant="outline" 
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+            disabled={currentPage === totalPages}
+            className="gap-2"
+          >
+            Suivant <FiChevronRight />
+          </Button>
+        </div>
       )}
-    </div>
-  );
-};
 
-// Composant Modal pour les détails d'utilisateur
-const UserDetailsModal = ({ user, onClose, onStatusChange }) => {
-  const roleConfig = getRoleConfig(user.role);
-  const statusConfig = getStatusConfig(user.status);
-  const RoleIcon = roleConfig.icon;
-
-  const getRoleConfig = (role) => {
-    const configs = {
-      customer: { 
-        label: 'Client', 
-        class: 'role-customer', 
-        icon: FiUser,
-        color: '#3b82f6'
-      },
-      admin: { 
-        label: 'Admin', 
-        class: 'role-admin', 
-        icon: FiShield,
-        color: '#ef4444'
-      }
-    };
-    return configs[role] || configs.customer;
-  };
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      active: { 
-        label: 'Actif', 
-        class: 'status-active'
-      },
-      inactive: { 
-        label: 'Inactif', 
-        class: 'status-inactive'
-      }
-    };
-    return configs[status] || configs.active;
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content user-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Détails de l'utilisateur</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-
-        <div className="user-details">
-          {/* User Summary */}
-          <div className="user-summary">
-            <div className="user-avatar large">
-              <FiUser />
-            </div>
-            <div className="user-info">
-              <h3>{user.name}</h3>
-              <p>{user.email}</p>
-              <div className="user-badges">
-                <span className={`role-badge ${roleConfig.class}`}>
-                  <RoleIcon className="role-icon" />
-                  {roleConfig.label}
-                </span>
-                <span className={`status-badge ${statusConfig.class}`}>
-                  {statusConfig.label}
-                </span>
+      {/* Modal Détails Utilisateur */}
+      <AnimatePresence>
+        {showModal && selectedUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 sticky top-0 backdrop-blur-sm z-10">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <FiUser className="text-blue-600" />
+                  Détails Utilisateur
+                </h2>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <FiX size={24} />
+                </button>
               </div>
-            </div>
-          </div>
 
-          {/* User Stats */}
-          <div className="user-stats">
-            <div className="stat-item">
-              <FiShoppingBag className="stat-icon" />
-              <div>
-                <span className="stat-number">{user.orders}</span>
-                <span className="stat-label">Commandes</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <FiDollarSign className="stat-icon" />
-              <div>
-                <span className="stat-number">{user.totalSpent.toLocaleString('fr-FR')} €</span>
-                <span className="stat-label">Total dépensé</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <FiCalendar className="stat-icon" />
-              <div>
-                <span className="stat-number">
-                  {new Date(user.createdAt).toLocaleDateString('fr-FR')}
-                </span>
-                <span className="stat-label">Membre depuis</span>
-              </div>
-            </div>
-          </div>
+              <div className="p-6 space-y-6">
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
+                    {selectedUser.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{selectedUser.name}</h3>
+                    <div className="flex items-center gap-2 text-slate-500 mt-1">
+                      <FiMail size={14} /> {selectedUser.email}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(selectedUser.role)}`}>
+                        {selectedUser.role}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(selectedUser.status)}`}>
+                        {selectedUser.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-          {/* Contact Information */}
-          <div className="section">
-            <h4>Informations de contact</h4>
-            <div className="contact-details">
-              <div className="detail-row">
-                <FiMail className="detail-icon" />
-                <span className="label">Email :</span>
-                <span className="value">{user.email}</span>
-              </div>
-              <div className="detail-row">
-                <FiUser className="detail-icon" />
-                <span className="label">Téléphone :</span>
-                <span className="value">{user.phone}</span>
-              </div>
-            </div>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="p-4 space-y-3">
+                    <h4 className="font-semibold text-slate-900 flex items-center gap-2 border-b pb-2">
+                      <FiShoppingBag className="text-slate-400" /> Activité
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Commandes</span>
+                        <span className="font-medium">{selectedUser.orders}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Total dépensé</span>
+                        <span className="font-medium">{selectedUser.totalSpent?.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Dernière connexion</span>
+                        <span className="font-medium">{new Date(selectedUser.lastLogin).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Inscription</span>
+                        <span className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    </div>
+                  </Card>
 
-          {/* Address Information */}
-          <div className="section">
-            <h4>Adresse</h4>
-            <div className="address-details">
-              <p>{user.address.street}</p>
-              <p>{user.address.postalCode} {user.address.city}</p>
-              <p>{user.address.country}</p>
-            </div>
-          </div>
+                  <Card className="p-4 space-y-3">
+                    <h4 className="font-semibold text-slate-900 flex items-center gap-2 border-b pb-2">
+                      <FiMapPin className="text-slate-400" /> Coordonnées
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <FiPhone className="mt-1 text-slate-400" />
+                        <span>{selectedUser.phone || 'Non renseigné'}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <FiMapPin className="mt-1 text-slate-400" />
+                        {selectedUser.address ? (
+                          <div>
+                            <div>{selectedUser.address.street}</div>
+                            <div>{selectedUser.address.postalCode} {selectedUser.address.city}</div>
+                            <div>{selectedUser.address.country}</div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Aucune adresse enregistrée</span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
 
-          {/* Account Management */}
-          <div className="section">
-            <h4>Gestion du compte</h4>
-            <div className="account-management">
-              <div className="form-group">
-                <label>Statut du compte :</label>
-                <select
-                  value={user.status}
-                  onChange={(e) => onStatusChange(user._id, e.target.value)}
-                  className="status-select"
-                >
-                  <option value="active">Actif</option>
-                  <option value="inactive">Inactif</option>
-                </select>
+              <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setShowModal(false)}>Fermer</Button>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700">Contacter</Button>
               </div>
-              <div className="detail-row">
-                <span className="label">Dernière connexion :</span>
-                <span className="value">
-                  {new Date(user.lastLogin).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
