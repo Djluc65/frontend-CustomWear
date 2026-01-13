@@ -12,15 +12,19 @@ import {
   FiClock,
   FiCheckCircle,
   FiXCircle,
-  FiTruck
+  FiTruck,
+  FiPlusSquare,
+  FiLayers,
+  FiBarChart2
 } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchDashboardStats } from '../../store/slices/adminSlice';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { stats, loading, error } = useSelector(state => state.admin.stats);
 
   useEffect(() => {
@@ -270,6 +274,92 @@ const AdminDashboard = () => {
           </Card>
         </motion.div>
       </div>
+
+      {/* Quick Actions Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="mt-8"
+      >
+        <h2 className="text-xl font-bold text-slate-900 mb-4">Accès Rapide</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <Card 
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500 group"
+            onClick={() => navigate('/admin/products/create')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                <FiPlusSquare size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Nouveau Produit</h3>
+                <p className="text-xs text-slate-500">Ajouter au catalogue</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-l-4 border-l-purple-500 group"
+            onClick={() => navigate('/admin/models')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-100 transition-colors">
+                <FiLayers size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Nouveau Modèle</h3>
+                <p className="text-xs text-slate-500">Gérer les modèles 3D</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-l-4 border-l-green-500 group"
+            onClick={() => navigate('/admin/users')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-green-50 text-green-600 group-hover:bg-green-100 transition-colors">
+                <FiUsers size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Utilisateurs</h3>
+                <p className="text-xs text-slate-500">Clients & Admins</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-l-4 border-l-orange-500 group"
+            onClick={() => navigate('/admin/orders')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-orange-50 text-orange-600 group-hover:bg-orange-100 transition-colors">
+                <FiShoppingBag size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Commandes</h3>
+                <p className="text-xs text-slate-500">Gestion des ventes</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-l-4 border-l-indigo-500 group"
+            onClick={() => navigate('/admin/analytics')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100 transition-colors">
+                <FiBarChart2 size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Analytiques</h3>
+                <p className="text-xs text-slate-500">Stats détaillées</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </motion.div>
     </div>
   );
 };

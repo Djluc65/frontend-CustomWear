@@ -138,6 +138,22 @@ const AdminUsers = () => {
 
   const usersList = (realUsers && realUsers.length > 0) ? realUsers : mockUsers;
 
+  const getDisplayName = (user) => {
+    if (!user) return 'Utilisateur inconnu';
+    if (user.name) return user.name;
+    if (user.firstName || user.lastName) {
+      return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    }
+    return 'Utilisateur';
+  };
+
+  const getInitials = (user) => {
+    if (!user) return 'U';
+    if (user.name && user.name.length > 0) return user.name.charAt(0).toUpperCase();
+    if (user.firstName && user.firstName.length > 0) return user.firstName.charAt(0).toUpperCase();
+    return 'U';
+  };
+
   useEffect(() => {
     dispatch(fetchAllUsers());
   }, [dispatch]);
@@ -165,8 +181,9 @@ const AdminUsers = () => {
   };
 
   const filteredUsers = usersList.filter(user => {
+    const userName = getDisplayName(user);
     const matchesSearch = 
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
@@ -278,10 +295,10 @@ const AdminUsers = () => {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
-                      {user.name.charAt(0)}
+                      {getInitials(user)}
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900">{user.name}</div>
+                      <div className="font-medium text-slate-900">{getDisplayName(user)}</div>
                       <div className="text-xs text-slate-500">{user.email}</div>
                     </div>
                   </div>
@@ -330,10 +347,10 @@ const AdminUsers = () => {
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-lg">
-                  {user.name.charAt(0)}
+                  {getInitials(user)}
                 </div>
                 <div>
-                  <div className="font-semibold text-slate-900">{user.name}</div>
+                  <div className="font-semibold text-slate-900">{getDisplayName(user)}</div>
                   <div className="text-sm text-slate-500">{user.email}</div>
                 </div>
               </div>
@@ -430,10 +447,10 @@ const AdminUsers = () => {
               <div className="p-6 space-y-6">
                 <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
-                    {selectedUser.name.charAt(0)}
+                    {getInitials(selectedUser)}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">{selectedUser.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">{getDisplayName(selectedUser)}</h3>
                     <div className="flex items-center gap-2 text-slate-500 mt-1">
                       <FiMail size={14} /> {selectedUser.email}
                     </div>

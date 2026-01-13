@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiSave, FiUpload } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiUpload, FiImage, FiX, FiCheck, FiLoader } from 'react-icons/fi';
 import { adminAPI } from '../../services/api';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
+import { Card } from '../../components/ui/card';
+import { Label } from '../../components/ui/label';
+import { Checkbox } from '../../components/ui/checkbox';
 
 const CATEGORIES = [
   { slug: 't-shirts', name: 'T-shirts' },
@@ -172,7 +178,6 @@ const AdminProductCreate = () => {
       };
 
       const res = await adminAPI.createProduct(payload);
-      const created = res?.data?.data || res?.data || payload;
       window.alert('Produit créé avec succès');
       navigate('/admin/products');
     } catch (err) {
@@ -183,147 +188,303 @@ const AdminProductCreate = () => {
     }
   };
 
-  return (
-    <div className="admin-products-page" style={{ padding: '1.5rem' }}>
-      <div className="admin-products-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Link to="/admin/products" className="btn" style={{ textDecoration: 'none' }}>
-            <FiArrowLeft /> Retour
-          </Link>
-          <h1 style={{ margin: 0 }}>Créer un produit</h1>
+  const ImageUploadBox = ({ label, image, onChange, id }) => (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="relative group">
+        <div className={`
+          border-2 border-dashed rounded-lg p-4 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-colors
+          ${image ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'}
+        `}>
+          {image ? (
+            <>
+              <img 
+                src={image.secure_url || image.url} 
+                alt="Preview" 
+                className="h-full w-full object-contain rounded"
+              />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                <FiUpload className="text-white text-3xl" />
+              </div>
+            </>
+          ) : (
+            <>
+              <FiImage className="text-4xl text-slate-300 mb-2" />
+              <span className="text-sm text-slate-500 font-medium">Cliquez pour ajouter</span>
+            </>
+          )}
+          <input 
+            type="file" 
+            id={id}
+            accept="image/*" 
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            onChange={onChange}
+          />
         </div>
-        <button className="btn-primary" form="create-form" disabled={creating || uploading}>
-          <FiSave /> {creating ? 'Création…' : 'Enregistrer'}
-        </button>
       </div>
+    </div>
+  );
 
-      <form id="create-form" className="form-grid" onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Nom
-          <input type="text" value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} />
-        </label>
-        <label className="full">
-          Description
-          <textarea rows={3} value={form.description} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} />
-        </label>
-        <label>
-          Description courte
-          <input type="text" value={form.shortDescription} onChange={(e) => setForm(prev => ({ ...prev, shortDescription: e.target.value }))} />
-        </label>
-        <label>
-          Catégorie
-          <select value={form.category} onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}>
-            {CATEGORIES.map(c => (
-              <option key={c.slug} value={c.slug}>{c.name}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Genre
-          <select value={form.gender} onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}>
-            {GENDERS.map(g => (
-              <option key={g.value} value={g.value}>{g.label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Prix de base (€)
-          <input type="number" step="0.01" value={form.priceBase} onChange={(e) => setForm(prev => ({ ...prev, priceBase: e.target.value }))} />
-        </label>
-        <label>
-          Stock global
-          <input type="number" value={form.stock} onChange={(e) => setForm(prev => ({ ...prev, stock: e.target.value }))} />
-        </label>
-
-        <div className="full">
-          <div style={{ marginTop: 8, marginBottom: 6, fontWeight: 600 }}>Images principales</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label>Avant (principale)
-                <input type="file" accept="image/*" onChange={(e) => handleMainImageChange('front', e.target.files?.[0])} />
-              </label>
-              {mainImages.front && (
-                <img alt="front" src={mainImages.front.secure_url || mainImages.front.url} style={{ marginTop: 8, width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 6 }} />
-              )}
+  return (
+    <div className="p-4 lg:p-8 max-w-[1400px] mx-auto min-h-screen bg-slate-50/50">
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/products')} className="text-slate-500 -ml-2">
+                <FiArrowLeft className="mr-2" /> Retour
+              </Button>
             </div>
-            <div>
-              <label>Arrière
-                <input type="file" accept="image/*" onChange={(e) => handleMainImageChange('back', e.target.files?.[0])} />
-              </label>
-              {mainImages.back && (
-                <img alt="back" src={mainImages.back.secure_url || mainImages.back.url} style={{ marginTop: 8, width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 6 }} />
-              )}
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Nouveau Produit</h1>
+            <p className="text-slate-500">Créez un nouveau produit pour votre catalogue</p>
+          </div>
+          <div className="flex gap-3 w-full md:w-auto">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate('/admin/products')}
+              className="flex-1 md:flex-none"
+            >
+              Annuler
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-blue-600 hover:bg-blue-700 text-white flex-1 md:flex-none" 
+              disabled={creating || uploading}
+            >
+              {creating ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
+              {creating ? 'Création...' : 'Créer le produit'}
+            </Button>
           </div>
         </div>
 
-        <div className="full">
-          <div style={{ marginTop: 8, marginBottom: 6, fontWeight: 600 }}>Tailles</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {SIZE_OPTIONS.map(s => (
-              <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input type="checkbox" checked={form.sizes.includes(s)} onChange={() => toggleSize(s)} /> {s}
-              </label>
-            ))}
-          </div>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Info */}
+          <div className="lg:col-span-2 space-y-8">
+            <Card className="p-6 bg-white shadow-sm border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 bg-blue-600 rounded-full"></span>
+                Informations générales
+              </h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nom du produit <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="name"
+                    value={form.name} 
+                    onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: T-Shirt Premium Cotton"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shortDescription">Description courte</Label>
+                  <Input 
+                    id="shortDescription"
+                    value={form.shortDescription} 
+                    onChange={(e) => setForm(prev => ({ ...prev, shortDescription: e.target.value }))}
+                    placeholder="Résumé pour les cartes produits..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description complète <span className="text-red-500">*</span></Label>
+                  <textarea 
+                    id="description"
+                    className="flex min-h-[120px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={form.description} 
+                    onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Détails complets du produit..."
+                  />
+                </div>
+              </div>
+            </Card>
 
-        <div className="full">
-          <div style={{ marginTop: 8, marginBottom: 6, fontWeight: 600 }}>Couleurs</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {ALLOWED_COLORS.map(c => (
-              <label key={c} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input type="checkbox" checked={form.colors.includes(c)} onChange={() => toggleColor(c)} /> {c}
-              </label>
-            ))}
-          </div>
-        </div>
+            <Card className="p-6 bg-white shadow-sm border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 bg-blue-600 rounded-full"></span>
+                Images principales <span className="text-red-500">*</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ImageUploadBox 
+                  label="Vue Avant" 
+                  image={mainImages.front} 
+                  onChange={(e) => handleMainImageChange('front', e.target.files?.[0])}
+                  id="main-front"
+                />
+                <ImageUploadBox 
+                  label="Vue Arrière" 
+                  image={mainImages.back} 
+                  onChange={(e) => handleMainImageChange('back', e.target.files?.[0])}
+                  id="main-back"
+                />
+              </div>
+            </Card>
 
-        {form.colors.length > 0 && (
-          <div className="full">
-            <div style={{ marginTop: 8, marginBottom: 6, fontWeight: 600 }}>Images par couleur (avant et arrière)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-              {form.colors.map(c => (
-                <div key={c} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{c}</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label>Avant
-                        <input type="file" accept="image/*" onChange={(e) => handleColorImageChange(c, 'front', e.target.files?.[0])} />
-                      </label>
-                      {colorImages[c]?.front && (
-                        <img alt={`${c}-front`} src={colorImages[c].front.secure_url || colorImages[c].front.url} style={{ marginTop: 8, width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 6 }} />
-                      )}
+            {form.colors.length > 0 && (
+              <Card className="p-6 bg-white shadow-sm border-slate-200">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-blue-600 rounded-full"></span>
+                  Images par couleur
+                </h2>
+                <div className="space-y-6">
+                  {form.colors.map(c => (
+                    <div key={c} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <h3 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-current" style={{ color: c === 'Blanc' ? '#e2e8f0' : c === 'Noir' ? '#0f172a' : c.toLowerCase() }}></span>
+                        {c}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUploadBox 
+                          label={`Avant (${c})`}
+                          image={colorImages[c]?.front} 
+                          onChange={(e) => handleColorImageChange(c, 'front', e.target.files?.[0])}
+                          id={`color-${c}-front`}
+                        />
+                        <ImageUploadBox 
+                          label={`Arrière (${c})`}
+                          image={colorImages[c]?.back} 
+                          onChange={(e) => handleColorImageChange(c, 'back', e.target.files?.[0])}
+                          id={`color-${c}-back`}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label>Arrière
-                        <input type="file" accept="image/*" onChange={(e) => handleColorImageChange(c, 'back', e.target.files?.[0])} />
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-8">
+            <Card className="p-6 bg-white shadow-sm border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Organisation</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Catégorie</Label>
+                  <Select 
+                    value={form.category} 
+                    onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}
+                  >
+                    {CATEGORIES.map(c => (
+                      <option key={c.slug} value={c.slug}>{c.name}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Genre</Label>
+                  <Select 
+                    value={form.gender} 
+                    onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}
+                  >
+                    {GENDERS.map(g => (
+                      <option key={g.value} value={g.value}>{g.label}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Statut</Label>
+                  <Select 
+                    value={form.status} 
+                    onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="draft">Brouillon</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                  </Select>
+                </div>
+                <div className="pt-2">
+                  <Checkbox 
+                    label="Produit mis en avant" 
+                    checked={form.featured} 
+                    onChange={(e) => setForm(prev => ({ ...prev, featured: e.target.checked }))}
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white shadow-sm border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Prix et Stock</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="priceBase">Prix de base (€) <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="priceBase"
+                    type="number" 
+                    step="0.01" 
+                    value={form.priceBase} 
+                    onChange={(e) => setForm(prev => ({ ...prev, priceBase: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock global</Label>
+                  <Input 
+                    id="stock"
+                    type="number" 
+                    value={form.stock} 
+                    onChange={(e) => setForm(prev => ({ ...prev, stock: e.target.value }))}
+                    placeholder="Illimité si vide"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white shadow-sm border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Variantes</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">Tailles disponibles</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SIZE_OPTIONS.map(s => (
+                      <label 
+                        key={s} 
+                        className={`
+                          cursor-pointer px-3 py-1.5 rounded text-sm font-medium border transition-colors
+                          ${form.sizes.includes(s) 
+                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}
+                        `}
+                      >
+                        <input 
+                          type="checkbox" 
+                          className="hidden" 
+                          checked={form.sizes.includes(s)} 
+                          onChange={() => toggleSize(s)} 
+                        />
+                        {s}
                       </label>
-                      {colorImages[c]?.back && (
-                        <img alt={`${c}-back`} src={colorImages[c].back.secure_url || colorImages[c].back.url} style={{ marginTop: 8, width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 6 }} />
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        <div className="full" style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Résumé</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-            <div><strong>Genre:</strong> {GENDERS.find(g => g.value === form.gender)?.label}</div>
-            <div><strong>Couleurs:</strong> {form.colors.length ? form.colors.join(', ') : '—'}</div>
-            <div><strong>Tailles:</strong> {form.sizes.length ? form.sizes.join(', ') : '—'}</div>
+                <div>
+                  <Label className="mb-2 block">Couleurs disponibles</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ALLOWED_COLORS.map(c => (
+                      <label 
+                        key={c} 
+                        className={`
+                          cursor-pointer pl-2 pr-3 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-2
+                          ${form.colors.includes(c) 
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}
+                        `}
+                      >
+                        <input 
+                          type="checkbox" 
+                          className="hidden" 
+                          checked={form.colors.includes(c)} 
+                          onChange={() => toggleColor(c)} 
+                        />
+                        <span className={`w-3 h-3 rounded-full border border-white/20`} style={{ backgroundColor: c === 'Blanc' ? '#fff' : c === 'Noir' ? '#000' : c === 'Marron' ? '#8B4513' : c === 'Rose' ? '#FFC0CB' : c === 'Jaune' ? '#FFD700' : c === 'Vert' ? '#008000' : c === 'Mauve' ? '#800080' : c === 'Gris' ? '#808080' : c.toLowerCase() }}></span>
+                        {c}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
-        </div>
-
-        <div className="full" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button type="submit" className="btn-primary" disabled={creating || uploading}>
-            <FiUpload /> {creating ? 'Création…' : 'Créer le produit'}
-          </button>
-          {uploading && <span>Upload en cours…</span>}
         </div>
       </form>
     </div>
