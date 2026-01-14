@@ -617,11 +617,9 @@
   font-weight: 500;
 }
 
-@media (max-width: 1024px) {
-  .customize-content { grid-template-columns: 1fr; }
-  
-  .gallery-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (max-width: 640px) {
+  .pricing-table {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
