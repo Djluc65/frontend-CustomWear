@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/cn';
 import { Input } from '../components/ui/input';
@@ -6,7 +8,7 @@ import { Label } from '../components/ui/label';
 import { Alert } from '../components/ui/alert';
 import { Checkbox } from '../components/ui/checkbox';
 import { Select } from '../components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { useLocation, NavLink, useNavigate } from 'react-router-dom';
 import { modelsAPI, productsAPI, customizationPricingAPI, customizationsAPI } from '../services/api';
 import { sortSizes } from '../utils/sizes';
@@ -35,6 +37,49 @@ const getColorHex = (name) => {
   return COLOR_NAME_TO_HEX[key] || name;
 };
 
+// Helper pour convertir couleur en objet {r,g,b,a}
+const parseColor = (colorStr) => {
+  if (!colorStr) return { r: 0, g: 0, b: 0, a: 1 };
+  if (colorStr === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+  
+  // Hex #RRGGBB
+  if (colorStr.startsWith('#')) {
+    const hex = colorStr.slice(1);
+    if (hex.length === 6) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+        a: 1
+      };
+    }
+  }
+  
+  // rgb/rgba
+  if (colorStr.startsWith('rgb')) {
+    const match = colorStr.match(/[\d.]+/g);
+    if (match) {
+      return {
+        r: parseInt(match[0] || 0),
+        g: parseInt(match[1] || 0),
+        b: parseInt(match[2] || 0),
+        a: match[3] !== undefined ? parseFloat(match[3]) : 1
+      };
+    }
+  }
+  
+  return { r: 0, g: 0, b: 0, a: 1 };
+};
+
+const toRgbaString = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
+const toHexString = ({ r, g, b }) => {
+  const toHex = (c) => {
+    const hex = Math.max(0, Math.min(255, Math.round(c))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
 // Utilitaire pour lire les query params
 function useQuery() {
   const { search } = useLocation();
@@ -55,12 +100,71 @@ const DEFAULT_MODEL_PLACEHOLDER = {
   },
 };
 
+// Helper pour le crop
+function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
+  return centerCrop(
+    makeAspectCrop(
+      {
+        unit: '%',
+        width: 90,
+      },
+      aspect,
+      mediaWidth,
+      mediaHeight,
+    ),
+    mediaWidth,
+    mediaHeight,
+  );
+}
+
+async function canvasPreview(image, canvas, crop) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  const pixelRatio = window.devicePixelRatio;
+
+  canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+  canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+
+  ctx.scale(pixelRatio, pixelRatio);
+  ctx.imageSmoothingQuality = 'high';
+
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
+
+  const rotateRads = 0;
+  const centerX = image.naturalWidth / 2;
+  const centerY = image.naturalHeight / 2;
+
+  ctx.save();
+  ctx.translate(-cropX, -cropY);
+  ctx.translate(centerX, centerY);
+  // ctx.rotate(rotateRads);
+  ctx.translate(-centerX, -centerY);
+  ctx.drawImage(
+    image,
+    0,
+    0,
+    image.naturalWidth,
+    image.naturalHeight,
+    0,
+    0,
+    image.naturalWidth,
+    image.naturalHeight,
+  );
+  ctx.restore();
+}
+
 
 
 const Customize = () => {
   const query = useQuery();
   const productId = query.get('product');
-  const variantId = query.get('variant');
+  // const variantId = query.get('variant');
 
   const [models, setModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_PLACEHOLDER);
@@ -80,8 +184,8 @@ const Customize = () => {
       // Déterminer la sélection côté client
       const textFront = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'front' && (t?.visible ?? true));
       const textBack = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'back' && (t?.visible ?? true));
-      const imageFront = Boolean(uploadedImageUrl && imageVisible && imageSide === 'front');
-      const imageBack = Boolean(uploadedImageUrl && imageVisible && imageSide === 'back');
+      const imageFront = Array.isArray(imageLayers) && imageLayers.some(i => i?.side === 'front' && (i?.visible ?? true));
+      const imageBack = Array.isArray(imageLayers) && imageLayers.some(i => i?.side === 'back' && (i?.visible ?? true));
       const baseModelPrice = Number(selectedModel?.basePrice) || Number(DEFAULT_MODEL_PLACEHOLDER.basePrice);
 
       // Calcul serveur (source de vérité)
@@ -103,6 +207,9 @@ const Customize = () => {
         null
       );
 
+      // Pour la compatibilité héritée, on prend la première image visible du côté affiché
+      const primaryImage = imageLayers.find(img => (showBack ? img.side === 'back' : img.side === 'front') && (img.visible ?? true)) || imageLayers[0];
+
       const payload = {
         productId: selectedModel?._id,
         quantity: 1,
@@ -116,10 +223,11 @@ const Customize = () => {
             image: { front: imageFront, back: imageBack },
           },
           textLayers,
-          image: {
-            url: uploadedImageUrl || null,
-            side: imageSide || (showBack ? 'back' : 'front'),
-            visible: Boolean(imageVisible),
+          imageLayers, // Full layer support
+          image: { // Legacy single image support
+            url: primaryImage?.url || null,
+            side: primaryImage?.side || (showBack ? 'back' : 'front'),
+            visible: !!primaryImage,
           },
           totals: serverTotals || computedTotals || { baseModelPrice, customizationPrice: 0, grandTotal: baseModelPrice },
           technique: selectedTechnique,
@@ -138,21 +246,27 @@ const Customize = () => {
       }
       dispatch(addToCart(payload));
       toast.success('Personnalisation ajoutée au panier !');
+      return true;
     } catch (err) {
       console.error('[Customize] handleAddToCartCustomized error', err);
       toast.error('Une erreur est survenue lors de l’ajout au panier');
+      return false;
     }
   };
 
-  const handleCheckoutCustomized = () => {
-    handleAddToCartCustomized();
-    navigate('/checkout');
+  const handleCheckoutCustomized = async () => {
+    const success = await handleAddToCartCustomized();
+    if (success) {
+      navigate('/checkout');
+    }
   };
   const [productLoading, setProductLoading] = useState(false);
   const [productError, setProductError] = useState(null);
 
-  // Image importée par le client
-  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  // Image Layers (remplace l'état d'image unique)
+  const [imageLayers, setImageLayers] = useState([]);
+  const [selectedImageId, setSelectedImageId] = useState(null);
+
   const [panelOpen, setPanelOpen] = useState({
     produit: false,
     image: false,
@@ -183,17 +297,7 @@ const Customize = () => {
     }
     setPanelOpen(prev => ({ ...prev, [key]: true }));
   };
-  const [imageXPercent, setImageXPercent] = useState(50);
-  const [imageYPercent, setImageYPercent] = useState(50);
-  const [imageScale, setImageScale] = useState(1);
-  const [imageRotation, setImageRotation] = useState(0);
-  // Nouveaux états pour les améliorations d'image
-  const [imageVisible, setImageVisible] = useState(true);
-  const [imageLocked, setImageLocked] = useState(false);
-  const [imageOpacity, setImageOpacity] = useState(1);
-  const [imageFlipX, setImageFlipX] = useState(false);
-  const [imageZIndex, setImageZIndex] = useState(2);
-  const [imageSide, setImageSide] = useState('front');
+  // Controls UI state
   // Bascule d'affichage des contrôles Image
   const [imageSizeOpen, setImageSizeOpen] = useState(false);
   const [imageRotationOpen, setImageRotationOpen] = useState(false);
@@ -234,6 +338,14 @@ const Customize = () => {
   const [includeGuides, setIncludeGuides] = useState(false);
   const [serverLoadId, setServerLoadId] = useState('');
 
+  const [activeTextInspectorTab, setActiveTextInspectorTab] = useState('content');
+
+  useEffect(() => {
+    if (selectedTextId) {
+      setActiveTextInspectorTab('content');
+    }
+  }, [selectedTextId]);
+
   const pushHistory = (label) => {
     setHistory(prev => [...prev, JSON.stringify(textLayers)]);
     setHistoryActions(prev => [...prev, label]);
@@ -264,6 +376,9 @@ const Customize = () => {
 
   useEffect(() => {
     const onKey = (e) => {
+      // Ignore if input/textarea focused
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
@@ -271,10 +386,62 @@ const Customize = () => {
         e.preventDefault();
         redo();
       }
+
+      // Arrow keys movement
+      const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+      if (isArrow) {
+        e.preventDefault();
+        const step = e.shiftKey ? 5 : 0.5; // Shift for faster movement
+        
+        if (selectedImageId) {
+          const img = imageLayers.find(i => i.id === selectedImageId);
+          if (img && !img.locked) {
+            let { xPercent, yPercent } = img;
+            if (e.key === 'ArrowLeft') xPercent -= step;
+            if (e.key === 'ArrowRight') xPercent += step;
+            if (e.key === 'ArrowUp') yPercent -= step;
+            if (e.key === 'ArrowDown') yPercent += step;
+            // Clamp
+            xPercent = Math.max(-20, Math.min(120, xPercent));
+            yPercent = Math.max(-20, Math.min(120, yPercent));
+            updateImageLayer(selectedImageId, { xPercent, yPercent });
+          }
+        } else if (selectedTextId) {
+          const t = textLayers.find(x => x.id === selectedTextId);
+          if (t && !t.locked) {
+            let { xPercent, yPercent } = t;
+            if (e.key === 'ArrowLeft') xPercent -= step;
+            if (e.key === 'ArrowRight') xPercent += step;
+            if (e.key === 'ArrowUp') yPercent -= step;
+            if (e.key === 'ArrowDown') yPercent += step;
+            // Clamp
+            xPercent = Math.max(0, Math.min(100, xPercent));
+            yPercent = Math.max(0, Math.min(100, yPercent));
+            updateTextLayer(selectedTextId, { xPercent, yPercent }, 'Déplacer au clavier');
+          }
+        }
+      }
+
+      // Delete key
+      if ((e.key === 'Delete' || e.key === 'Backspace')) {
+        if (selectedImageId) {
+             const img = imageLayers.find(i => i.id === selectedImageId);
+             if (img && !img.locked) {
+                 e.preventDefault();
+                 deleteImageLayer(selectedImageId);
+             }
+        } else if (selectedTextId) {
+             const t = textLayers.find(x => x.id === selectedTextId);
+             if (t && !t.locked) {
+                 e.preventDefault();
+                 deleteTextLayer(selectedTextId);
+             }
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [textLayers]);
+  }, [textLayers, imageLayers, selectedImageId, selectedTextId]);
 
   const createTextLayer = (overrides = {}) => ({
     id: `text-${Date.now()}`,
@@ -304,6 +471,9 @@ const Customize = () => {
     shadowY: 0,
     shadowBlur: 0,
     shadowColor: 'rgba(0,0,0,0.3)',
+    strokeEnabled: false,
+    strokeColor: '#000000',
+    strokeWidth: 1,
     opacity: 1,
     locked: false,
     visible: true,
@@ -416,6 +586,39 @@ const Customize = () => {
     updateTextLayer(id, { rotation: angle }, 'Rotation prédéfinie');
   };
 
+  // --- Image Layers Helpers ---
+  const createImageLayer = (url, overrides = {}) => ({
+    id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    url,
+    xPercent: 50,
+    yPercent: 50,
+    rotation: 0,
+    scale: 1,
+    opacity: 1,
+    locked: false,
+    visible: true,
+    flipX: false,
+    zIndex: 2,
+    side: 'front',
+    ...overrides,
+  });
+
+  const addImageLayer = (url, overrides = {}) => {
+    const nextIndex = imageLayers.length + 2; 
+    const next = createImageLayer(url, { side: showBack ? 'back' : 'front', zIndex: nextIndex, ...overrides });
+    setImageLayers(prev => [...prev, next]);
+    setSelectedImageId(next.id);
+  };
+
+  const updateImageLayer = (id, patch) => {
+    setImageLayers(prev => prev.map(img => img.id === id ? { ...img, ...patch } : img));
+  };
+
+  const deleteImageLayer = (id) => {
+    setImageLayers(prev => prev.filter(img => img.id !== id));
+    if (selectedImageId === id) setSelectedImageId(null);
+  };
+
   // CRUD des repères utilisateur
   const addGuideLine = (type) => {
     const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -437,17 +640,8 @@ const Customize = () => {
     rulerUnit,
     guideLines,
     textLayers,
-    uploadedImageUrl,
-    imageXPercent,
-    imageYPercent,
-    imageScale,
-    imageRotation,
-    imageVisible,
-    imageLocked,
-    imageOpacity,
-    imageFlipX,
-    imageZIndex,
-    imageSide,
+    imageLayers,
+    selectedImageId,
   });
 
   // Helpers pour sauvegarde serveur
@@ -490,7 +684,11 @@ const Customize = () => {
   const buildServerPayload = async () => {
     const side = showBack ? 'back' : 'front';
     const primaryText = extractPrimaryTextConfig(side);
-    const dataUrl = await imageUrlToDataUrl(uploadedImageUrl || null, 1024);
+    
+    // Use first visible image on current side as primary for legacy structure
+    const primaryImage = imageLayers.find(img => img.side === side && (img.visible ?? true));
+    const dataUrl = primaryImage ? await imageUrlToDataUrl(primaryImage.url, 1024) : null;
+
     const productColorHex = getColorHex(selectedColor) || '#ffffff';
     return {
       productId: selectedModel?._id,
@@ -499,11 +697,14 @@ const Customize = () => {
       text: primaryText || undefined,
       image: {
         dataUrl: dataUrl || undefined,
-        size: Number((imageScale || 1) * 100),
-        rotation: Number(imageRotation || 0),
-        position: { x: Number(imageXPercent || 50), y: Number(imageYPercent || 50) },
-        side: imageSide || side,
+        size: Number((primaryImage?.scale || 1) * 100),
+        rotation: Number(primaryImage?.rotation || 0),
+        position: { x: Number(primaryImage?.xPercent || 50), y: Number(primaryImage?.yPercent || 50) },
+        side: primaryImage?.side || side,
       },
+      // New fields for full state
+      textLayers,
+      imageLayers,
       background: undefined,
     };
   };
@@ -571,12 +772,14 @@ const Customize = () => {
         setShowBack((text.side || 'front') === 'back');
       }
       if (image) {
-        setUploadedImageUrl(image.dataUrl || uploadedImageUrl);
-        setImageScale(Number((image.size || 100) / 100));
-        setImageRotation(Number(image.rotation || 0));
-        setImageXPercent(Number(image.position?.x || 50));
-        setImageYPercent(Number(image.position?.y || 50));
-        setImageSide(image.side || (showBack ? 'back' : 'front'));
+        const newImage = createImageLayer(image.dataUrl, {
+            scale: Number((image.size || 100) / 100),
+            rotation: Number(image.rotation || 0),
+            xPercent: Number(image.position?.x || 50),
+            yPercent: Number(image.position?.y || 50),
+            side: image.side || (showBack ? 'back' : 'front'),
+        });
+        setImageLayers(prev => [...prev, newImage]);
         setShowBack((image.side || 'front') === 'back');
       }
       toast.success('Création chargée depuis le serveur.');
@@ -614,17 +817,28 @@ const Customize = () => {
       if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
       if (data.rulerUnit) setRulerUnit(data.rulerUnit);
       if (data.selectedColor) setSelectedColor(data.selectedColor);
-      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
-      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
-      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
-      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
-      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
-      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
-      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
-      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
-      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
-      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
-      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      if (Array.isArray(data.imageLayers)) {
+        setImageLayers(data.imageLayers);
+        setSelectedImageId(data.selectedImageId || null);
+      } else if (typeof data.uploadedImageUrl === 'string') {
+        const newImage = createImageLayer(data.uploadedImageUrl, {
+            xPercent: data.imageXPercent ?? 50,
+            yPercent: data.imageYPercent ?? 50,
+            scale: data.imageScale ?? 1,
+            rotation: data.imageRotation ?? 0,
+            visible: data.imageVisible ?? true,
+            locked: data.imageLocked ?? false,
+            opacity: data.imageOpacity ?? 1,
+            flipX: data.imageFlipX ?? false,
+            zIndex: data.imageZIndex ?? 2,
+            side: data.imageSide ?? 'front'
+        });
+        setImageLayers([newImage]);
+        setSelectedImageId(newImage.id);
+      } else {
+        setImageLayers([]);
+        setSelectedImageId(null);
+      }
       setSelectedTextId(null);
       setEditingTextId(null);
       toast.success('Création chargée.');
@@ -640,17 +854,31 @@ const Customize = () => {
       if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
       if (data.rulerUnit) setRulerUnit(data.rulerUnit);
       if (data.selectedColor) setSelectedColor(data.selectedColor);
-      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
-      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
-      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
-      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
-      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
-      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
-      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
-      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
-      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
-      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
-      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      
+      if (Array.isArray(data.imageLayers)) {
+        setImageLayers(data.imageLayers);
+        setSelectedImageId(data.selectedImageId || null);
+      } else if (typeof data.uploadedImageUrl === 'string' && data.uploadedImageUrl) {
+        // Legacy support
+        const newImage = createImageLayer(data.uploadedImageUrl, {
+            xPercent: data.imageXPercent ?? 50,
+            yPercent: data.imageYPercent ?? 50,
+            scale: data.imageScale ?? 1,
+            rotation: data.imageRotation ?? 0,
+            visible: data.imageVisible ?? true,
+            locked: data.imageLocked ?? false,
+            opacity: data.imageOpacity ?? 1,
+            flipX: data.imageFlipX ?? false,
+            zIndex: data.imageZIndex ?? 2,
+            side: data.imageSide ?? 'front'
+        });
+        setImageLayers([newImage]);
+        setSelectedImageId(newImage.id);
+      } else {
+        setImageLayers([]);
+        setSelectedImageId(null);
+      }
+
       setSelectedTextId(null);
       setEditingTextId(null);
       toast.success(`Sauvegarde "${found.name}" chargée.`);
@@ -688,6 +916,7 @@ const Customize = () => {
     } catch(e) { console.error('Share link error', e); toast.error('Erreur lors de la génération du lien.'); }
   };
   useEffect(() => {
+    // Auto-save customization to local storage
     try { localStorage.setItem('cw_auto_customization', JSON.stringify(serializeCustomization())); } catch(e) {}
     setHasAutoDraft(true);
   }, [
@@ -696,17 +925,8 @@ const Customize = () => {
     rulerUnit,
     selectedColor,
     showBack,
-    uploadedImageUrl,
-    imageXPercent,
-    imageYPercent,
-    imageScale,
-    imageRotation,
-    imageVisible,
-    imageLocked,
-    imageOpacity,
-    imageFlipX,
-    imageZIndex,
-    imageSide,
+    imageLayers,
+    selectedImageId,
   ]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -719,17 +939,29 @@ const Customize = () => {
         if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
         if (data.rulerUnit) setRulerUnit(data.rulerUnit);
         if (data.selectedColor) setSelectedColor(data.selectedColor);
-        if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
-        if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
-        if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
-        if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
-        if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
-        if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
-        if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
-        if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
-        if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
-        if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
-        if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+        
+        if (Array.isArray(data.imageLayers)) {
+          setImageLayers(data.imageLayers);
+          setSelectedImageId(data.selectedImageId || null);
+        } else if (typeof data.uploadedImageUrl === 'string') {
+          const newImage = createImageLayer(data.uploadedImageUrl, {
+              xPercent: data.imageXPercent ?? 50,
+              yPercent: data.imageYPercent ?? 50,
+              scale: data.imageScale ?? 1,
+              rotation: data.imageRotation ?? 0,
+              visible: data.imageVisible ?? true,
+              locked: data.imageLocked ?? false,
+              opacity: data.imageOpacity ?? 1,
+              flipX: data.imageFlipX ?? false,
+              zIndex: data.imageZIndex ?? 2,
+              side: data.imageSide ?? 'front'
+          });
+          setImageLayers([newImage]);
+          setSelectedImageId(newImage.id);
+        } else {
+          setImageLayers([]);
+          setSelectedImageId(null);
+        }
       } catch(e) { console.error('Share decode error', e); }
     }
   }, []);
@@ -755,9 +987,12 @@ const Customize = () => {
 
       // Construire les calques visibles (image + textes), triés par z-index
       const layers = [];
-      if (uploadedImageUrl && (showBack ? imageSide === 'back' : imageSide === 'front') && imageVisible) {
-        layers.push({ type: 'image', zIndex: imageZIndex });
+      
+      const visibleImages = imageLayers.filter(img => (showBack ? img.side === 'back' : img.side === 'front') && (img.visible ?? true));
+      for (const img of visibleImages) {
+        layers.push({ type: 'image', zIndex: img.zIndex ?? 2, data: img });
       }
+
       const visibleTexts = textLayers.filter(t => (showBack ? t.side==='back' : t.side==='front') && (t.visible ?? true));
       for (const t of visibleTexts) {
         layers.push({ type: 'text', zIndex: t.zIndex || 3, data: t });
@@ -766,15 +1001,16 @@ const Customize = () => {
 
       for (const layer of layers) {
         if (layer.type === 'image') {
-          const upImg = await loadImg(uploadedImageUrl);
+          const imgData = layer.data;
+          const upImg = await loadImg(imgData.url);
           const w = size * 0.5;
           const h = upImg.height * (w / upImg.width);
-          const x = (imageXPercent/100)*size; const y = (imageYPercent/100)*size;
+          const x = (imgData.xPercent/100)*size; const y = (imgData.yPercent/100)*size;
           ctx.save();
           ctx.translate(x, y);
-          ctx.rotate((imageRotation||0) * Math.PI/180);
-          ctx.scale((imageFlipX ? -1 : 1) * (imageScale||1), imageScale||1);
-          ctx.globalAlpha = imageOpacity ?? 1;
+          ctx.rotate((imgData.rotation||0) * Math.PI/180);
+          ctx.scale((imgData.flipX ? -1 : 1) * (imgData.scale||1), imgData.scale||1);
+          ctx.globalAlpha = imgData.opacity ?? 1;
           ctx.drawImage(upImg, -w/2, -h/2, w, h);
           ctx.restore();
         } else if (layer.type === 'text') {
@@ -802,8 +1038,28 @@ const Customize = () => {
             ctx.strokeStyle = t.borderColor || '#000';
             ctx.lineWidth = t.borderWidth || 1;
             const pad = t.padding || 4;
+            
+            ctx.save();
+            if (t.borderStyle === 'dashed') {
+              ctx.setLineDash([8, 6]);
+            } else if (t.borderStyle === 'double') {
+              // Simple double border simulation by drawing twice if width > 2
+              // But standard strokeRect doesn't support double. 
+              // We'll just ignore double for now or treat as solid, or maybe dashed is enough.
+              // Let's just stick to dashed/solid support for now to keep it simple and robust.
+            }
             ctx.strokeRect(-metricsW/2 - pad, -metricsH/2 - pad, metricsW + pad*2, metricsH + pad*2);
+            ctx.restore();
           }
+
+          if (t.strokeEnabled) {
+            ctx.lineWidth = t.strokeWidth || 1;
+            ctx.strokeStyle = t.strokeColor || '#000000';
+            ctx.lineJoin = 'round';
+            ctx.miterLimit = 2;
+            ctx.strokeText(text, 0, 0);
+          }
+
           ctx.fillStyle = t.color || '#111827';
           ctx.fillText(text, 0, 0);
           ctx.restore();
@@ -862,17 +1118,30 @@ const Customize = () => {
       if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
       if (data.rulerUnit) setRulerUnit(data.rulerUnit);
       if (data.selectedColor) setSelectedColor(data.selectedColor);
-      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
-      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
-      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
-      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
-      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
-      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
-      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
-      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
-      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
-      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
-      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      
+      if (Array.isArray(data.imageLayers)) {
+        setImageLayers(data.imageLayers);
+        setSelectedImageId(data.selectedImageId || null);
+      } else if (typeof data.uploadedImageUrl === 'string') {
+        const newImage = createImageLayer(data.uploadedImageUrl, {
+            xPercent: data.imageXPercent ?? 50,
+            yPercent: data.imageYPercent ?? 50,
+            scale: data.imageScale ?? 1,
+            rotation: data.imageRotation ?? 0,
+            visible: data.imageVisible ?? true,
+            locked: data.imageLocked ?? false,
+            opacity: data.imageOpacity ?? 1,
+            flipX: data.imageFlipX ?? false,
+            zIndex: data.imageZIndex ?? 2,
+            side: data.imageSide ?? 'front'
+        });
+        setImageLayers([newImage]);
+        setSelectedImageId(newImage.id);
+      } else {
+        setImageLayers([]);
+        setSelectedImageId(null);
+      }
+
       setSelectedTextId(null);
       setEditingTextId(null);
       toast.success('Création importée.');
@@ -888,17 +1157,30 @@ const Customize = () => {
       if (typeof data.showBack === 'boolean') setShowBack(data.showBack);
       if (data.rulerUnit) setRulerUnit(data.rulerUnit);
       if (data.selectedColor) setSelectedColor(data.selectedColor);
-      if (typeof data.uploadedImageUrl === 'string') setUploadedImageUrl(data.uploadedImageUrl);
-      if (typeof data.imageXPercent === 'number') setImageXPercent(data.imageXPercent);
-      if (typeof data.imageYPercent === 'number') setImageYPercent(data.imageYPercent);
-      if (typeof data.imageScale === 'number') setImageScale(data.imageScale);
-      if (typeof data.imageRotation === 'number') setImageRotation(data.imageRotation);
-      if (typeof data.imageVisible === 'boolean') setImageVisible(data.imageVisible);
-      if (typeof data.imageLocked === 'boolean') setImageLocked(data.imageLocked);
-      if (typeof data.imageOpacity === 'number') setImageOpacity(data.imageOpacity);
-      if (typeof data.imageFlipX === 'boolean') setImageFlipX(data.imageFlipX);
-      if (typeof data.imageZIndex === 'number') setImageZIndex(data.imageZIndex);
-      if (typeof data.imageSide === 'string') setImageSide(data.imageSide);
+      
+      if (Array.isArray(data.imageLayers)) {
+        setImageLayers(data.imageLayers);
+        setSelectedImageId(data.selectedImageId || null);
+      } else if (typeof data.uploadedImageUrl === 'string') {
+        const newImage = createImageLayer(data.uploadedImageUrl, {
+            xPercent: data.imageXPercent ?? 50,
+            yPercent: data.imageYPercent ?? 50,
+            scale: data.imageScale ?? 1,
+            rotation: data.imageRotation ?? 0,
+            visible: data.imageVisible ?? true,
+            locked: data.imageLocked ?? false,
+            opacity: data.imageOpacity ?? 1,
+            flipX: data.imageFlipX ?? false,
+            zIndex: data.imageZIndex ?? 2,
+            side: data.imageSide ?? 'front'
+        });
+        setImageLayers([newImage]);
+        setSelectedImageId(newImage.id);
+      } else {
+        setImageLayers([]);
+        setSelectedImageId(null);
+      }
+
       setSelectedTextId(null);
       setEditingTextId(null);
       toast.success('Brouillon repris.');
@@ -994,21 +1276,36 @@ const Customize = () => {
 
   // Déplacement et alignement à droite de l'image importée
   const nudgeImageRight = () => {
-    setImageXPercent(prev => Math.min(prev + 5, 98));
+    if (selectedImageId) {
+        const img = imageLayers.find(i => i.id === selectedImageId);
+        if (img) {
+            updateImageLayer(selectedImageId, { xPercent: Math.min((img.xPercent || 50) + 5, 98) });
+        }
+    }
   };
 
   const alignImageRight = () => {
-    setImageXPercent(92);
+    if (selectedImageId) {
+        updateImageLayer(selectedImageId, { xPercent: 92 });
+    }
   };
 
-  // Révoquer l'URL blob au changement et au démontage
+  // Révoquer l'URL blob uniquement au démontage pour éviter de casser les images lors des mises à jour d'état
+  const imageLayersRef = useRef(imageLayers);
+  imageLayersRef.current = imageLayers;
+
   useEffect(() => {
     return () => {
-      if (uploadedImageUrl && uploadedImageUrl.startsWith('blob:')) {
-        try { URL.revokeObjectURL(uploadedImageUrl); } catch (e) {}
+      // Nettoyage final lors du démontage du composant
+      if (Array.isArray(imageLayersRef.current)) {
+        imageLayersRef.current.forEach(img => {
+          if (img.url && img.url.startsWith('blob:')) {
+              try { URL.revokeObjectURL(img.url); } catch (e) {}
+          }
+        });
       }
     };
-  }, [uploadedImageUrl]);
+  }, []);
 
   // Précharger les images avant/arrière du modèle pour éviter scintillements
   useEffect(() => {
@@ -1057,23 +1354,29 @@ const Customize = () => {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (uploadedImageUrl && uploadedImageUrl.startsWith('blob:')) {
-      try { URL.revokeObjectURL(uploadedImageUrl); } catch (err) {}
-    }
     const url = URL.createObjectURL(file);
-    setUploadedImageUrl(url);
+    
+    // Get aspect ratio
+    const img = new Image();
+    img.onload = () => {
+        const aspect = img.width / img.height;
+        addImageLayer(url, { aspect });
+    };
+    img.src = url;
   };
 
   // Supprimer le fond de l'image uploadée (client-side)
   const [bgRemoving, setBgRemoving] = useState(false);
   const handleRemoveBackground = async () => {
-    if (!uploadedImageUrl) {
-      toast.error("Veuillez uploader une image d’abord.");
+    const selectedImage = imageLayers.find(img => img.id === selectedImageId);
+    if (!selectedImage) {
+      toast.error("Veuillez sélectionner une image d’abord.");
       return;
     }
+    const currentUrl = selectedImage.url;
     try {
       setBgRemoving(true);
-      const blob = await fetch(uploadedImageUrl).then(r => r.blob());
+      const blob = await fetch(currentUrl).then(r => r.blob());
       if (blob && blob.type === 'image/svg+xml') {
         toast.error('La suppression de fond ne supporte pas les images SVG.');
         setBgRemoving(false);
@@ -1082,16 +1385,80 @@ const Customize = () => {
       const { removeBackground } = await import('@imgly/background-removal');
       const resultBlob = await removeBackground(blob, { model: 'medium' });
       const nextUrl = URL.createObjectURL(resultBlob);
-      if (uploadedImageUrl.startsWith('blob:')) {
-        try { URL.revokeObjectURL(uploadedImageUrl); } catch (e) {}
+      
+      if (currentUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(currentUrl); } catch (e) {}
       }
-      setUploadedImageUrl(nextUrl);
+      updateImageLayer(selectedImageId, { url: nextUrl });
       toast.success('Fond supprimé avec succès !');
     } catch (err) {
       console.error('[Customize] removeBackground error', err);
-      toast.error('Échec de la suppression du fond. Réessayez avec une image différente.');
+      toast.error('Échec de la suppression du fond.');
     } finally {
       setBgRemoving(false);
+    }
+  };
+
+  // --- Crop Logic ---
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState();
+  const imgRef = useRef(null);
+
+  const startCrop = () => {
+    const img = imageLayers.find(i => i.id === selectedImageId);
+    if (img) {
+      setImageToCrop(img.url);
+      setCropModalOpen(true);
+    }
+  };
+
+  function onImageLoad(e) {
+    const { width, height } = e.currentTarget;
+    setCrop(centerAspectCrop(width, height, undefined));
+  }
+
+  const applyCrop = async () => {
+    if (!completedCrop || !imgRef.current) return;
+    try {
+        const image = imgRef.current;
+        const scaleX = image.naturalWidth / image.width;
+        const scaleY = image.naturalHeight / image.height;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = completedCrop.width * scaleX;
+        offscreen.height = completedCrop.height * scaleY;
+        const ctx = offscreen.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(
+            image,
+            completedCrop.x * scaleX,
+            completedCrop.y * scaleY,
+            completedCrop.width * scaleX,
+            completedCrop.height * scaleY,
+            0,
+            0,
+            offscreen.width,
+            offscreen.height,
+        );
+        
+        const blob = await new Promise(resolve => offscreen.toBlob(resolve, 'image/png'));
+        const newUrl = URL.createObjectURL(blob);
+        
+        // Revoke old if blob
+        const oldUrl = imageLayers.find(i => i.id === selectedImageId)?.url;
+        if (oldUrl && oldUrl.startsWith('blob:') && oldUrl !== imageToCrop) {
+             try { URL.revokeObjectURL(oldUrl); } catch(e) {}
+        }
+        
+        updateImageLayer(selectedImageId, { url: newUrl });
+        setCropModalOpen(false);
+        setImageToCrop(null);
+        toast.success('Image recadrée');
+    } catch(e) {
+        console.error(e);
+        toast.error('Erreur lors du recadrage');
     }
   };
 
@@ -1271,103 +1638,177 @@ const Customize = () => {
                   <>
                     <input type="file" accept="image/*,.svg" onChange={handleFileUpload} />
                     <div className="quick-actions" style={{ marginTop: 8 }}>
-                      <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
-                      <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
-                      <button className="chip" disabled={!uploadedImageUrl || bgRemoving} onClick={handleRemoveBackground}>
+                      <button className="chip" onClick={nudgeImageRight} disabled={!selectedImageId}>Déplacer à droite</button>
+                      <button className="chip" onClick={alignImageRight} disabled={!selectedImageId}>Aligner à droite</button>
+                      <button className="chip" disabled={!selectedImageId || bgRemoving} onClick={handleRemoveBackground}>
                         {bgRemoving ? 'Suppression du fond…' : 'Supprimer le fond'}
                       </button>
+                      <button className="chip" onClick={() => {
+                        if (selectedImageId) deleteImageLayer(selectedImageId);
+                      }} disabled={!selectedImageId}>Supprimer</button>
                     </div>
                   </>
-                )}
-              </div>
-              <div className="form-group">
-                <label
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setImageSizeOpen(o => !o)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageSizeOpen(o => !o); }}
-                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageSizeOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageSizeOpen ? '#ffffff' : undefined  }}
-                >Taille</label>
-                {imageSizeOpen && (
-                  <input type="range" min="0.2" max="3" step="0.05" value={imageScale} onChange={(e) => setImageScale(Number(e.target.value))} />
-                )}
-              </div>
-              <div className="form-group">
-                <label
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setImageRotationOpen(o => !o)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageRotationOpen(o => !o); }}
-                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageRotationOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageRotationOpen ? '#ffffff' : undefined }}
-                >Rotation</label>
-                {imageRotationOpen && (
-                  <input type="range" min="-180" max="180" step="1" value={imageRotation} onChange={(e) => setImageRotation(Number(e.target.value))} />
-                )}
-              </div>
-              {/* Nouveaux contrôles avancés */}
-              <div className="form-group">
-                <label
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setImageVisibilityOpen(o => !o)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageVisibilityOpen(o => !o); }}
-                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageVisibilityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageVisibilityOpen ? '#ffffff' : undefined  }}
-                >Visible</label>
-                {imageVisibilityOpen && (
-                  <div className="options-row">
-                    <label className="chip"><input type="checkbox" checked={imageVisible} onChange={() => setImageVisible(v => !v)} /> Visible</label>
-                    <button type="button" className={`chip ${imageLocked ? 'active' : ''}`} onClick={() => setImageLocked(v => !v)}>{imageLocked ? 'Déverrouiller' : 'Verrouiller'}</button>
-                    <button type="button" className="chip" onClick={() => setImageSide(s => s === 'front' ? 'back' : 'front')}>{imageSide === 'front' ? 'Envoyer à arrière' : 'Envoyer à avant'}</button>
-                  </div>
-                )}
-              </div>
-              <div className="form-group">
-                <label
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setImageOpacityOpen(o => !o)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageOpacityOpen(o => !o); }}
-                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageOpacityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageOpacityOpen ? '#ffffff' : undefined }}
-                >Opacité</label>
-                {imageOpacityOpen && (
-                  <input type="range" min="0" max="1" step="0.05" value={imageOpacity} onChange={(e) => setImageOpacity(Number(e.target.value))} />
                 )}
               </div>
               
-              <div className="form-group">
-                <label
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setImagePositionOpen(o => !o)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImagePositionOpen(o => !o); }}
-                  style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imagePositionOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imagePositionOpen ? '#ffffff' : undefined  }}
-                >Position</label>
-                {imagePositionOpen && (
-                  <>
-                    <div className="options-row">
-                      <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.max(5, p - 5))}>←</button>
-                      <button type="button" className="chip" onClick={() => setImageXPercent(p => Math.min(95, p + 5))}>→</button>
-                      <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.max(5, p - 5))}>↑</button>
-                      <button type="button" className="chip" onClick={() => setImageYPercent(p => Math.min(95, p + 5))}>↓</button>
-                      <button type="button" className="chip" onClick={() => { setImageXPercent(50); setImageYPercent(50); }}>Centrer</button>
-                    </div>
-                    <div className="form-group" style={{ marginTop: 8 }}>
+              {selectedImageId && imageLayers.find(i => i.id === selectedImageId) ? (
+                <>
+                  <div className="form-group">
+                    <label
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setImageSizeOpen(o => !o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageSizeOpen(o => !o); }}
+                      style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageSizeOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageSizeOpen ? '#ffffff' : undefined  }}
+                    >Taille</label>
+                    {imageSizeOpen && (
+                      <input 
+                        type="range" min="0.2" max="3" step="0.05" 
+                        value={imageLayers.find(i => i.id === selectedImageId).scale || 1} 
+                        onChange={(e) => updateImageLayer(selectedImageId, { scale: Number(e.target.value) })} 
+                      />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setImageRotationOpen(o => !o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageRotationOpen(o => !o); }}
+                      style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageRotationOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageRotationOpen ? '#ffffff' : undefined }}
+                    >Rotation</label>
+                    {imageRotationOpen && (
+                      <input 
+                        type="range" min="-180" max="180" step="1" 
+                        value={imageLayers.find(i => i.id === selectedImageId).rotation || 0} 
+                        onChange={(e) => updateImageLayer(selectedImageId, { rotation: Number(e.target.value) })} 
+                      />
+                    )}
+                  </div>
+                  {/* Nouveaux contrôles avancés */}
+                  <div className="form-group">
+                    <label
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setImageVisibilityOpen(o => !o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageVisibilityOpen(o => !o); }}
+                      style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageVisibilityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageVisibilityOpen ? '#ffffff' : undefined  }}
+                    >Options</label>
+                    {imageVisibilityOpen && (
                       <div className="options-row">
-                        <button type="button" className="chip" onClick={() => setImageFlipX(f => !f)}>{imageFlipX ? 'Annuler flip horizontal' : 'Flip horizontal'}</button>
-                        <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.max(1, z - 1))}>Arrière-plan</button>
-                        <button type="button" className="chip" onClick={() => setImageZIndex(z => Math.min(10, z + 1))}>Premier plan</button>
+                        <label className="chip">
+                          <input 
+                            type="checkbox" 
+                            checked={imageLayers.find(i => i.id === selectedImageId).visible ?? true} 
+                            onChange={() => updateImageLayer(selectedImageId, { visible: !(imageLayers.find(i => i.id === selectedImageId).visible ?? true) })} 
+                          /> Visible
+                        </label>
+                        <button 
+                          type="button" 
+                          className={`chip ${imageLayers.find(i => i.id === selectedImageId).locked ? 'active' : ''}`} 
+                          onClick={() => updateImageLayer(selectedImageId, { locked: !imageLayers.find(i => i.id === selectedImageId).locked })}
+                        >
+                          {imageLayers.find(i => i.id === selectedImageId).locked ? 'Déverrouiller' : 'Verrouiller'}
+                        </button>
+                        <button 
+                          type="button" 
+                          className="chip" 
+                          onClick={() => updateImageLayer(selectedImageId, { side: imageLayers.find(i => i.id === selectedImageId).side === 'front' ? 'back' : 'front' })}
+                        >
+                          {imageLayers.find(i => i.id === selectedImageId).side === 'front' ? 'Envoyer à arrière' : 'Envoyer à avant'}
+                        </button>
                       </div>
-                      <small style={{ color:'#6b7280' }}>z-index: {imageZIndex} • face: {imageSide}</small>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setImageOpacityOpen(o => !o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImageOpacityOpen(o => !o); }}
+                      style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imageOpacityOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imageOpacityOpen ? '#ffffff' : undefined }}
+                    >Opacité</label>
+                    {imageOpacityOpen && (
+                      <input 
+                        type="range" min="0" max="1" step="0.05" 
+                        value={imageLayers.find(i => i.id === selectedImageId).opacity ?? 1} 
+                        onChange={(e) => updateImageLayer(selectedImageId, { opacity: Number(e.target.value) })} 
+                      />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setImagePositionOpen(o => !o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setImagePositionOpen(o => !o); }}
+                      style={{ cursor: 'pointer', width: 'auto', border: '1px solid #3b82f6', padding: 8, borderRadius: 4 , backgroundColor: imagePositionOpen ? '#3b82f6' : 'rgba(232, 232, 232, 0.73)', color: imagePositionOpen ? '#ffffff' : undefined  }}
+                    >Position</label>
+                    {imagePositionOpen && (
+                      <>
+                        <div className="options-row">
+                          <button type="button" className="chip" onClick={() => {
+                            const img = imageLayers.find(i => i.id === selectedImageId);
+                            if (img) updateImageLayer(selectedImageId, { xPercent: Math.max(5, (img.xPercent || 50) - 5) });
+                          }}>←</button>
+                          <button type="button" className="chip" onClick={() => {
+                            const img = imageLayers.find(i => i.id === selectedImageId);
+                            if (img) updateImageLayer(selectedImageId, { xPercent: Math.min(95, (img.xPercent || 50) + 5) });
+                          }}>→</button>
+                          <button type="button" className="chip" onClick={() => {
+                            const img = imageLayers.find(i => i.id === selectedImageId);
+                            if (img) updateImageLayer(selectedImageId, { yPercent: Math.max(5, (img.yPercent || 50) - 5) });
+                          }}>↑</button>
+                          <button type="button" className="chip" onClick={() => {
+                            const img = imageLayers.find(i => i.id === selectedImageId);
+                            if (img) updateImageLayer(selectedImageId, { yPercent: Math.min(95, (img.yPercent || 50) + 5) });
+                          }}>↓</button>
+                          <button type="button" className="chip" onClick={() => updateImageLayer(selectedImageId, { xPercent: 50, yPercent: 50 })}>Centrer</button>
+                        </div>
+                        <div className="form-group" style={{ marginTop: 8 }}>
+                          <div className="options-row">
+                            <button type="button" className="chip" onClick={() => {
+                               const img = imageLayers.find(i => i.id === selectedImageId);
+                               if (img) updateImageLayer(selectedImageId, { flipX: !img.flipX });
+                            }}>{(selectedImageId && imageLayers.find(i => i.id === selectedImageId)?.flipX) ? 'Annuler flip horizontal' : 'Flip horizontal'}</button>
+                            <button type="button" className="chip" onClick={() => {
+                               const img = imageLayers.find(i => i.id === selectedImageId);
+                               if (img) updateImageLayer(selectedImageId, { zIndex: Math.max(1, (img.zIndex || 2) - 1) });
+                            }}>Arrière-plan</button>
+                            <button type="button" className="chip" onClick={() => {
+                               const img = imageLayers.find(i => i.id === selectedImageId);
+                               if (img) updateImageLayer(selectedImageId, { zIndex: Math.min(10, (img.zIndex || 2) + 1) });
+                            }}>Premier plan</button>
+                          </div>
+                          <small style={{ color:'#6b7280' }}>
+                            z-index: {selectedImageId && imageLayers.find(i => i.id === selectedImageId)?.zIndex} • face: {selectedImageId && imageLayers.find(i => i.id === selectedImageId)?.side}
+                          </small>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <div className="options-row">
+                      <button type="button" className="chip" onClick={startCrop}>Rogner</button>
+                      <button type="button" className="chip" onClick={() => {
+                        if (selectedImageId) updateImageLayer(selectedImageId, { xPercent: 50, yPercent: 50, scale: 1, rotation: 0, opacity: 1, flipX: false, zIndex: 2, side: 'front' });
+                      }}>Réinitialiser</button>
+                      <button type="button" className="chip" onClick={() => {
+                         if (selectedImageId) {
+                           const img = imageLayers.find(i => i.id === selectedImageId);
+                           if (img && img.url && img.url.startsWith('blob:')) {
+                             try { URL.revokeObjectURL(img.url); } catch(e) {}
+                           }
+                           deleteImageLayer(selectedImageId);
+                         }
+                      }}>Supprimer l'image</button>
                     </div>
-                  </>
-                )}
-              </div>
-              <div className="form-group">
-                <div className="options-row">
-                  <button type="button" className="chip" onClick={() => { setImageXPercent(50); setImageYPercent(50); setImageScale(1); setImageRotation(0); setImageOpacity(1); setImageFlipX(false); setImageZIndex(2); setImageSide('front'); }}>Réinitialiser</button>
-                  <button type="button" className="chip" onClick={() => { if (uploadedImageUrl && uploadedImageUrl.startsWith('blob:')) { try { URL.revokeObjectURL(uploadedImageUrl); } catch(e) {} } setUploadedImageUrl(''); }}>Supprimer l'image</button>
-                </div>
-              </div>
+                  </div>
+                </>
+              ) : (
+                <p style={{ padding: 8, color: '#666', fontStyle: 'italic' }}>Sélectionnez une image pour voir les options.</p>
+              )}
             </div>
           </div>
           )}
@@ -1419,143 +1860,305 @@ const Customize = () => {
               </div>
 
               {selectedTextId && (
-                <>
-                  <div className="form-group">
-                    <label>Contenu</label>
-                    <input type="text" maxLength={textCharLimit} value={textLayers.find(t=>t.id===selectedTextId)?.content || ''} onChange={(e)=>updateTextLayer(selectedTextId, { content: e.target.value })} />
-                    <small style={{ color:'#6b7280' }}>{ (textLayers.find(t=>t.id===selectedTextId)?.content?.length || 0) } / {textCharLimit}</small>
+                <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTextInspectorTab('content')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium border rounded ${
+                        activeTextInspectorTab === 'content'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Contenu du texte
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTextInspectorTab('effects')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium border rounded ${
+                        activeTextInspectorTab === 'effects'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Effets & Décorations
+                    </button>
                   </div>
 
-                  <div className="form-group">
-                    <label>Couleur</label>
-                    <input type="color" value={textLayers.find(t=>t.id===selectedTextId)?.color || '#111827'} onChange={(e)=>updateTextLayer(selectedTextId, { color: e.target.value })} />
-                  </div>
+                  {activeTextInspectorTab === 'content' && (
+                  <div className="flex flex-col gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Contenu du texte</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                        maxLength={textCharLimit} 
+                        value={textLayers.find(t=>t.id===selectedTextId)?.content || ''} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { content: e.target.value })} 
+                        placeholder="Votre texte ici"
+                      />
+                      <div className="flex justify-end mt-1">
+                        <small className="text-xs text-gray-500">{ (textLayers.find(t=>t.id===selectedTextId)?.content?.length || 0) } / {textCharLimit}</small>
+                      </div>
+                    </div>
 
-                  <div className="form-group">
-                    <label>Police</label>
-                    <select value={textLayers.find(t=>t.id===selectedTextId)?.fontFamily || 'Arial, Helvetica, sans-serif'} onChange={(e)=>updateTextLayer(selectedTextId, { fontFamily: e.target.value })}>
-                      <option value="Arial, Helvetica, sans-serif">Arial</option>
-                      <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                      <option value="Helvetica, Arial, sans-serif">Helvetica</option>
-                      <option value="Montserrat, Arial, sans-serif">Montserrat</option>
-                      <option value="Roboto, Arial, sans-serif">Roboto</option>
-                      <option value="'Open Sans', Arial, sans-serif">Open Sans</option>
-                      <option value="Courier New, monospace">Courier New</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Taille</label>
-                    <input type="range" min="8" max="200" step="1" value={textLayers.find(t=>t.id===selectedTextId)?.fontSize || 32} onChange={(e)=>updateTextLayer(selectedTextId, { fontSize: Number(e.target.value) })} />
-                  </div>
-
-                  <div className="options-row">
-                    <button className={`chip ${textLayers.find(t=>t.id===selectedTextId)?.fontWeight === 700 ? 'active' : ''}`} onClick={()=>updateTextLayer(selectedTextId, { fontWeight: (textLayers.find(t=>t.id===selectedTextId)?.fontWeight===700) ? 400 : 700 })}>Gras</button>
-                    <button className={`chip ${textLayers.find(t=>t.id===selectedTextId)?.fontStyle === 'italic' ? 'active' : ''}`} onClick={()=>updateTextLayer(selectedTextId, { fontStyle: (textLayers.find(t=>t.id===selectedTextId)?.fontStyle==='italic') ? 'normal' : 'italic' })}>Italique</button>
-                    <button className={`chip ${textLayers.find(t=>t.id===selectedTextId)?.textDecoration === 'underline' ? 'active' : ''}`} onClick={()=>updateTextLayer(selectedTextId, { textDecoration: (textLayers.find(t=>t.id===selectedTextId)?.textDecoration==='underline') ? 'none' : 'underline' })}>Souligné</button>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Espacement</label>
-                    <div className="options-row">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span>Lettres</span>
-                        <input type="range" min="-2" max="10" step="0.5" value={textLayers.find(t=>t.id===selectedTextId)?.letterSpacing || 0} onChange={(e)=>updateTextLayer(selectedTextId, { letterSpacing: Number(e.target.value) })} />
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">Police</label>
+                        <select 
+                          className="w-full px-2 py-1.5 border rounded text-sm bg-white"
+                          value={textLayers.find(t=>t.id===selectedTextId)?.fontFamily || 'Arial, Helvetica, sans-serif'} 
+                          onChange={(e)=>updateTextLayer(selectedTextId, { fontFamily: e.target.value })}
+                        >
+                          <option value="Arial, Helvetica, sans-serif">Arial</option>
+                          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                          <option value="Montserrat, Arial, sans-serif">Montserrat</option>
+                          <option value="Roboto, Arial, sans-serif">Roboto</option>
+                          <option value="'Open Sans', Arial, sans-serif">Open Sans</option>
+                          <option value="Courier New, monospace">Courier New</option>
+                        </select>
                       </div>
                       <div>
-                        <span>Lignes</span>
-                        <input type="range" min="0.8" max="2.5" step="0.05" value={textLayers.find(t=>t.id===selectedTextId)?.lineHeight || 1.2} onChange={(e)=>updateTextLayer(selectedTextId, { lineHeight: Number(e.target.value) })} />
+                         <label className="text-xs font-medium text-gray-500 mb-1 block">Alignement</label>
+                         <div className="flex border rounded overflow-hidden bg-white">
+                            <button className="flex-1 py-1.5 hover:bg-gray-100 text-xs border-r" onClick={()=>alignTextHorizontal(selectedTextId,'left')}>G</button>
+                            <button className="flex-1 py-1.5 hover:bg-gray-100 text-xs border-r" onClick={()=>alignTextHorizontal(selectedTextId,'center')}>C</button>
+                            <button className="flex-1 py-1.5 hover:bg-gray-100 text-xs" onClick={()=>alignTextHorizontal(selectedTextId,'right')}>D</button>
+                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                       <button 
+                        className={`flex-1 py-1.5 text-xs border rounded transition-colors ${textLayers.find(t=>t.id===selectedTextId)?.fontWeight === 700 ? 'bg-black text-white border-black' : 'bg-white text-gray-700 hover:bg-gray-50'}`} 
+                        onClick={()=>updateTextLayer(selectedTextId, { fontWeight: (textLayers.find(t=>t.id===selectedTextId)?.fontWeight===700) ? 400 : 700 })}
+                       >Gras</button>
+                       <button 
+                        className={`flex-1 py-1.5 text-xs border rounded transition-colors ${textLayers.find(t=>t.id===selectedTextId)?.fontStyle === 'italic' ? 'bg-black text-white border-black' : 'bg-white text-gray-700 hover:bg-gray-50'}`} 
+                        onClick={()=>updateTextLayer(selectedTextId, { fontStyle: (textLayers.find(t=>t.id===selectedTextId)?.fontStyle==='italic') ? 'normal' : 'italic' })}
+                       >Italique</button>
+                       <button 
+                        className={`flex-1 py-1.5 text-xs border rounded transition-colors ${textLayers.find(t=>t.id===selectedTextId)?.textDecoration === 'underline' ? 'bg-black text-white border-black' : 'bg-white text-gray-700 hover:bg-gray-50'}`} 
+                        onClick={()=>updateTextLayer(selectedTextId, { textDecoration: (textLayers.find(t=>t.id===selectedTextId)?.textDecoration==='underline') ? 'none' : 'underline' })}
+                       >Souligné</button>
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Opacité</label>
-                    <input type="range" min="0" max="100" step="1" value={Math.round((textLayers.find(t=>t.id===selectedTextId)?.opacity || 1)*100)} onChange={(e)=>updateTextLayer(selectedTextId, { opacity: Number(e.target.value)/100 })} />
-                  </div>
+                  <div className="h-px bg-gray-200"></div>
 
-                  <div className="form-group">
-                    <label>Alignement horizontal</label>
-                    <div className="options-row">
-                      <button className="chip" onClick={()=>alignTextHorizontal(selectedTextId,'left')}>Gauche</button>
-                      <button className="chip" onClick={()=>alignTextHorizontal(selectedTextId,'center')}>Centre</button>
-                      <button className="chip" onClick={()=>alignTextHorizontal(selectedTextId,'right')}>Droite</button>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Alignement vertical</label>
-                    <div className="options-row">
-                      <button className="chip" onClick={()=>alignTextVertical(selectedTextId,'top')}>Haut</button>
-                      <button className="chip" onClick={()=>alignTextVertical(selectedTextId,'middle')}>Milieu</button>
-                      <button className="chip" onClick={()=>alignTextVertical(selectedTextId,'bottom')}>Bas</button>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Rotation</label>
-                    <input type="range" min="-180" max="180" step="1" value={textLayers.find(t=>t.id===selectedTextId)?.rotation || 0} onChange={(e)=>updateTextLayer(selectedTextId, { rotation: Number(e.target.value) })} />
-                    <div className="options-row">
-                      <button className="chip" onClick={()=>rotateTextTo(selectedTextId, 0)}>0°</button>
-                      <button className="chip" onClick={()=>rotateTextTo(selectedTextId, 45)}>45°</button>
-                      <button className="chip" onClick={()=>rotateTextTo(selectedTextId, 90)}>90°</button>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Échelle</label>
-                    <input type="range" min="0.5" max="3" step="0.05" value={textLayers.find(t=>t.id===selectedTextId)?.scale || 1} onChange={(e)=>updateTextLayer(selectedTextId, { scale: Number(e.target.value) })} />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Fond</label>
-                    <div className="options-row">
-                      <label><input type="checkbox" checked={textLayers.find(t=>t.id===selectedTextId)?.backgroundEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { backgroundEnabled: e.target.checked })} /> Activer</label>
-                      <input type="color" disabled={!textLayers.find(t=>t.id===selectedTextId)?.backgroundEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.backgroundColor || '#ffffff'} onChange={(e)=>updateTextLayer(selectedTextId, { backgroundColor: e.target.value })} />
-                      <div>
-                        <span>Padding</span>
-                        <input type="range" min="0" max="40" step="1" disabled={!textLayers.find(t=>t.id===selectedTextId)?.backgroundEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.padding || 4} onChange={(e)=>updateTextLayer(selectedTextId, { padding: Number(e.target.value) })} />
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-1/3">
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">Couleur</label>
+                        <div className="flex items-center gap-2">
+                           <input 
+                              type="color" 
+                              className="h-8 w-8 p-0 border-0 rounded cursor-pointer"
+                              value={(() => {
+                                const c = textLayers.find(t=>t.id===selectedTextId)?.color || '#111827';
+                                if (c === 'transparent') return '#000000';
+                                return toHexString(parseColor(c));
+                              })()} 
+                              onChange={(e)=>{
+                                const current = textLayers.find(t=>t.id===selectedTextId)?.color || '#111827';
+                                const parsedOld = parseColor(current);
+                                const parsedNew = parseColor(e.target.value);
+                                updateTextLayer(selectedTextId, { color: toRgbaString({ ...parsedNew, a: parsedOld.a }) });
+                              }} 
+                            />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-gray-500 mb-1 block flex justify-between">
+                          <span>Opacité</span>
+                          <span>{Math.round((parseColor(textLayers.find(t=>t.id===selectedTextId)?.color || '#111827').a) * 100)}%</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" max="1" step="0.01" 
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          value={(() => {
+                            const c = textLayers.find(t=>t.id===selectedTextId)?.color || '#111827';
+                            return parseColor(c).a;
+                          })()} 
+                          onChange={(e)=>{
+                             const val = parseFloat(e.target.value);
+                             const current = textLayers.find(t=>t.id===selectedTextId)?.color || '#111827';
+                             const parsed = parseColor(current);
+                             updateTextLayer(selectedTextId, { color: toRgbaString({ ...parsed, a: val }) });
+                          }}
+                        />
                       </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label>Contour</label>
-                    <div className="options-row">
-                      <label><input type="checkbox" checked={textLayers.find(t=>t.id===selectedTextId)?.borderEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { borderEnabled: e.target.checked })} /> Activer</label>
-                      <input type="color" disabled={!textLayers.find(t=>t.id===selectedTextId)?.borderEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.borderColor || '#000000'} onChange={(e)=>updateTextLayer(selectedTextId, { borderColor: e.target.value })} />
-                      <div>
-                        <span>Épaisseur</span>
-                        <input type="range" min="0" max="10" step="1" disabled={!textLayers.find(t=>t.id===selectedTextId)?.borderEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.borderWidth || 0} onChange={(e)=>updateTextLayer(selectedTextId, { borderWidth: Number(e.target.value) })} />
-                      </div>
-                      <select disabled={!textLayers.find(t=>t.id===selectedTextId)?.borderEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.borderStyle || 'solid'} onChange={(e)=>updateTextLayer(selectedTextId, { borderStyle: e.target.value })}>
-                        <option value="solid">Solide</option>
-                        <option value="dashed">Pointillé</option>
-                        <option value="double">Double</option>
-                      </select>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1 block flex justify-between">
+                        <span>Taille</span>
+                        <span>{textLayers.find(t=>t.id===selectedTextId)?.fontSize || 32}px</span>
+                      </label>
+                      <input 
+                        type="range" min="8" max="200" step="1" 
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        value={textLayers.find(t=>t.id===selectedTextId)?.fontSize || 32} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { fontSize: Number(e.target.value) })} 
+                      />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Ombre</label>
-                    <div className="options-row">
-                      <label><input type="checkbox" checked={textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { shadowEnabled: e.target.checked })} /> Activer</label>
-                      <input type="color" disabled={!textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.shadowColor || 'rgba(0,0,0,0.3)'} onChange={(e)=>updateTextLayer(selectedTextId, { shadowColor: e.target.value })} />
-                      <div>
-                        <span>X</span>
-                        <input type="range" min="-50" max="50" step="1" disabled={!textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.shadowX || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowX: Number(e.target.value) })} />
-                      </div>
-                      <div>
-                        <span>Y</span>
-                        <input type="range" min="-50" max="50" step="1" disabled={!textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.shadowY || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowY: Number(e.target.value) })} />
-                      </div>
-                      <div>
-                        <span>Flou</span>
-                        <input type="range" min="0" max="50" step="1" disabled={!textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled} value={textLayers.find(t=>t.id===selectedTextId)?.shadowBlur || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowBlur: Number(e.target.value) })} />
-                      </div>
+                  <div className="h-px bg-gray-200"></div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1 block">Esp. Lettres</label>
+                      <input 
+                        type="range" min="-2" max="10" step="0.5" 
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        value={textLayers.find(t=>t.id===selectedTextId)?.letterSpacing || 0} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { letterSpacing: Number(e.target.value) })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1 block">Hauteur Ligne</label>
+                      <input 
+                        type="range" min="0.8" max="2.5" step="0.05" 
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        value={textLayers.find(t=>t.id===selectedTextId)?.lineHeight || 1.2} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { lineHeight: Number(e.target.value) })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1 block">Rotation ({textLayers.find(t=>t.id===selectedTextId)?.rotation || 0}°)</label>
+                      <input 
+                        type="range" min="-180" max="180" step="1" 
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        value={textLayers.find(t=>t.id===selectedTextId)?.rotation || 0} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { rotation: Number(e.target.value) })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1 block">Échelle (x{textLayers.find(t=>t.id===selectedTextId)?.scale || 1})</label>
+                      <input 
+                        type="range" min="0.5" max="3" step="0.05" 
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        value={textLayers.find(t=>t.id===selectedTextId)?.scale || 1} 
+                        onChange={(e)=>updateTextLayer(selectedTextId, { scale: Number(e.target.value) })} 
+                      />
                     </div>
                   </div>
-                </>
+
+                  </div>
+                  )}
+
+                  {activeTextInspectorTab === 'effects' && (
+                  <div className="space-y-4">
+                    <div className="border rounded p-3 bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Arrière-plan</span>
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black" checked={textLayers.find(t=>t.id===selectedTextId)?.backgroundEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { backgroundEnabled: e.target.checked })} />
+                      </div>
+                      {textLayers.find(t=>t.id===selectedTextId)?.backgroundEnabled && (
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div>
+                            <label className="text-xs text-gray-500 block">Couleur</label>
+                            <input type="color" className="w-full h-6 p-0 border-0 rounded" value={(() => {
+                               const c = textLayers.find(t=>t.id===selectedTextId)?.backgroundColor || '#ffffff';
+                               if (c === 'transparent') return '#ffffff';
+                               return toHexString(parseColor(c));
+                             })()} onChange={(e)=>{
+                               const current = textLayers.find(t=>t.id===selectedTextId)?.backgroundColor || '#ffffff';
+                               const parsedOld = parseColor(current);
+                               const parsedNew = parseColor(e.target.value);
+                               updateTextLayer(selectedTextId, { backgroundColor: toRgbaString({ ...parsedNew, a: parsedOld.a }) });
+                             }} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 block">Padding</label>
+                            <input type="range" min="0" max="40" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.padding || 4} onChange={(e)=>updateTextLayer(selectedTextId, { padding: Number(e.target.value) })} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border rounded p-3 bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Contour du texte</span>
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black" checked={textLayers.find(t=>t.id===selectedTextId)?.strokeEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { strokeEnabled: e.target.checked })} />
+                      </div>
+                      {textLayers.find(t=>t.id===selectedTextId)?.strokeEnabled && (
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                           <div>
+                            <label className="text-xs text-gray-500 block">Couleur</label>
+                            <input type="color" className="w-full h-6 p-0 border-0 rounded" value={textLayers.find(t=>t.id===selectedTextId)?.strokeColor || '#000000'} onChange={(e)=>updateTextLayer(selectedTextId, { strokeColor: e.target.value })} />
+                           </div>
+                           <div>
+                            <label className="text-xs text-gray-500 block">Épaisseur</label>
+                            <input type="range" min="0" max="10" step="0.5" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.strokeWidth || 0} onChange={(e)=>updateTextLayer(selectedTextId, { strokeWidth: Number(e.target.value) })} />
+                           </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border rounded p-3 bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Bordure (Cadre)</span>
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black" checked={textLayers.find(t=>t.id===selectedTextId)?.borderEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { borderEnabled: e.target.checked })} />
+                      </div>
+                      {textLayers.find(t=>t.id===selectedTextId)?.borderEnabled && (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                           <div>
+                            <label className="text-xs text-gray-500 block">Couleur</label>
+                            <input type="color" className="w-full h-6 p-0 border-0 rounded" value={textLayers.find(t=>t.id===selectedTextId)?.borderColor || '#000000'} onChange={(e)=>updateTextLayer(selectedTextId, { borderColor: e.target.value })} />
+                           </div>
+                           <div>
+                            <label className="text-xs text-gray-500 block">Épaisseur</label>
+                            <input type="range" min="0" max="10" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.borderWidth || 0} onChange={(e)=>updateTextLayer(selectedTextId, { borderWidth: Number(e.target.value) })} />
+                           </div>
+                           <div>
+                            <label className="text-xs text-gray-500 block">Style</label>
+                            <select className="w-full h-6 text-xs border rounded" value={textLayers.find(t=>t.id===selectedTextId)?.borderStyle || 'solid'} onChange={(e)=>updateTextLayer(selectedTextId, { borderStyle: e.target.value })}>
+                              <option value="solid">Trait</option>
+                              <option value="dashed">Pointillé</option>
+                            </select>
+                           </div>
+                        </div>
+                      )}
+                    </div>
+
+                     <div className="border rounded p-3 bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Ombre portée</span>
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black" checked={textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled || false} onChange={(e)=>updateTextLayer(selectedTextId, { shadowEnabled: e.target.checked })} />
+                      </div>
+                      {textLayers.find(t=>t.id===selectedTextId)?.shadowEnabled && (
+                        <div className="space-y-3 mt-2">
+                           <div>
+                            <label className="text-xs text-gray-500 block mb-1">Couleur</label>
+                            <input type="color" className="w-full h-6 p-0 border-0 rounded" value={textLayers.find(t=>t.id===selectedTextId)?.shadowColor || 'rgba(0,0,0,0.3)'} onChange={(e)=>updateTextLayer(selectedTextId, { shadowColor: e.target.value })} />
+                           </div>
+                           <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="text-xs text-gray-500 block">X</label>
+                                <input type="range" min="-50" max="50" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.shadowX || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowX: Number(e.target.value) })} />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 block">Y</label>
+                                <input type="range" min="-50" max="50" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.shadowY || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowY: Number(e.target.value) })} />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 block">Flou</label>
+                                <input type="range" min="0" max="50" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" value={textLayers.find(t=>t.id===selectedTextId)?.shadowBlur || 0} onChange={(e)=>updateTextLayer(selectedTextId, { shadowBlur: Number(e.target.value) })} />
+                              </div>
+                           </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  )}
+
+                  </div>
               )}
             </div>
           </div>
@@ -1694,21 +2297,10 @@ const Customize = () => {
             showBack={showBack}
             selectedModel={selectedModel}
             selectedColor={selectedColor}
-            uploadedImageUrl={uploadedImageUrl}
-            imageXPercent={imageXPercent}
-            imageYPercent={imageYPercent}
-            imageScale={imageScale}
-            imageRotation={imageRotation}
-            // add image control props
-            imageVisible={imageVisible}
-            imageLocked={imageLocked}
-            imageOpacity={imageOpacity}
-            imageFlipX={imageFlipX}
-            imageZIndex={imageZIndex}
-            imageSide={imageSide}
-            setImageXPercent={setImageXPercent}
-            setImageYPercent={setImageYPercent}
-            setImageRotation={setImageRotation}
+            imageLayers={imageLayers}
+            selectedImageId={selectedImageId}
+            setSelectedImageId={setSelectedImageId}
+            updateImageLayer={updateImageLayer}
             canvasRef={canvasRef}
             textLayers={textLayers}
             selectedTextId={selectedTextId}
@@ -1808,8 +2400,8 @@ const Customize = () => {
                 back: Array.isArray(textLayers) && textLayers.some(t => t?.side === 'back' && (t?.visible ?? true)),
               },
               image: {
-                front: Boolean(uploadedImageUrl && imageVisible && imageSide === 'front'),
-                back: Boolean(uploadedImageUrl && imageVisible && imageSide === 'back'),
+                front: Array.isArray(imageLayers) && imageLayers.some(i => i?.side === 'front' && (i?.visible ?? true)),
+                back: Array.isArray(imageLayers) && imageLayers.some(i => i?.side === 'back' && (i?.visible ?? true)),
               },
             }}
             onTotals={(t) => setComputedTotals(t)}
@@ -1842,6 +2434,37 @@ const Customize = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de recadrage */}
+      {cropModalOpen && (
+        <div className="crop-modal-overlay">
+          <div className="crop-modal-content">
+            <h3>Recadrer l'image</h3>
+            <div className="crop-container">
+              {imageToCrop && (
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={undefined}
+                >
+                  <img
+                    ref={imgRef}
+                    alt="Crop me"
+                    src={imageToCrop}
+                    onLoad={onImageLoad}
+                    style={{ maxWidth: '100%', maxHeight: '60vh' }}
+                  />
+                </ReactCrop>
+              )}
+            </div>
+            <div className="crop-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+              <Button variant="outline" onClick={() => setCropModalOpen(false)}>Annuler</Button>
+              <Button onClick={applyCrop}>Appliquer</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1849,7 +2472,14 @@ const Customize = () => {
 export default Customize;
 
 // Composant d'aperçu isolé et mémoïsé (défini avant usage)
-const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uploadedImageUrl, imageXPercent, imageYPercent, imageScale, imageRotation, imageVisible, imageLocked, imageOpacity, imageFlipX, imageZIndex, imageSide, setImageXPercent, setImageYPercent, setImageRotation, canvasRef, textLayers, selectedTextId, setSelectedTextId, updateTextLayer, editingTextId, setEditingTextId, previewMode, canvasZoom, rulerUnit, guideLines, updateGuideLine, deleteGuideLine }) => {
+const PreviewCanvas = React.memo(({ 
+  showBack, selectedModel, selectedColor, 
+  imageLayers, selectedImageId, setSelectedImageId, updateImageLayer,
+  canvasRef, 
+  textLayers, selectedTextId, setSelectedTextId, updateTextLayer, 
+  editingTextId, setEditingTextId, 
+  previewMode, canvasZoom, rulerUnit, guideLines, updateGuideLine, deleteGuideLine 
+}) => {
   // Priorité : images par couleur > images par défaut > placeholder
   const colorImages = selectedModel?.imagesByColor?.[selectedColor];
   const defaultImages = selectedModel?.images;
@@ -1858,45 +2488,83 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
     ? (colorImages?.back || defaultImages?.back || DEFAULT_MODEL_PLACEHOLDER.images.back)
     : (colorImages?.front || defaultImages?.front || DEFAULT_MODEL_PLACEHOLDER.images.front);
     
-  // État d'interaction (drag/rotate)
+  // État d'interaction (drag/rotate/resize)
   const dragState = React.useRef(null);
   const rotateState = React.useRef(null);
+  const resizeState = React.useRef(null);
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
   // Drag image
-  const onImagePointerDown = (e) => {
-    if (imageLocked) return;
+  const onImagePointerDown = (img, e) => {
+    if (img.locked) return;
     e.stopPropagation();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
+    setSelectedImageId(img.id);
     const startX = e.clientX; const startY = e.clientY;
-    const origX = imageXPercent; const origY = imageYPercent;
+    dragState.current = { id: img.id, startX, startY, origX: img.xPercent, origY: img.yPercent, type: 'image' };
+    
     const onMove = (ev) => {
       const dxPx = ev.clientX - startX;
       const dyPx = ev.clientY - startY;
       const dxPercent = (dxPx / rect.width) * 100;
       const dyPercent = (dyPx / rect.height) * 100;
-      const nx = clamp(origX + dxPercent, 5, 95);
-      const ny = clamp(origY + dyPercent, 5, 95);
-      setImageXPercent(nx);
-      setImageYPercent(ny);
+      const nx = clamp(dragState.current.origX + dxPercent, -20, 120); // Allow moving slightly off-canvas
+      const ny = clamp(dragState.current.origY + dyPercent, -20, 120);
+      updateImageLayer(dragState.current.id, { xPercent: nx, yPercent: ny });
     };
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      dragState.current = null;
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  // Resize image handle
+  const onImageResizePointerDown = (img, e) => {
+    if (img.locked) return;
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    // Center of image in screen coordinates
+    const centerX = rect.left + (img.xPercent / 100) * rect.width;
+    const centerY = rect.top + (img.yPercent / 100) * rect.height;
+    
+    // Initial distance from center to pointer
+    const startDist = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+    const startScale = img.scale || 1;
+    
+    resizeState.current = { id: img.id, startDist, startScale };
+    
+    const onMove = (ev) => {
+      const currentDist = Math.hypot(ev.clientX - centerX, ev.clientY - centerY);
+      const newScale = startScale * (currentDist / startDist);
+      // Limit scale
+      updateImageLayer(resizeState.current.id, { scale: Math.max(0.1, Math.min(5, newScale)) });
+    };
+    
+    const onUp = () => {
+       window.removeEventListener('pointermove', onMove);
+       window.removeEventListener('pointerup', onUp);
+       resizeState.current = null;
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   };
 
   // Rotate image handle
-  const onImageRotatePointerDown = (e) => {
-    if (imageLocked) return;
+  const onImageRotatePointerDown = (img, e) => {
+    if (img.locked) return;
     e.stopPropagation();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const centerX = rect.left + (imageXPercent / 100) * rect.width;
-    const centerY = rect.top + (imageYPercent / 100) * rect.height;
+    const centerX = rect.left + (img.xPercent / 100) * rect.width;
+    const centerY = rect.top + (img.yPercent / 100) * rect.height;
+    rotateState.current = { id: img.id, centerX, centerY, type: 'image' };
+
     const onMove = (ev) => {
       const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * 180 / Math.PI;
       let snapped = angle;
@@ -1904,11 +2572,12 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
         const increments = [ -180, -135, -90, -45, 0, 45, 90, 135, 180 ];
         snapped = increments.reduce((prev, curr)=> Math.abs(curr-angle) < Math.abs(prev-angle) ? curr : prev, 0);
       }
-      setImageRotation(snapped);
+      updateImageLayer(rotateState.current.id, { rotation: snapped });
     };
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      rotateState.current = null;
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -2022,31 +2691,45 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
   return (
     <div className={`canvas-container ${previewMode ? 'preview-mode' : ''}`} ref={canvasRef} onPointerDown={() => setEditingTextId(null)} style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}>
       <img className="product-base" src={baseSrc} alt="Base produit" />
-      {uploadedImageUrl && (showBack ? imageSide === 'back' : imageSide === 'front') && imageVisible && (
-        <>
+      {imageLayers.filter(img => (showBack ? img.side === 'back' : img.side === 'front') && (img.visible ?? true)).map((img) => (
+        <React.Fragment key={img.id}>
           <img
-            src={uploadedImageUrl}
+            src={img.url}
             alt="Upload"
-            className="uploaded-image"
+            className={`uploaded-image ${selectedImageId === img.id ? 'selected' : ''}`}
             style={{
-              left: `${imageXPercent}%`,
-              top: `${imageYPercent}%`,
-              transform: `translate(-50%, -50%) scale(${imageFlipX ? -imageScale : imageScale}, ${imageScale}) rotate(${imageRotation}deg)`,
+              left: `${img.xPercent}%`,
+              top: `${img.yPercent}%`,
+              transform: `translate(-50%, -50%) scale(${img.flipX ? -(img.scale || 1) : (img.scale || 1)}, ${img.scale || 1}) rotate(${img.rotation || 0}deg)`,
               width: '50%',
-              zIndex: imageZIndex,
-              opacity: imageOpacity,
+              zIndex: img.zIndex ?? 2,
+              opacity: img.opacity ?? 1,
+              cursor: img.locked ? 'not-allowed' : 'move',
+              touchAction: 'none',
             }}
-            onPointerDown={onImagePointerDown}
+            onPointerDown={(e) => onImagePointerDown(img, e)}
           />
-          {!previewMode && !imageLocked && (
-            <div
-              className="rotate-handle"
-              style={{ left: `${imageXPercent}%`, top: `calc(${imageYPercent}% - 24px)` }}
-              onPointerDown={onImageRotatePointerDown}
-            />
+          {!previewMode && selectedImageId === img.id && !img.locked && (
+            <>
+              <div
+                className="rotate-handle"
+                style={{ left: `${img.xPercent}%`, top: `calc(${img.yPercent}% - 24px)` }}
+                onPointerDown={(e) => onImageRotatePointerDown(img, e)}
+                title="Pivoter"
+              />
+              <div
+                className="resize-handle"
+                style={{ 
+                  left: `calc(${img.xPercent}% + ${25 * (img.scale||1)}%)`, 
+                  top: `calc(${img.yPercent}% + ${25 * (img.scale||1) / (img.aspect||1)}%)` 
+                }}
+                onPointerDown={(e) => onImageResizePointerDown(img, e)}
+                title="Redimensionner"
+              />
+            </>
           )}
-        </>
-      )}
+        </React.Fragment>
+      ))}
 
       {textLayers?.filter(t => (showBack ? t.side === 'back' : t.side === 'front') && (t.visible ?? true)).map((t) => (
         <div
@@ -2073,6 +2756,8 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
               lineHeight: t.lineHeight || 1.2,
               color: t.color || '#111827',
               textDecoration: t.textDecoration || 'none',
+              WebkitTextStroke: t.strokeEnabled ? `${t.strokeWidth || 1}px ${t.strokeColor || '#000000'}` : undefined,
+              paintOrder: 'stroke fill',
               background: t.backgroundEnabled ? (t.backgroundColor || '#ffffff') : 'transparent',
               padding: t.backgroundEnabled ? `${t.padding || 4}px` : '0px',
               border: t.borderEnabled ? `${t.borderWidth || 1}px ${t.borderStyle || 'solid'} ${t.borderColor || '#000'}` : 'none',
@@ -2101,8 +2786,8 @@ const PreviewCanvas = React.memo(({ showBack, selectedModel, selectedColor, uplo
       {nearCenterX && <div className="guide-line vertical" />}
       {nearCenterY && <div className="guide-line horizontal" />}
       {/* Guides dynamiques pour l'image */}
-      {uploadedImageUrl && (Math.abs(imageXPercent - 50) < 1) && <div className="guide-line vertical" />}
-      {uploadedImageUrl && (Math.abs(imageYPercent - 50) < 1) && <div className="guide-line horizontal" />}
+      {selectedImageId && imageLayers.find(i => i.id === selectedImageId) && (Math.abs(imageLayers.find(i => i.id === selectedImageId).xPercent - 50) < 1) && <div className="guide-line vertical" />}
+      {selectedImageId && imageLayers.find(i => i.id === selectedImageId) && (Math.abs(imageLayers.find(i => i.id === selectedImageId).yPercent - 50) < 1) && <div className="guide-line horizontal" />}
       {/* Safe-area et axes centraux permanents (édition uniquement) */}
       {!previewMode && (
         <>

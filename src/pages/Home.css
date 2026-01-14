@@ -55,7 +55,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: 25px;
+  border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -65,14 +65,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: rgba(86, 182, 92, 0.829);
   color: white;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #2980b9, #1f5f8b);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+  background: rgba(69, 184, 77, 0.829);  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.572);
   color: white;
 }
 
@@ -84,7 +83,7 @@
 .btn-secondary:hover {
   background: linear-gradient(135deg, #c0392b, #a93226);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.475);
 }
 
 .btn-outline {
@@ -97,7 +96,7 @@
   background: #3498db;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 8px 25px rgba(254, 254, 254, 0.448);
 }
 
 .btn-large {

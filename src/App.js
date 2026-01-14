@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 
 // Import des composants
@@ -39,72 +39,84 @@ import AdminProductEdit from './pages/Admin/AdminProductEdit';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
+function ScrollToTop({ children }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  return children;
+}
+
 function App() {
   return (
-    <div className="App">
-      <Routes>
-        {/* Route de connexion admin (non protégée) */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        
-        {/* Routes Admin protégées */}
-        <Route path="/admin/*" element={
-          <AdminRoute>
-            <AdminLayout />
-          </AdminRoute>
-        }>
-          <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="products/create" element={<AdminProductCreate />} />
-          <Route path="products/new" element={<AdminProductCreate />} />
-          <Route path="products/:id/edit" element={<AdminProductEdit />} />
-          <Route path="models" element={<AdminModels />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
+    <ScrollToTop>
+      <div className="App">
+        <Routes>
+          {/* Route de connexion admin (non protégée) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          
+          {/* Routes Admin protégées */}
+          <Route path="/admin/*" element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="products/create" element={<AdminProductCreate />} />
+            <Route path="products/new" element={<AdminProductCreate />} />
+            <Route path="products/:id/edit" element={<AdminProductEdit />} />
+            <Route path="models" element={<AdminModels />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
-        {/* Routes publiques */}
-        <Route path="/*" element={
-          <>
-            <Navbar />
-            <main className="main-content">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:category" element={<Products />} />
-                <Route path="/models" element={<Models />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/checkout/success" element={<CheckoutSuccess />} />
-                <Route path="/checkout/cancel" element={<CheckoutCancel />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/customize" element={<Customize />} />
-                <Route path="/test-admin" element={<TestAdmin />} />
-              </Routes>
-            </main>
-            <Footer />
-          </>
-        } />
-      </Routes>
-      
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-    </div>
+          {/* Routes publiques */}
+          <Route path="/*" element={
+            <>
+              <Navbar />
+              <main className="main-content">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/products/:category" element={<Products />} />
+                  <Route path="/models" element={<Models />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/checkout/success" element={<CheckoutSuccess />} />
+                  <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/customize" element={<Customize />} />
+                  <Route path="/test-admin" element={<TestAdmin />} />
+                </Routes>
+              </main>
+              <Footer />
+            </>
+          } />
+        </Routes>
+        
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+      </div>
+    </ScrollToTop>
   );
 }
 
