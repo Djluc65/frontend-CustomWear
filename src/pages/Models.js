@@ -14,8 +14,6 @@ const Models = () => {
   const [selectedGender, setSelectedGender] = useState('all');
   const [searchParams, setSearchParams] = useSearchParams();
   const [initializedFromURL, setInitializedFromURL] = useState(false);
-  const [isTypeOpen, setIsTypeOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState('all');
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [openSections, setOpenSections] = useState({
@@ -53,12 +51,10 @@ const Models = () => {
     if (initializedFromURL) return;
     const categoryParam = String(searchParams.get('category') || '').toLowerCase();
     const genderParam = String(searchParams.get('gender') || '').toLowerCase();
-    const typeParam = String(searchParams.get('type') || '').toLowerCase();
     const colorParam = String(searchParams.get('color') || '');
     const sizeParam = String(searchParams.get('size') || '');
     if (categoryParam) setSelectedCategory(categoryParam);
     if (genderParam) setSelectedGender(genderParam);
-    if (typeParam) setSelectedType(typeParam);
     if (colorParam) setSelectedColors(colorParam.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
     if (sizeParam) setSelectedSizes(sizeParam.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
     setInitializedFromURL(true);
@@ -70,11 +66,10 @@ const Models = () => {
     if (currentSearch) params.search = currentSearch;
     if (selectedCategory !== 'all') params.category = selectedCategory;
     if (selectedGender !== 'all') params.gender = selectedGender;
-    if (selectedType !== 'all') params.type = selectedType;
     if (selectedColors.length > 0) params.color = selectedColors.join(',');
     if (selectedSizes.length > 0) params.size = selectedSizes.join(',');
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, selectedGender, selectedType, selectedColors, selectedSizes, setSearchParams, searchParams]);
+  }, [selectedCategory, selectedGender, selectedColors, selectedSizes, setSearchParams, searchParams]);
 
   const activeModels = useMemo(() => models.filter((m) => m?.active !== false), [models]);
   const categoryCounts = useMemo(() => {
@@ -92,15 +87,6 @@ const Models = () => {
       const g = String(m?.gender || '').toLowerCase();
       if (!g) return;
       map.set(g, (map.get(g) || 0) + 1);
-    });
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [activeModels]);
-  const typeCounts = useMemo(() => {
-    const map = new Map();
-    activeModels.forEach((m) => {
-      const t = String(m?.type || '').toLowerCase();
-      if (!t) return;
-      map.set(t, (map.get(t) || 0) + 1);
     });
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [activeModels]);
@@ -136,9 +122,6 @@ const Models = () => {
     if (selectedGender !== 'all') {
       list = list.filter(m => String(m?.gender || '').toLowerCase() === selectedGender);
     }
-    if (selectedType !== 'all') {
-      list = list.filter(m => String(m?.type || '').toLowerCase() === selectedType);
-    }
     if (selectedColors.length > 0) {
       list = list.filter(m => {
         const colors = Array.isArray(m?.colors) ? m.colors.map(c => String(c).toLowerCase()) : [];
@@ -154,13 +137,11 @@ const Models = () => {
     if (searchTerm) {
       list = list.filter(m => {
         const name = String(m?.name || '').toLowerCase();
-        const type = String(m?.type || '').toLowerCase();
         const gender = String(m?.gender || '').toLowerCase();
         const category = String(m?.category || '').toLowerCase();
         const tags = Array.isArray(m?.tags) ? m.tags.map(t => String(t).toLowerCase()) : [];
         return (
           name.includes(searchTerm) ||
-          type.includes(searchTerm) ||
           gender.includes(searchTerm) ||
           category.includes(searchTerm) ||
           tags.some(t => t.includes(searchTerm))
@@ -168,28 +149,14 @@ const Models = () => {
       });
     }
     return list;
-  }, [activeModels, selectedCategory, selectedGender, selectedType, selectedColors, selectedSizes, searchTerm]);
+  }, [activeModels, selectedCategory, selectedGender, selectedColors, selectedSizes, searchTerm]);
   const handleShowAllModels = () => {
     setSelectedCategory('all');
     setSelectedGender('all');
-    setSelectedType('all');
     setSelectedColors([]);
     setSelectedSizes([]);
-    setIsTypeOpen(false);
     setSearchParams({}, { replace: true });
   };
-  const formatTypeLabel = (slug) => {
-    const s = String(slug || '').toLowerCase();
-    const map = {
-      't-shirt': 'T-shirt',
-      'sweat': 'Sweat',
-      'hoodie': 'Hoodie',
-      'casquette': 'Casquette',
-      'mug': 'Mug',
-    };
-    return map[s] || s.replace(/-/g, ' ').replace(/^./, c => c.toUpperCase());
-  };
-
   const toggleColorFilter = (color) => {
     const value = String(color || '').toLowerCase();
     setSelectedColors((prev) => (
@@ -253,40 +220,7 @@ const Models = () => {
         >
           Modèle
         </button>
-        <div className={`subnav-dropdown${isTypeOpen ? ' open' : ''}`}>
-          <button
-            type="button"
-            className={`subnav-link dropdown-toggle${isTypeOpen ? ' active' : ''}`}
-            onClick={() => setIsTypeOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={isTypeOpen}
-          >
-            Type
-          </button>
-          {isTypeOpen && (
-            <div className="dropdown-menu" role="menu" aria-label="Menu Type">
-              <button
-                type="button"
-                className={`dropdown-item${selectedType === 'all' ? ' active' : ''}`}
-                onClick={() => { setSelectedType('all'); setIsTypeOpen(false); }}
-                aria-pressed={selectedType === 'all'}
-              >
-                Tous
-              </button>
-              {typeCounts.map(([type, count]) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`dropdown-item${selectedType === type ? ' active' : ''}`}
-                  onClick={() => { setSelectedType(type); setIsTypeOpen(false); }}
-                  aria-pressed={selectedType === type}
-                >
-                  {formatTypeLabel(type)} ({count})
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        
       </nav>
       {activeModels.length === 0 ? (
         <div className="alert alert-info">Aucun modèle actif pour le moment.</div>

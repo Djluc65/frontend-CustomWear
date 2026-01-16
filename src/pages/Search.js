@@ -31,10 +31,9 @@ const Search = () => {
            const lowerQuery = query.toLowerCase();
            const filtered = allModels.filter(m => {
              const name = (m.name || '').toLowerCase();
-             const type = (m.type || '').toLowerCase();
              const category = (m.category || '').toLowerCase();
              const tags = (m.tags || []).map(t => t.toLowerCase());
-             return name.includes(lowerQuery) || type.includes(lowerQuery) || category.includes(lowerQuery) || tags.some(t => t.includes(lowerQuery));
+             return name.includes(lowerQuery) || category.includes(lowerQuery) || tags.some(t => t.includes(lowerQuery));
            });
            setModels(filtered);
         })

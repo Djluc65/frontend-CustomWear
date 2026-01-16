@@ -37,7 +37,6 @@ const toCategorySlug = (cat) => {
   return String(cat).toLowerCase();
 };
 
-const ALLOWED_TYPES = ['t-shirt', 'sweat', 'hoodie', 'casquette', 'mug'];
 const ALLOWED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'Unisexe'];
 const ALLOWED_COLORS = [
   'Noir',
@@ -69,7 +68,6 @@ const AdminModels = () => {
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [colorFilter, setColorFilter] = useState([]);
@@ -83,7 +81,6 @@ const AdminModels = () => {
   const [form, setForm] = useState({
     name: '',
     description: '',
-    type: 't-shirt',
     category: '',
     gender: 'unisexe',
     basePrice: '',
@@ -166,16 +163,14 @@ const AdminModels = () => {
 
   const filteredModels = models.filter(m => {
     const name = (m?.name || '').toLowerCase();
-    const type = (m?.type || '').toLowerCase();
     const gender = (m?.gender || '').toLowerCase();
     const category = toCategorySlug(m?.category || '');
     const matchesSearch = name.includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || type === typeFilter;
     const matchesGender = genderFilter === 'all' || gender === genderFilter;
     const matchesCategory = categoryFilter === 'all' || category === String(categoryFilter).toLowerCase();
     const matchesColor = colorFilter.length === 0 || (Array.isArray(m.colors) && m.colors.some(c => colorFilter.includes(c)));
     const matchesSize = sizeFilter.length === 0 || (Array.isArray(m.sizes) && m.sizes.some(s => sizeFilter.includes(s)));
-    return matchesSearch && matchesType && matchesGender && matchesCategory && matchesColor && matchesSize;
+    return matchesSearch && matchesGender && matchesCategory && matchesColor && matchesSize;
   });
 
   const handleAddModel = () => {
@@ -183,7 +178,6 @@ const AdminModels = () => {
     setForm({
       name: '',
       description: '',
-      type: 't-shirt',
       category: '',
       gender: 'unisexe',
       basePrice: '',
@@ -209,7 +203,6 @@ const AdminModels = () => {
     setForm({
       name: model?.name || '',
       description: model?.description || '',
-      type: model?.type || 't-shirt',
       category: toCategorySlug(model?.category || ''),
       gender: (model?.gender || 'unisexe'),
       basePrice: String(model?.basePrice ?? ''),
@@ -323,7 +316,6 @@ const AdminModels = () => {
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('description', form.description);
-      formData.append('type', form.type);
       formData.append('category', form.category);
       formData.append('gender', form.gender);
       formData.append('basePrice', form.basePrice);
@@ -386,10 +378,6 @@ const AdminModels = () => {
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="min-w-[140px]">
-              <option value="all">Tous types</option>
-              {ALLOWED_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </Select>
             <Select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className="min-w-[140px]">
               <option value="all">Tous genres</option>
               {ALLOWED_GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
@@ -436,11 +424,9 @@ const AdminModels = () => {
                 
                 <div className="p-4">
                   <h3 className="font-bold text-slate-900 truncate">{model.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                    <span className="capitalize">{model.type}</span>
-                    <span>•</span>
-                    <span className="capitalize">{model.gender}</span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                  <span className="capitalize">{model.gender}</span>
+                </div>
                   {model.description && (
                     <p className="text-xs text-slate-400 mt-2 line-clamp-2">{model.description}</p>
                   )}
@@ -488,19 +474,11 @@ const AdminModels = () => {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                      <Select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
-                        {ALLOWED_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Genre</label>
-                      <Select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}>
-                        {ALLOWED_GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
-                      </Select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Genre</label>
+                    <Select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}>
+                      {ALLOWED_GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

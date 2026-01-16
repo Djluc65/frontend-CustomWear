@@ -135,117 +135,281 @@ const AdminProductEdit = () => {
 
   if (loading) {
     return (
-      <div className="admin-products-page" style={{ padding: '1.5rem' }}>
-        <p>Chargement…</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
       </div>
     );
   }
 
   return (
-    <div className="admin-products-page" style={{ padding: '1.5rem' }}>
-      <div className="admin-products-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Link to="/admin/products" className="btn" style={{ textDecoration: 'none' }}>
-            <FiArrowLeft /> Retour
-          </Link>
-          <h1 style={{ margin: 0 }}>Modifier le produit</h1>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/admin/products" 
+              className="p-2 bg-white border border-gray-200 rounded-full text-gray-600 hover:text-black hover:border-black transition-all shadow-sm"
+            >
+              <FiArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Modifier le produit</h1>
+              <p className="text-sm text-gray-500 mt-1">Gérez les informations et variantes du produit</p>
+            </div>
+          </div>
+          <button 
+            className="flex items-center gap-2 px-6 py-2.5 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            form="edit-form"
+            disabled={saving}
+          >
+            <FiSave className="w-5 h-5" />
+            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          </button>
         </div>
-        <button className="btn-primary" form="edit-form" disabled={saving}>
-          <FiSave /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 animate-fade-in">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <p className="text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+
+        <form id="edit-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column - Main Info */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* General Info Card */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-lg font-semibold text-gray-900">Informations générales</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom du produit
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black transition-all outline-none"
+                    placeholder="Ex: T-shirt Premium Coton"
+                    value={form.name} 
+                    onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea 
+                    rows={6} 
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black transition-all outline-none resize-none"
+                    placeholder="Description détaillée du produit..."
+                    value={form.description} 
+                    onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Variants Card */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-lg font-semibold text-gray-900">Variantes</h2>
+              </div>
+              <div className="p-6 space-y-8">
+                {/* Colors */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Couleurs disponibles
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {ALLOWED_COLORS.map(color => {
+                      const isSelected = form.colors.includes(color);
+                      return (
+                        <button
+                          type="button"
+                          key={color}
+                          onClick={() => toggleColor(color)}
+                          className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                            isSelected 
+                              ? 'bg-black text-white border-black shadow-md transform scale-105' 
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {color}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sizes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Tailles disponibles
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {SIZE_OPTIONS.map(size => {
+                      const isSelected = form.sizes.includes(size);
+                      return (
+                        <button
+                          type="button"
+                          key={size}
+                          onClick={() => toggleSize(size)}
+                          className={`w-12 h-12 flex items-center justify-center rounded-lg border text-sm font-medium transition-all duration-200 ${
+                            isSelected 
+                              ? 'bg-black text-white border-black shadow-md transform scale-105' 
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Settings & Price */}
+          <div className="space-y-8">
+            {/* Organization Card */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-lg font-semibold text-gray-900">Organisation</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
+                  <div className="relative">
+                    <select 
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black appearance-none bg-white transition-all outline-none"
+                      value={form.category} 
+                      onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}
+                    >
+                      {CATEGORIES.map(c => (
+                        <option key={c.slug} value={c.slug}>{c.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
+                  <div className="relative">
+                    <select 
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black appearance-none bg-white transition-all outline-none"
+                      value={form.gender} 
+                      onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}
+                    >
+                      {GENDERS.map(g => (
+                        <option key={g.value} value={g.value}>{g.label}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+                  <div className="relative">
+                    <select 
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black appearance-none bg-white transition-all outline-none"
+                      value={form.status} 
+                      onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="active">Actif</option>
+                      <option value="inactive">Inactif</option>
+                      <option value="draft">Brouillon</option>
+                      <option value="discontinued">Arrêté</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-black checked:bg-black hover:border-black focus:ring-2 focus:ring-black focus:ring-offset-1"
+                        checked={form.featured} 
+                        onChange={(e) => setForm(prev => ({ ...prev, featured: e.target.checked }))} 
+                      />
+                      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-black transition-colors">
+                      Mettre en avant
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Price & Stock Card */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-lg font-semibold text-gray-900">Prix et Stock</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prix de base</label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black transition-all outline-none"
+                      placeholder="0.00"
+                      value={form.priceBase} 
+                      onChange={(e) => setForm(prev => ({ ...prev, priceBase: e.target.value }))} 
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">€</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stock initial</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    step="1" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black transition-all outline-none"
+                    placeholder="0"
+                    value={form.stock} 
+                    onChange={(e) => setForm(prev => ({ ...prev, stock: e.target.value }))} 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">SKU (Référence)</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-black transition-all outline-none"
+                    placeholder="REF-001"
+                    value={form.sku} 
+                    onChange={(e) => setForm(prev => ({ ...prev, sku: e.target.value }))} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
-
-      {error && (
-        <div className="error-state" style={{ marginBottom: 12 }}>
-          <p style={{ color: '#b91c1c' }}>{error}</p>
-        </div>
-      )}
-
-      <form id="edit-form" className="form-grid" onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Nom
-          <input type="text" value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} />
-        </label>
-        <label className="full">
-          Description
-          <textarea rows={3} value={form.description} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} />
-        </label>
-        <label>
-          Catégorie
-          <select value={form.category} onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}>
-            {CATEGORIES.map(c => (
-              <option key={c.slug} value={c.slug}>{c.name}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Genre
-          <select value={form.gender} onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}>
-            {GENDERS.map(g => (
-              <option key={g.value} value={g.value}>{g.label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Prix de base (€)
-          <input type="number" min="0" step="0.01" value={form.priceBase} onChange={(e) => setForm(prev => ({ ...prev, priceBase: e.target.value }))} />
-        </label>
-        <label>
-          Statut
-          <select value={form.status} onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}>
-            <option value="active">Actif</option>
-            <option value="inactive">Inactif</option>
-            <option value="draft">Brouillon</option>
-            <option value="discontinued">Arrêté</option>
-          </select>
-        </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={form.featured} onChange={(e) => setForm(prev => ({ ...prev, featured: e.target.checked }))} />
-          Mettre en avant
-        </label>
-
-        <div className="full">
-          <div style={{ marginBottom: 6, fontWeight: 500 }}>Couleurs disponibles</div>
-          <div className="checkbox-grid">
-            {ALLOWED_COLORS.map(color => (
-              <label key={color} className="checkbox-item">
-                <input 
-                  type="checkbox"
-                  checked={form.colors.includes(color)}
-                  onChange={() => toggleColor(color)}
-                />
-                <span>{color}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="full">
-          <div style={{ marginBottom: 6, fontWeight: 500 }}>Tailles disponibles</div>
-          <div className="checkbox-grid">
-            {SIZE_OPTIONS.map(size => (
-              <label key={size} className="checkbox-item">
-                <input 
-                  type="checkbox"
-                  checked={form.sizes.includes(size)}
-                  onChange={() => toggleSize(size)}
-                />
-                <span>{size}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <label>
-          Stock (variant principal)
-          <input type="number" min="0" step="1" value={form.stock} onChange={(e) => setForm(prev => ({ ...prev, stock: e.target.value }))} />
-        </label>
-
-        <label>
-          SKU
-          <input type="text" value={form.sku} onChange={(e) => setForm(prev => ({ ...prev, sku: e.target.value }))} />
-        </label>
-      </form>
     </div>
   );
 };

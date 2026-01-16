@@ -695,7 +695,7 @@ const Customize = () => {
     const productColorHex = getColorHex(selectedColor) || '#ffffff';
     return {
       productId: selectedModel?._id,
-      productType: selectedModel?.category || selectedModel?.type || 't-shirts',
+      productType: selectedModel?.category || 't-shirts',
       productColor: productColorHex,
       text: primaryText || undefined,
       image: {
