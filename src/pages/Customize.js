@@ -30,6 +30,9 @@ const COLOR_NAME_TO_HEX = {
   'Mauve': '#7c3aed',
   'Rose': '#ec4899',
   'Marron': '#92400e',
+  'Gris': '#6b7280',
+  'Vert palme': '#adfacaff',
+  'Bleu palme': '#9fdcfdff',
 };
 const getColorHex = (name) => {
   if (!name) return '#ffffff';

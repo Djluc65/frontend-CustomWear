@@ -512,6 +512,9 @@ const formatColorLabel = (slug) => {
     mauve: 'Mauve',
     rose: 'Rose',
     marron: 'Marron',
+    gris: 'Gris',
+    'vert foncé palme': 'Vert foncé palme',
+    'bleu foncé palme': 'Bleu foncé palme',
   };
   return map[s] || s.replace(/^./, c => c.toUpperCase());
 };

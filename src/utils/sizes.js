@@ -1,5 +1,5 @@
 // Utilitaire de tri des tailles selon ordre global
-export const SIZE_ORDER = ['xs','s','m','l','xl','2xl','3xl','4xl','5xl'];
+export const SIZE_ORDER = ['xs','s','m','l','xl','2xl','3xl','4xl','5xl','taille universelle'];
 
 export const sizeIndex = (value) => {
   const v = String(value || '').toLowerCase();

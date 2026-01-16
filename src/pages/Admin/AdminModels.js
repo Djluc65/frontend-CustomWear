@@ -38,8 +38,21 @@ const toCategorySlug = (cat) => {
 };
 
 const ALLOWED_TYPES = ['t-shirt', 'sweat', 'hoodie', 'casquette', 'mug'];
-const ALLOWED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-const ALLOWED_COLORS = ['Noir', 'Blanc', 'Bleu', 'Vert', 'Jaune', 'Rouge', 'Mauve', 'Rose', 'Marron'];
+const ALLOWED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'Unisexe'];
+const ALLOWED_COLORS = [
+  'Noir',
+  'Blanc',
+  'Bleu',
+  'Vert',
+  'Jaune',
+  'Rouge',
+  'Mauve',
+  'Rose',
+  'Marron',
+  'Gris',
+  'Vert palme',
+  'Bleu palme'
+];
 const ALLOWED_GENDERS = ['unisexe', 'homme', 'femme', 'enfant'];
 
 const PREFERRED_CATEGORIES = [
@@ -69,6 +82,7 @@ const AdminModels = () => {
   const [editingModel, setEditingModel] = useState(null);
   const [form, setForm] = useState({
     name: '',
+    description: '',
     type: 't-shirt',
     category: '',
     gender: 'unisexe',
@@ -168,6 +182,7 @@ const AdminModels = () => {
     setEditingModel(null);
     setForm({
       name: '',
+      description: '',
       type: 't-shirt',
       category: '',
       gender: 'unisexe',
@@ -193,6 +208,7 @@ const AdminModels = () => {
     setEditingModel(model);
     setForm({
       name: model?.name || '',
+      description: model?.description || '',
       type: model?.type || 't-shirt',
       category: toCategorySlug(model?.category || ''),
       gender: (model?.gender || 'unisexe'),
@@ -306,6 +322,7 @@ const AdminModels = () => {
       setLoading(true);
       const formData = new FormData();
       formData.append('name', form.name);
+      formData.append('description', form.description);
       formData.append('type', form.type);
       formData.append('category', form.category);
       formData.append('gender', form.gender);
@@ -424,6 +441,9 @@ const AdminModels = () => {
                     <span>•</span>
                     <span className="capitalize">{model.gender}</span>
                   </div>
+                  {model.description && (
+                    <p className="text-xs text-slate-400 mt-2 line-clamp-2">{model.description}</p>
+                  )}
                   <div className="flex items-center justify-between mt-4">
                     <span className="font-bold text-blue-600">{model.basePrice} €</span>
                     <div className="flex gap-1">
@@ -456,6 +476,16 @@ const AdminModels = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nom du modèle</label>
                     <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ex: T-Shirt Premium Bio" required />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea 
+                      value={form.description} 
+                      onChange={e => setForm({...form, description: e.target.value})} 
+                      placeholder="Description du modèle..." 
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                    />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -513,24 +543,33 @@ const AdminModels = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Couleurs disponibles</label>
                     <div className="flex flex-wrap gap-2">
-                      {ALLOWED_COLORS.map(color => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setForm(prev => ({
-                            ...prev,
-                            colors: prev.colors.includes(color) ? prev.colors.filter(c => c !== color) : [...prev.colors, color]
-                          }))}
-                          className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border transition-all ${
-                            form.colors.includes(color)
-                              ? 'bg-slate-900 text-white border-slate-900'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                          }`}
-                        >
-                          <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color.toLowerCase() === 'noir' ? 'black' : color.toLowerCase() === 'blanc' ? 'white' : color.toLowerCase() }} />
-                          {color}
-                        </button>
-                      ))}
+                      {ALLOWED_COLORS.map(color => {
+                        const lower = color.toLowerCase();
+                        let swatchColor = lower;
+                        if (lower === 'noir') swatchColor = '#000000';
+                        else if (lower === 'blanc') swatchColor = '#ffffff';
+                        else if (lower === 'gris') swatchColor = '#6b7280';
+                        else if (lower.startsWith('vert')) swatchColor = '#166534';
+                        else if (lower.startsWith('bleu')) swatchColor = '#1e3a8a';
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setForm(prev => ({
+                              ...prev,
+                              colors: prev.colors.includes(color) ? prev.colors.filter(c => c !== color) : [...prev.colors, color]
+                            }))}
+                            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+                              form.colors.includes(color)
+                                ? 'bg-slate-900 text-white border-slate-900'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                            }`}
+                          >
+                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: swatchColor }} />
+                            {color}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -581,12 +620,20 @@ const AdminModels = () => {
                      <div className="mt-8 pt-8 border-t border-slate-100">
                         <h3 className="font-semibold text-slate-900 mb-4">Images par couleur (optionnel)</h3>
                         <div className="space-y-6">
-                          {form.colors.map(color => (
-                            <div key={color} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                              <h4 className="font-medium text-slate-800 mb-3 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: color.toLowerCase() === 'noir' ? 'black' : color.toLowerCase() === 'blanc' ? 'white' : color.toLowerCase() }}></span>
-                                {color}
-                              </h4>
+                          {form.colors.map(color => {
+                            const lower = color.toLowerCase();
+                            let swatchColor = lower;
+                            if (lower === 'noir') swatchColor = '#000000';
+                            else if (lower === 'blanc') swatchColor = '#ffffff';
+                            else if (lower === 'gris') swatchColor = '#6b7280';
+                            else if (lower.startsWith('vert')) swatchColor = '#166534';
+                            else if (lower.startsWith('bleu')) swatchColor = '#1e3a8a';
+                            return (
+                              <div key={color} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <h4 className="font-medium text-slate-800 mb-3 flex items-center gap-2">
+                                  <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: swatchColor }}></span>
+                                  {color}
+                                </h4>
                               <div className="grid grid-cols-2 gap-4">
                                 {['front', 'back'].map(side => (
                                   <div key={`${color}-${side}`} className="relative">
@@ -607,7 +654,8 @@ const AdminModels = () => {
                                 ))}
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                      </div>
                    )}
