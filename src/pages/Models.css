@@ -186,6 +186,34 @@
 .model-card-title { font-weight: 700; color: #111827; font-size: 1rem; }
 .model-card-price { font-weight: 600; color: #059669; }
 
+.model-card-description {
+  font-size: 0.85rem;
+  color: #4b5563;
+  max-height: 3rem;
+  overflow: hidden;
+}
+
+.model-card-colors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.model-color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.05);
+  cursor: pointer;
+}
+
+.model-color-dot.selected {
+  outline: 2px solid #111827;
+  outline-offset: 1px;
+}
+
 .model-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .model-card-tags .tag {
   display: inline-flex;

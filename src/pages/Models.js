@@ -15,6 +15,7 @@ const Models = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [initializedFromURL, setInitializedFromURL] = useState(false);
   const [selectedColors, setSelectedColors] = useState([]);
+  const [modelColorSelection, setModelColorSelection] = useState({});
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [openSections, setOpenSections] = useState({
     categories: false,
@@ -172,16 +173,9 @@ const Models = () => {
   };
 
   const getModelDisplayImage = (model) => {
-    if (selectedColors.length > 0 && model?.imagesByColor) {
-      // Mapping des clés imagesByColor en minuscule pour comparaison
-      const colorKeys = Object.keys(model.imagesByColor);
-      const matchedKey = colorKeys.find(key => 
-        selectedColors.includes(key.toLowerCase()) && model.imagesByColor[key]?.front
-      );
-      
-      if (matchedKey) {
-        return model.imagesByColor[matchedKey].front;
-      }
+    const selectedColor = modelColorSelection[model._id];
+    if (selectedColor && model?.imagesByColor && model.imagesByColor[selectedColor]?.front) {
+      return model.imagesByColor[selectedColor].front;
     }
     return model?.images?.front || model?.images?.back || '/logo512.png';
   };
@@ -371,10 +365,15 @@ const Models = () => {
             </div>
           </aside>
           <div className="models-list flex-grow-1" role="list">
-            {filteredModels.map((model) => (
+            {filteredModels.map((model) => {
+              const selectedColor = modelColorSelection[model._id];
+              const customizeUrl = selectedColor
+                ? `/customize?model=${model._id}&color=${encodeURIComponent(selectedColor)}`
+                : `/customize?model=${model._id}`;
+              return (
               <Link
                 key={model._id}
-                to={`/customize?model=${model._id}`}
+                to={customizeUrl}
                 className="model-card"
                 role="listitem"
               >
@@ -387,9 +386,38 @@ const Models = () => {
                 </div>
                 <div className="model-card-meta">
                   <div className="model-card-title">{model?.name || 'Modèle'}</div>
+                  {model?.description && (
+                    <div className="model-card-description">
+                      {model.description}
+                    </div>
+                  )}
                   <div className="model-card-price">
                     {Number.isFinite(Number(model?.basePrice)) ? `${Number(model.basePrice).toFixed(2)} €` : 'Prix indisponible'}
                   </div>
+                  {Array.isArray(model?.colors) && model.colors.length > 0 && (
+                    <div className="model-card-colors">
+                      {model.colors.map((color) => {
+                        const isSelected = modelColorSelection[model._id] === color;
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`model-color-dot${isSelected ? ' selected' : ''}`}
+                            style={{ backgroundColor: getColorSwatchColor(color) }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setModelColorSelection((prev) => ({
+                                ...prev,
+                                [model._id]: color,
+                              }));
+                            }}
+                            aria-label={formatColorLabel(color)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                   {Array.isArray(model?.tags) && model.tags.length > 0 && (
                     <div className="model-card-tags">
                       {model.tags.map((t) => (
@@ -399,7 +427,7 @@ const Models = () => {
                   )}
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         </div>
       )}
@@ -454,4 +482,21 @@ const formatColorLabel = (slug) => {
 };
 const formatSizeLabel = (slug) => {
   return String(slug || '').toUpperCase();
+};
+
+const getColorSwatchColor = (color) => {
+  const lower = String(color || '').toLowerCase();
+  if (lower === 'noir') return '#000000';
+  if (lower === 'blanc') return '#ffffff';
+  if (lower === 'vert') return '#166534';
+  if (lower === 'bleu') return '#1e3a8a';
+  if (lower === 'gris') return '#6b7280';
+  if (lower === 'rouge') return '#fe0606ff';
+  if (lower === 'rose') return '#ffd7cbff';
+  if (lower === 'jaune') return '#ffe600ff';
+  if (lower === 'marron') return '#523a32ff';
+  if (lower === 'mauve') return '#606ff3ff';
+  if (lower === 'vert palme') return '#bfffb5ff';
+  if (lower === 'bleu palme') return '#91c6ffff';
+  return lower;
 };

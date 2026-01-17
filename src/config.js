@@ -3,8 +3,8 @@
 
 const getApiUrl = () => {
   // 1. Si une URL est définie dans l'environnement, l'utiliser
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
 
   // 2. Sinon, construire l'URL dynamiquement basée sur le hostname actuel

@@ -183,8 +183,11 @@ const Customize = () => {
   const [computedTotals, setComputedTotals] = useState({ customizationPrice: 0, baseModelPrice: Number(DEFAULT_MODEL_PLACEHOLDER.basePrice), grandTotal: Number(DEFAULT_MODEL_PLACEHOLDER.basePrice) });
 
   const handleAddToCartCustomized = async () => {
+    if (!selectedTechnique) {
+      toast.error("Veuillez choisir une technique d'impression avant de continuer.");
+      return false;
+    }
     try {
-      // Déterminer la sélection côté client
       const textFront = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'front' && (t?.visible ?? true));
       const textBack = Array.isArray(textLayers) && textLayers.some(t => t?.side === 'back' && (t?.visible ?? true));
       const imageFront = Array.isArray(imageLayers) && imageLayers.some(i => i?.side === 'front' && (i?.visible ?? true));
@@ -270,8 +273,10 @@ const Customize = () => {
   const [imageLayers, setImageLayers] = useState([]);
   const [selectedImageId, setSelectedImageId] = useState(null);
 
+  const isDesktop = typeof window !== 'undefined' ? window.innerWidth >= 1024 : true;
+
   const [panelOpen, setPanelOpen] = useState({
-    produit: false,
+    produit: isDesktop,
     image: false,
     texte: false,
     galerie: false,
@@ -280,8 +285,8 @@ const Customize = () => {
   });
   const togglePanel = (key) => setPanelOpen(prev => ({ ...prev, [key]: !prev[key] }));
   // Barre contextuelle à côté du panel gauche
-  const [contextOpen, setContextOpen] = useState(false);
-  const [activeContextSection, setActiveContextSection] = useState(null); // 'produit' | 'image' | 'texte' | 'save'
+  const [contextOpen, setContextOpen] = useState(isDesktop);
+  const [activeContextSection, setActiveContextSection] = useState(isDesktop ? 'produit' : null); // 'produit' | 'image' | 'texte' | 'save'
   // Références pour scroll vers les sections du panneau gauche
   const produitRef = useRef(null);
   const imageRef = useRef(null);
@@ -1327,15 +1332,25 @@ const Customize = () => {
     });
   }, [selectedModel, selectedColor]);
 
-  // Préselection via paramètre 'model' dans l'URL (si fourni)
   useEffect(() => {
     const modelId = query.get('model');
+    const colorParam = query.get('color');
     if (!modelId || activeModels.length === 0) return;
     const next = activeModels.find(m => String(m._id) === String(modelId));
-    if (next && next._id !== selectedModel?._id) {
-      setSelectedModel(next);
-      if (Array.isArray(next.colors) && next.colors.length) {
-        setSelectedColor(next.colors[0]);
+    if (next) {
+      if (next._id !== selectedModel?._id || colorParam) {
+        setSelectedModel(next);
+        let targetColor = null;
+        if (colorParam && Array.isArray(next.colors)) {
+          targetColor = next.colors.find(c => String(c).toLowerCase() === String(colorParam).toLowerCase());
+        }
+        if (targetColor) {
+          setSelectedColor(targetColor);
+        } else if (Array.isArray(next.colors) && next.colors.length) {
+          if (next._id !== selectedModel?._id) {
+            setSelectedColor(next.colors[0]);
+          }
+        }
       }
     }
   }, [query, activeModels]);
@@ -1477,7 +1492,7 @@ const Customize = () => {
         </div>
       </div>
       <nav className="flex items-center space-x-1 border-b pb-2 mb-4 overflow-x-auto md:overflow-visible" aria-label="Sous-navigation">
-        <NavLink to="/customize" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Personnalisation</NavLink>
+        <NavLink to="/customize" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-600 text-white font-bold" : "text-white-600 hover:bg-blue-700 hover:text-white")}>Personnalisation</NavLink>
         <NavLink to="/products" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Produits disponibles</NavLink>
         <NavLink to="/models" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}>Modèles</NavLink>
       </nav>
@@ -1537,14 +1552,14 @@ const Customize = () => {
           contextOpen && activeContextSection ? "fixed bottom-[60px] left-0 right-0 z-40 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl h-[50vh] overflow-y-auto p-4 md:static md:h-auto md:bg-transparent md:border-none md:shadow-none md:p-0 md:z-auto" : "hidden md:block"
         )}>
           {/* En-tête mobile pour la fenêtre */}
-          <div className="w-full flex md:hidden justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b">
-            <h3 className="font-bold text-lg uppercase">{{
+          <div className="w-full flex md:hidden items-center mb-4 sticky top-0 bg-white z-10 pb-2">
+            <h3 className="font-bold text-lg uppercase flex-1">{{
               produit: 'Modèles',
               image: 'Image',
               texte: 'Texte',
               save: 'Sauvegarder'
             }[activeContextSection] || activeContextSection}</h3>
-            <Button variant="ghost" size="sm" onClick={() => { setContextOpen(false); setActiveContextSection(null); }}>Fermer</Button>
+            {/* <Button variant="ghost" size="sm" onClick={() => { setContextOpen(false); setActiveContextSection(null); }}>Fermer</Button> */}
           </div>
           <div className="container-panel">
           {activeContextSection === 'produit' && (
@@ -2420,6 +2435,9 @@ const Customize = () => {
               <button className={`chip ${selectedTechnique === 'DTG' ? 'active' : ''}`} onClick={() => setSelectedTechnique('DTG')}>DTG</button>
               <button className={`chip ${selectedTechnique === 'Sublimation' ? 'active' : ''}`} onClick={() => setSelectedTechnique('Sublimation')}>Sublimation</button>
             </div>
+            {!selectedTechnique && (
+              <p style={{ color: '#dc2626', marginTop: 8 }}>Choisissez une technique d'impression pour continuer.</p>
+            )}
             <p style={{ color: '#6b7280' }}>Aperçu et coûts seront ajoutés ici.</p>
           </div>
 
@@ -2427,10 +2445,20 @@ const Customize = () => {
           
           <div className="panel">
             <div className="customize-actions">
-              <button className="add-to-cart-btn" onClick={handleAddToCartCustomized} title="Ajouter au panier">
+              <button
+                className="add-to-cart-btn"
+                onClick={handleAddToCartCustomized}
+                title="Ajouter au panier"
+                disabled={!selectedTechnique}
+              >
                 <FiShoppingCart /> Ajouter au panier
               </button>
-              <button className="checkout-btn" onClick={handleCheckoutCustomized} title="Paiement">
+              <button
+                className="checkout-btn"
+                onClick={handleCheckoutCustomized}
+                title="Paiement"
+                disabled={!selectedTechnique}
+              >
                 <FiCreditCard /> Paiement
               </button>
             </div>

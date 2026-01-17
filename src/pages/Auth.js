@@ -16,7 +16,7 @@ const Auth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector(state => state.auth);
-  const ENABLE_TEST_ADMIN = process.env.REACT_APP_ENABLE_TEST_ADMIN === 'true';
+  const ENABLE_TEST_ADMIN = import.meta.env.VITE_ENABLE_TEST_ADMIN === 'true';
   
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode');
@@ -305,7 +305,7 @@ const Auth = () => {
 
             <div className="flex justify-center w-full">
               <FacebookLogin
-                appId={process.env.REACT_APP_FACEBOOK_APP_ID || "123456789012345"}
+                appId={import.meta.env.VITE_FACEBOOK_APP_ID || "123456789012345"}
                 onSuccess={handleFacebookSuccess}
                 onFail={handleFacebookFail}
                 onProfileSuccess={(response) => console.log('Get Profile Success!', response)}

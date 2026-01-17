@@ -221,8 +221,12 @@ export const customizationPricingAPI = {
 export const modelsAPI = {
   getModels: (params = {}) => api.get('/api/models', { params }),
   getModel: (id) => api.get(`/api/models/${id}`),
-  createModel: (data) => api.post('/api/models', data),
-  updateModel: (id, data) => api.put(`/api/models/${id}`, data),
+  createModel: (data) => api.post('/api/models', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  updateModel: (id, data) => api.put(`/api/models/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   deleteModel: (id) => api.delete(`/api/models/${id}`),
 };
 
