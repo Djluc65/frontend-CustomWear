@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useSearchParams } from 'react-router-dom';
-import { modelsAPI } from '../services/api';
+import { modelsAPI, assistantAPI } from '../services/api';
 import './Customize.css';
 import './Models.css';
 
@@ -26,6 +26,11 @@ const Models = () => {
   const toggleSection = (key) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const [assistantInput, setAssistantInput] = useState('');
+  const [assistantReply, setAssistantReply] = useState('');
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantError, setAssistantError] = useState('');
 
   const searchTerm = useMemo(() => String(searchParams.get('search') || '').trim().toLowerCase(), [searchParams]);
   useEffect(() => {
@@ -180,6 +185,38 @@ const Models = () => {
     return model?.images?.front || model?.images?.back || '/logo512.png';
   };
 
+  const handleAskAssistant = async (e) => {
+    e.preventDefault();
+    const message = assistantInput.trim();
+    if (!message) return;
+    setAssistantLoading(true);
+    setAssistantError('');
+    try {
+      const firstModel = Array.isArray(filteredModels) && filteredModels.length > 0 ? filteredModels[0] : null;
+      const summaryParts = [];
+      if (firstModel?.name) summaryParts.push(`Nom: ${firstModel.name}`);
+      if (firstModel?.category) summaryParts.push(`Catégorie: ${firstModel.category}`);
+      if (firstModel?.gender) summaryParts.push(`Genre: ${firstModel.gender}`);
+      if (firstModel?.colors && firstModel.colors.length > 0) {
+        summaryParts.push(`Couleurs: ${firstModel.colors.slice(0, 3).join(', ')}`);
+      }
+      const productSummary = summaryParts.join(' | ');
+      const res = await assistantAPI.ask({
+        message,
+        page: 'models',
+        productSummary,
+      });
+      const reply = res?.data?.reply || '';
+      setAssistantReply(reply);
+    } catch (err) {
+      setAssistantError(
+        err?.response?.data?.message || 'Impossible de récupérer une recommandation pour le moment.'
+      );
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="models-page container py-4">
@@ -216,6 +253,41 @@ const Models = () => {
         </button>
         
       </nav>
+      <div className="assistant-compact">
+        <form onSubmit={handleAskAssistant} className="assistant-compact-form">
+          <input
+            type="text"
+            className="assistant-compact-input"
+            placeholder="Besoin d’un conseil sur ces modèles ?"
+            value={assistantInput}
+            onChange={(e) => setAssistantInput(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="assistant-compact-button"
+            disabled={assistantLoading}
+          >
+            {assistantLoading ? 'Analyse...' : 'Conseil'}
+          </button>
+        </form>
+        {assistantError && (
+          <div className="assistant-compact-error">
+            {assistantError}
+          </div>
+        )}
+        {assistantReply && !assistantError && (
+          <div className="assistant-compact-reply">
+            <button 
+              className="assistant-close-btn"
+              onClick={() => setAssistantReply('')}
+              title="Masquer le conseil"
+            >
+              ×
+            </button>
+            {assistantReply}
+          </div>
+        )}
+      </div>
       {activeModels.length === 0 ? (
         <div className="alert alert-info">Aucun modèle actif pour le moment.</div>
       ) : (

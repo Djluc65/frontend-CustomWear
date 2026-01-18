@@ -230,5 +230,10 @@ export const modelsAPI = {
   deleteModel: (id) => api.delete(`/api/models/${id}`),
 };
 
+export const assistantAPI = {
+  ask: ({ message, page, productSummary }) =>
+    api.post('/api/assistant', { message, page, productSummary }),
+};
+
 // Export par défaut de l'instance axios configurée
 export default api;

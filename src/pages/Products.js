@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiSearch, FiFilter, FiGrid, FiList } from 'react-icons/fi';
 import ProductCard from '../components/Products/ProductCard';
 import { fetchProducts, setFilters, clearFilters } from '../store/slices/productsSlice';
+import { assistantAPI } from '../services/api';
 import './Products.css';
 
 // Utilitaire: déduire un slug de catégorie compatible
@@ -179,6 +180,48 @@ const Products = () => {
     }
   };
 
+  const [assistantInput, setAssistantInput] = useState('');
+  const [assistantReply, setAssistantReply] = useState('');
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantError, setAssistantError] = useState('');
+
+  const handleAskAssistant = async (e) => {
+    e.preventDefault();
+    const message = assistantInput.trim();
+    if (!message) return;
+    setAssistantLoading(true);
+    setAssistantError('');
+    try {
+      const firstProduct = Array.isArray(products) && products.length > 0 ? products[0] : null;
+      const summaryParts = [];
+      if (firstProduct?.name) summaryParts.push(`Nom: ${firstProduct.name}`);
+      if (firstProduct?.category?.name || firstProduct?.category) {
+        const catName = typeof firstProduct.category === 'object' ? firstProduct.category.name : firstProduct.category;
+        summaryParts.push(`Catégorie: ${catName}`);
+      }
+      if (firstProduct?.colors && firstProduct.colors.length > 0) {
+        summaryParts.push(`Couleurs: ${firstProduct.colors.slice(0, 3).join(', ')}`);
+      }
+      if (firstProduct?.sizes && firstProduct.sizes.length > 0) {
+        summaryParts.push(`Tailles: ${firstProduct.sizes.slice(0, 3).join(', ')}`);
+      }
+      const productSummary = summaryParts.join(' | ');
+      const res = await assistantAPI.ask({
+        message,
+        page: 'products',
+        productSummary,
+      });
+      const reply = res?.data?.reply || '';
+      setAssistantReply(reply);
+    } catch (err) {
+      setAssistantError(
+        err?.response?.data?.message || 'Impossible de récupérer une recommandation pour le moment.'
+      );
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
   if (isLoading && products.length === 0) {
     return (
       <div className="products-loading">
@@ -215,14 +258,40 @@ const Products = () => {
         </div>
         
         <div className="products-controls">
-          <div className="search-bar">
-            <FiSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Rechercher un produit (titre, tags, etc...)"
-              value={localFilters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-            />
+          <div className="assistant-compact">
+            <form onSubmit={handleAskAssistant} className="assistant-compact-form">
+              <input
+                type="text"
+                className="assistant-compact-input"
+                placeholder="Besoin d’un conseil sur ces produits ?"
+                value={assistantInput}
+                onChange={(e) => setAssistantInput(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="assistant-compact-button"
+                disabled={assistantLoading}
+              >
+                {assistantLoading ? 'Analyse...' : 'Conseil'}
+              </button>
+            </form>
+            {assistantError && (
+              <div className="assistant-compact-error">
+                {assistantError}
+              </div>
+            )}
+            {assistantReply && !assistantError && (
+              <div className="assistant-compact-reply">
+                <button 
+                  className="assistant-close-btn"
+                  onClick={() => setAssistantReply('')}
+                  title="Masquer le conseil"
+                >
+                  ×
+                </button>
+                {assistantReply}
+              </div>
+            )}
           </div>
           
           <button 

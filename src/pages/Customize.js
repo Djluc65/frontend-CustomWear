@@ -10,7 +10,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Select } from '../components/ui/select';
 import { Card, CardContent } from '../components/ui/card';
 import { useLocation, NavLink, useNavigate } from 'react-router-dom';
-import { modelsAPI, productsAPI, customizationPricingAPI, customizationsAPI } from '../services/api';
+import { modelsAPI, productsAPI, customizationPricingAPI, customizationsAPI, assistantAPI } from '../services/api';
 import { sortSizes } from '../utils/sizes';
 import './Customize.css';
 
@@ -353,6 +353,41 @@ const Customize = () => {
       setActiveTextInspectorTab('content');
     }
   }, [selectedTextId]);
+
+  const [assistantInput, setAssistantInput] = useState('');
+  const [assistantReply, setAssistantReply] = useState('');
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantError, setAssistantError] = useState('');
+
+  const handleAskAssistant = async (e) => {
+    e.preventDefault();
+    const message = assistantInput.trim();
+    if (!message) return;
+    setAssistantLoading(true);
+    setAssistantError('');
+    try {
+      const summaryParts = [];
+      if (selectedModel?.name) summaryParts.push(`Nom: ${selectedModel.name}`);
+      if (selectedModel?.category) summaryParts.push(`Catégorie: ${selectedModel.category}`);
+      if (selectedModel?.gender) summaryParts.push(`Genre: ${selectedModel.gender}`);
+      if (selectedColor) summaryParts.push(`Couleur choisie: ${selectedColor}`);
+      if (selectedSize) summaryParts.push(`Taille choisie: ${selectedSize}`);
+      const productSummary = summaryParts.join(' | ');
+      const res = await assistantAPI.ask({
+        message,
+        page: 'customize',
+        productSummary,
+      });
+      const reply = res?.data?.reply || '';
+      setAssistantReply(reply);
+    } catch (err) {
+      setAssistantError(
+        err?.response?.data?.message || 'Impossible de récupérer une recommandation pour le moment.'
+      );
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
 
   const pushHistory = (label) => {
     setHistory(prev => [...prev, JSON.stringify(textLayers)]);
@@ -1490,6 +1525,41 @@ const Customize = () => {
             {Number.isFinite(Number(selectedModel?.basePrice)) ? `${Number(selectedModel.basePrice).toFixed(2)} €` : `${Number(DEFAULT_MODEL_PLACEHOLDER.basePrice).toFixed(2)} €`}
           </div>
         </div>
+      </div>
+      <div className="assistant-compact">
+        <form onSubmit={handleAskAssistant} className="assistant-compact-form">
+          <input
+            type="text"
+            className="assistant-compact-input"
+            placeholder="Besoin d’un conseil sur ta personnalisation ?"
+            value={assistantInput}
+            onChange={(e) => setAssistantInput(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="assistant-compact-button"
+            disabled={assistantLoading}
+          >
+            {assistantLoading ? 'Analyse...' : 'Conseil'}
+          </button>
+        </form>
+        {assistantError && (
+          <div className="assistant-compact-error">
+            {assistantError}
+          </div>
+        )}
+        {assistantReply && !assistantError && (
+          <div className="assistant-compact-reply">
+            <button 
+              className="assistant-close-btn"
+              onClick={() => setAssistantReply('')}
+              title="Masquer le conseil"
+            >
+              ×
+            </button>
+            {assistantReply}
+          </div>
+        )}
       </div>
       <nav className="flex items-center space-x-1 border-b pb-2 mb-4 overflow-x-auto md:overflow-visible" aria-label="Sous-navigation">
         <NavLink to="/customize" className={({ isActive }) => cn("px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap", isActive ? "bg-blue-600 text-white font-bold" : "text-white-600 hover:bg-blue-700 hover:text-white")}>Personnalisation</NavLink>

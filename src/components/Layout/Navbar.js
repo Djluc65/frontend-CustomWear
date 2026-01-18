@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import './Navbar.css';
 
@@ -148,11 +149,14 @@ const Navbar = () => {
       <div className="navbar-top">
       <div className="navbar-container">
         {/* Logo */}
-        <Link to="/" className="navbar-logo" onClick={() => setIsMenuOpen(false)}>
-          
-          <span className="logo-text">CustomWear</span>
-          <span className="logo-emoji">👕</span>
-        </Link>
+        <Button asChild variant="ghost" className="navbar-logo-button">
+          <Link to="/" className="navbar-logo" onClick={() => setIsMenuOpen(false)}>
+            <img src="/LogoCustomWear.png" alt="CustomWear Logo" className="navbar-logo-img" />
+             <h3 className="footer-title">
+              <span className="logo-emoji">👕</span>
+            </h3>
+          </Link>
+        </Button>
 
         {/* Menu Desktop */}
         <div className="navbar-menu">
