@@ -293,17 +293,15 @@ const Customize = () => {
   const texteRef = useRef(null);
   const saveRef = useRef(null);
   const scrollToSection = (key) => {
-    // Mobile: do not scroll page body, just open the panel
-    if (window.innerWidth < 1024) {
-      setPanelOpen(prev => ({ ...prev, [key]: true }));
-      return;
-    }
-    const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
-    const target = map[key];
-    if (target && target.current) {
-      try { target.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
-    }
     setPanelOpen(prev => ({ ...prev, [key]: true }));
+    // Small delay to allow panel expansion before scrolling
+    setTimeout(() => {
+      const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
+      const target = map[key];
+      if (target && target.current) {
+        try { target.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+      }
+    }, 100);
   };
   // Controls UI state
   // Bascule d'affichage des contrôles Image
