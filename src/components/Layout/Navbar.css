@@ -81,6 +81,8 @@
     width: 64px;
     height: 64px;
     margin-right: 8px;
+    position: relative;
+    right: 20px;
   }
 }
 
@@ -88,6 +90,8 @@
   .navbar-logo-img {
     width: 56px;
     height: 56px;
+    position: relative;
+    right: 20px;
   }
 }
 
