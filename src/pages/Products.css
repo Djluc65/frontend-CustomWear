@@ -466,8 +466,27 @@
     gap: 1rem;
   }
   .products-controls {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .assistant-compact {
+    margin-bottom: 0;
+    flex: 1;
+    max-width: none;
+    min-width: 0; /* Permet au flex item de rétrécir en dessous de son contenu min */
+  }
+
+  .filter-toggle {
+    white-space: nowrap;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .view-controls {
+    display: flex;
+    flex-shrink: 0;
   }
   
   .search-bar {

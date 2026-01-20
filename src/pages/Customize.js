@@ -2360,7 +2360,7 @@ const Customize = () => {
               <div className="options-row">
                 <button className={`chip ${!showBack ? 'active' : ''}`} onClick={() => setShowBack(false)}>Avant</button>
                 <button className={`chip ${showBack ? 'active' : ''}`} onClick={() => setShowBack(true)}>Arrière</button>
-                <button className={`chip ${previewMode ? 'active' : ''}`} onClick={() => setPreviewMode(!previewMode)}>{previewMode ? 'Mode édition' : 'Mode aperçu'}</button>
+                <button className={`chip ${previewMode ? 'active' : ''}`} onClick={() => setPreviewMode(!previewMode)}>{previewMode ? 'Mode édition' : 'Aperçu'}</button>
                 <div className="zoom-controls">
                   <span>Zoom</span>
                   <input type="range" min="0.5" max="3" step="0.05" value={canvasZoom} onChange={(e)=>setCanvasZoom(Number(e.target.value))} />
@@ -2371,14 +2371,14 @@ const Customize = () => {
             <div className="preview-toolbar-row">
               <div className="unit-controls">
                 <span>Unité des règles</span>
-                <select value={rulerUnit} onChange={(e)=>setRulerUnit(e.target.value)}>
+                <select className="unit-select" value={rulerUnit} onChange={(e)=>setRulerUnit(e.target.value)}>
                   <option value="px">Pixels</option>
                   <option value="cm">Centimètres</option>
                 </select>
                 {!previewMode && (
                   <div className="guide-controls">
-                    <button className="chip" onClick={()=>addGuideLine('vertical')}>Ajouter repère vertical</button>
-                    <button className="chip" onClick={()=>addGuideLine('horizontal')}>Ajouter repère horizontal</button>
+                    <button className="chip" onClick={()=>addGuideLine('vertical')}>Repère vertical</button>
+                    <button className="chip" onClick={()=>addGuideLine('horizontal')}>Repère horizontal</button>
                   </div>
                 )}
               </div>
