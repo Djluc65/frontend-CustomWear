@@ -2356,28 +2356,32 @@ const Customize = () => {
         {/* Zone d'aperçu */}
         <div className="customize-preview">
           <div className="preview-toolbar">
-            <div className="options-row">
-              <button className={`chip ${!showBack ? 'active' : ''}`} onClick={() => setShowBack(false)}>Avant</button>
-              <button className={`chip ${showBack ? 'active' : ''}`} onClick={() => setShowBack(true)}>Arrière</button>
-              <button className={`chip ${previewMode ? 'active' : ''}`} onClick={() => setPreviewMode(!previewMode)}>{previewMode ? 'Mode édition' : 'Mode aperçu'}</button>
-              <div className="zoom-controls">
-                <span>Zoom</span>
-                <input type="range" min="0.5" max="3" step="0.05" value={canvasZoom} onChange={(e)=>setCanvasZoom(Number(e.target.value))} />
-                <span>{Math.round(canvasZoom*100)}%</span>
+            <div className="preview-toolbar-row">
+              <div className="options-row">
+                <button className={`chip ${!showBack ? 'active' : ''}`} onClick={() => setShowBack(false)}>Avant</button>
+                <button className={`chip ${showBack ? 'active' : ''}`} onClick={() => setShowBack(true)}>Arrière</button>
+                <button className={`chip ${previewMode ? 'active' : ''}`} onClick={() => setPreviewMode(!previewMode)}>{previewMode ? 'Mode édition' : 'Mode aperçu'}</button>
+                <div className="zoom-controls">
+                  <span>Zoom</span>
+                  <input type="range" min="0.5" max="3" step="0.05" value={canvasZoom} onChange={(e)=>setCanvasZoom(Number(e.target.value))} />
+                  <span>{Math.round(canvasZoom*100)}%</span>
+                </div>
               </div>
+            </div>
+            <div className="preview-toolbar-row">
               <div className="unit-controls">
                 <span>Unité des règles</span>
                 <select value={rulerUnit} onChange={(e)=>setRulerUnit(e.target.value)}>
                   <option value="px">Pixels</option>
                   <option value="cm">Centimètres</option>
                 </select>
+                {!previewMode && (
+                  <div className="guide-controls">
+                    <button className="chip" onClick={()=>addGuideLine('vertical')}>Ajouter repère vertical</button>
+                    <button className="chip" onClick={()=>addGuideLine('horizontal')}>Ajouter repère horizontal</button>
+                  </div>
+                )}
               </div>
-              {!previewMode && (
-                <div className="guide-controls">
-                  <button className="chip" onClick={()=>addGuideLine('vertical')}>Ajouter repère vertical</button>
-                  <button className="chip" onClick={()=>addGuideLine('horizontal')}>Ajouter repère horizontal</button>
-                </div>
-              )}
             </div>
           </div>
 

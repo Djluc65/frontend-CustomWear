@@ -28,51 +28,22 @@
 }
 
 @media (max-width: 768px) {
-  .products-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .products-controls {
-    display: flex;
-    flex-direction: row; /* Force row direction */
-    flex-wrap: nowrap; /* Prevent wrapping */
-    align-items: center;
-    width: 100%;
-    gap: 0.5rem;
-  }
-
   .assistant-compact {
     padding: 0.6rem;
-    max-width: none; /* Reset max-width */
-    margin: 0;
-    flex: 1; /* Take available space */
-  }
-
-  .filter-toggle {
-    padding: 0.6rem;
-    white-space: nowrap;
-    font-size: 0.9rem;
-  }
-  
-  .view-controls {
-    display: none; /* Hide view controls on mobile if space is tight, or make them smaller */
   }
 
   .assistant-compact-form {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .assistant-compact-input {
     min-width: 0;
     font-size: 0.8rem;
-    width: 100%; /* Ensure input takes space */
   }
 
   .assistant-compact-button {
     font-size: 0.75rem;
     padding: 0.3rem 0.6rem;
-    white-space: nowrap;
   }
 }
 

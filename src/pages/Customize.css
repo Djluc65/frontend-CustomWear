@@ -31,8 +31,6 @@
 @media (max-width: 768px) {
   .assistant-compact {
     padding: 0.6rem;
-    max-width: 90%;
-    margin: 0.5rem auto;
   }
 
   .assistant-compact-form {
@@ -370,10 +368,25 @@
   z-index: 10;
   background: #ffffff;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.5rem 0;
   margin: -0.5rem 0 0.5rem 0;
+}
+
+.preview-toolbar-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.options-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .canvas-container {
@@ -388,13 +401,25 @@
 }
 
 .zoom-controls {
-  position: sticky;
-  top: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-left: 1rem;
   background: #ffffff;
+}
+
+.unit-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.guide-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
 }
 
 .product-base {
