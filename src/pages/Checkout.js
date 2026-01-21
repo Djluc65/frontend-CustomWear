@@ -231,7 +231,7 @@ const Checkout = () => {
               >
                 <h2>Informations de paiement</h2>
                 <div className="payment-methods">
-                  <label className="payment-method">
+                  <label className={`payment-method ${formData.payment.method === 'card' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -241,7 +241,7 @@ const Checkout = () => {
                     />
                     <span>Carte bancaire</span>
                   </label>
-                  <label className="payment-method">
+                  <label className={`payment-method ${formData.payment.method === 'paypal' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="paymentMethod"
