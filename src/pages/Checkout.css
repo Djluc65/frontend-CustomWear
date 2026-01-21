@@ -1,7 +1,7 @@
 .checkout-page {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem;
 }
 
 .checkout-header {
@@ -52,7 +52,7 @@
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  border: 1px solid #e1e5e9;
+  border: 1px solid #e2e8f0; /* slate-200 */
 }
 
 .form-section h2 {
