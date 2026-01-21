@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import './Navbar.css';
@@ -209,10 +209,16 @@ const Navbar = () => {
                   Mon Profil
                 </Link>
                 <Link to="/orders" className="dropdown-link">
-                  <FaClipboardList className="dropdown-icon" />
-                  Mes Commandes
+                <FaClipboardList className="dropdown-icon" />
+                Mes Commandes
+              </Link>
+              {(user?.role === 'admin' || user?.role === 'moderator') && (
+                <Link to="/admin" className="dropdown-link">
+                  <FaChartLine className="dropdown-icon" />
+                  Dashboard Admin
                 </Link>
-                <button onClick={handleLogout} className="dropdown-link logout-btn">
+              )}
+              <button onClick={handleLogout} className="dropdown-link logout-btn">
                   <FaSignOutAlt className="dropdown-icon" />
                   Déconnexion
                 </button>

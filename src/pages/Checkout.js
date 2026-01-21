@@ -231,7 +231,7 @@ const Checkout = () => {
               >
                 <h2>Informations de paiement</h2>
                 <div className="payment-methods">
-                  <label className="payment-method">
+                  <label className={`payment-method ${formData.payment.method === 'card' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -241,7 +241,7 @@ const Checkout = () => {
                     />
                     <span>Carte bancaire</span>
                   </label>
-                  <label className="payment-method">
+                  <label className={`payment-method ${formData.payment.method === 'paypal' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -289,7 +289,7 @@ const Checkout = () => {
                 )}
 
                 {formData.payment.method === 'paypal' && (
-                  <div className="paypal-info" style={{ marginTop: '0.5rem', color: '#374151' }}>
+                  <div className="paypal-info">
                     Vous serez redirigé vers PayPal pour valider votre paiement.
                   </div>
                 )}
@@ -355,15 +355,7 @@ const Checkout = () => {
           <div className="order-totals">
             {cartCustomizationTotal > 0 ? (
               <>
-                {/* <div className="total-line">
-                  <span>Total Modèles</span>
-                  <span>{cartModelTotal.toFixed(2)} €</span>
-                </div> */}
-                {/* <div className="total-line">
-                  <span>Total Personnalisation</span>
-                  <span>{cartCustomizationTotal.toFixed(2)} €</span>
-                </div> */}
-                <div className="total-line" style={{ borderTop: '1px dashed #e1e5e9', marginTop: '0.25rem', paddingTop: '0.5rem' }}>
+                <div className="total-line subtotal">
                   <span>Sous-total</span>
                   <span>{(cartModelTotal + cartCustomizationTotal).toFixed(2)} €</span>
                 </div>

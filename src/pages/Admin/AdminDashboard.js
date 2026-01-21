@@ -25,7 +25,7 @@ import { Button } from '../../components/ui/button';
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { stats, loading, error } = useSelector(state => state.admin.stats);
+  const { data: stats, loading, error } = useSelector(state => state.admin.stats);
 
   useEffect(() => {
     dispatch(fetchDashboardStats());

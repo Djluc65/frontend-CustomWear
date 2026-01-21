@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { store, persistor } from './store/store';
 import './index.css';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import reportWebVitals from './reportWebVitals';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
@@ -27,7 +28,9 @@ root.render(
       <PersistGate loading={null} persistor={persistor}>
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
           <BrowserRouter>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </BrowserRouter>
         </GoogleOAuthProvider>
       </PersistGate>
