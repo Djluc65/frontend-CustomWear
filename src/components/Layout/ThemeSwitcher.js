@@ -1,52 +1,81 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setTheme, syncThemeWithUser } from '../../store/slices/themeSlice';
-import { FaSun, FaMoon, FaTint } from 'react-icons/fa';
+import { FaSun, FaMoon, FaTint, FaPalette } from 'react-icons/fa';
 import './ThemeSwitcher.css';
 
 const ThemeSwitcher = () => {
   const dispatch = useDispatch();
   const { theme } = useSelector((state) => state.theme);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const handleThemeChange = (newTheme) => {
     dispatch(setTheme(newTheme));
     if (isAuthenticated) {
       dispatch(syncThemeWithUser(newTheme));
     }
+    setIsOpen(false);
+  };
+
+  // Fermer le menu si on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light': return <FaSun />;
+      case 'dark': return <FaMoon />;
+      case 'deep-blue': return <FaTint />;
+      default: return <FaPalette />;
+    }
   };
 
   return (
-    <div className="theme-switcher">
-      <div className="theme-options">
+    <div className="theme-switcher" ref={dropdownRef}>
+      <button 
+        className="theme-toggle-btn"
+        onClick={() => setIsOpen(!isOpen)}
+        title="Changer de thème"
+      >
+        {getThemeIcon()}
+        {/* <span className="theme-current-label">{theme}</span> */}
+      </button>
+
+      <div className={`theme-dropdown ${isOpen ? 'open' : ''}`}>
         <button
-          className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+          className={`theme-option ${theme === 'light' ? 'active' : ''}`}
           onClick={() => handleThemeChange('light')}
-          title="Thème Clair"
-          aria-label="Activer le thème clair"
         >
           <FaSun />
-          <span className="theme-label">Light</span>
+          <span>Light</span>
         </button>
         
         <button
-          className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+          className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
           onClick={() => handleThemeChange('dark')}
-          title="Thème Sombre"
-          aria-label="Activer le thème sombre"
         >
           <FaMoon />
-          <span className="theme-label">Dark</span>
+          <span>Dark</span>
         </button>
         
         <button
-          className={`theme-btn ${theme === 'deep-blue' ? 'active' : ''}`}
+          className={`theme-option ${theme === 'deep-blue' ? 'active' : ''}`}
           onClick={() => handleThemeChange('deep-blue')}
-          title="Thème Deep Blue"
-          aria-label="Activer le thème Deep Blue"
         >
           <FaTint />
-          <span className="theme-label">Blue</span>
+          <span>Deep Blue</span>
         </button>
       </div>
     </div>

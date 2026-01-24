@@ -1,71 +1,130 @@
 .theme-switcher {
+  position: relative;
   display: flex;
   align-items: center;
   margin-left: 1rem;
 }
 
-.theme-options {
-  display: flex;
-  background-color: var(--bg-secondary);
-  border-radius: 20px;
-  padding: 4px;
-  border: 1px solid var(--border-color);
-}
-
-.theme-btn {
+.theme-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 150px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+.theme-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  width: 100%;
   background: transparent;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 16px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: left;
 }
 
-.theme-btn:hover {
-  color: var(--accent-color);
-  background-color: rgba(0, 0, 0, 0.05);
+.theme-option:hover {
+  background-color: #f0f0f0;
+  transform: translateX(3px);
 }
 
-.theme-btn.active {
-  background-color: var(--bg-primary);
-  color: var(--accent-color);
-  box-shadow: 0 2px 4px var(--shadow-color);
+.theme-option.active {
+  background-color: #e6f0ff;
+  color: #0066cc;
   font-weight: 600;
 }
 
-.theme-label {
-  display: none;
+.theme-option svg {
+  font-size: 1rem;
 }
 
-/* Afficher les labels sur les écrans plus larges si nécessaire, 
-   ou garder uniquement les icônes pour économiser de l'espace */
-@media (min-width: 1200px) {
-  .theme-label {
-    display: inline-block;
-    font-size: 0.8rem;
-  }
+/* Dark Mode Overrides */
+[data-theme='dark'] .theme-toggle-btn,
+[data-theme='deep-blue'] .theme-toggle-btn {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #e0e0e0;
 }
 
-/* Ajustements pour le thème sombre des boutons */
-[data-theme='dark'] .theme-options,
-[data-theme='deep-blue'] .theme-options {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='dark'] .theme-btn:hover,
-[data-theme='deep-blue'] .theme-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='dark'] .theme-btn.active,
-[data-theme='deep-blue'] .theme-btn.active {
-  background-color: rgba(255, 255, 255, 0.2);
+[data-theme='dark'] .theme-toggle-btn:hover,
+[data-theme='deep-blue'] .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
+}
+
+[data-theme='dark'] .theme-dropdown,
+[data-theme='deep-blue'] .theme-dropdown {
+  background: #1a1b1d; /* Dark theme background */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='deep-blue'] .theme-dropdown {
+  background: #1e293b; /* Deep blue theme background */
+}
+
+[data-theme='dark'] .theme-option,
+[data-theme='deep-blue'] .theme-option {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .theme-option:hover,
+[data-theme='deep-blue'] .theme-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .theme-option.active {
+  background-color: rgba(62, 166, 255, 0.2);
+  color: #3ea6ff;
+}
+
+[data-theme='deep-blue'] .theme-option.active {
+  background-color: rgba(62, 166, 255, 0.2);
+  color: #3ea6ff;
 }

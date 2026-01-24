@@ -82,8 +82,7 @@
     width: 64px;
     height: 64px;
     margin-right: 8px;
-    position: relative;
-    right: 60px;
+    /* Removed suspicious positioning */
   }
 }
 
@@ -91,8 +90,7 @@
   .navbar-logo-img {
     width: 56px;
     height: 56px;
-    position: relative;
-    right: 60px;
+    /* Removed suspicious positioning */
   }
 }
 
@@ -132,8 +130,20 @@
   text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
-[data-theme='dark'].navbar-link:hover {
-  background: #f8f9fa;
+[data-theme='dark'] .navbar-link:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='deep-blue'] .navbar-link:hover {
+  background: rgba(15, 23, 42, 0.403) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 1024px) {
