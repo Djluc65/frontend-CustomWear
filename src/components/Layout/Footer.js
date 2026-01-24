@@ -40,6 +40,7 @@ const Footer = () => {
             <h4 className="footer-subtitle">Navigation</h4>
             <ul className="footer-links">
               <li><Link to="/">Accueil</Link></li>
+              <li><Link to="/about">À Propos</Link></li>
               <li><Link to="/products">Tous les Produits</Link></li>
               <li><Link to="/products/tshirts">T-shirts</Link></li>
               <li><Link to="/products/vestes">Vestes</Link></li>

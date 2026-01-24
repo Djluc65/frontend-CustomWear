@@ -161,6 +161,11 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+[data-theme='light'] .hero-description,
+[data-theme='light'] .section-description {
+  color: whitesmoke !important;
+}
+
 .hero-buttons {
   display: flex;
   gap: 20px;

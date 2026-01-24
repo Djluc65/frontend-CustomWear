@@ -21,6 +21,7 @@ import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import Customize from './pages/Customize';
 import Search from './pages/Search';
+import About from './pages/About';
 import TestAdmin from './pages/TestAdmin';
 
 // Import des composants Admin
@@ -114,6 +115,8 @@ function App() {
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/customize" element={<Customize />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/search" element={<Search />} />
                   <Route path="/test-admin" element={<TestAdmin />} />
                 </Routes>
               </main>

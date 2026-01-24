@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine, FaInfoCircle } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import ThemeSwitcher from './ThemeSwitcher';
+import VoiceSearch from '../Common/VoiceSearch';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -165,6 +166,10 @@ const Navbar = () => {
             <FaHome className="navbar-icon" />
             Accueil
           </Link>
+          <Link to="/about" className="navbar-link">
+            <FaInfoCircle className="navbar-icon" />
+            À Propos
+          </Link>
           <Link to="/products" className="navbar-link">
             <FaBox className="navbar-icon" />
             Produits disponibles
@@ -267,9 +272,7 @@ const Navbar = () => {
             <button type="submit" className="search-btn"> 
               <FaSearch /> 
             </button> 
-            <div className="mic-btn" title="Recherche vocale (à venir)"> 
-              <FaMicrophone /> 
-            </div>
+            <VoiceSearch onSearch={setSearchQuery} />
           </form>
         </div>
       </div>
@@ -288,6 +291,7 @@ const Navbar = () => {
             <button type="submit" className="mobile-search-button">
               <FaSearch />
             </button>
+            <VoiceSearch onSearch={setSearchQuery} className="mobile-mic-btn" />
           </form>
         </div>
         
