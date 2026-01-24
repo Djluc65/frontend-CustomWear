@@ -30,9 +30,16 @@
 /* Dark and Deep Blue Overrides for Title and Description */
 [data-theme='dark'] .product-title,
 [data-theme='deep-blue'] .product-title,
-[data-theme='dark'] .product-description, p,
-[data-theme='deep-blue'] .product-description, p {
+[data-theme='dark'] .product-description,
+[data-theme='dark'] p,
+[data-theme='deep-blue'] .product-description,
+[data-theme='deep-blue'] p {
   color: rgba(245, 245, 245, 0.88) !important;
+}
+
+[data-theme='light'] .product-description,
+[data-theme='light'] p {
+  color: rgba(0, 0, 0, 0.746) !important;
 }
 
 .product-card:hover {

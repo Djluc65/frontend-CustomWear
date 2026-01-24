@@ -81,7 +81,7 @@
   .navbar-logo-img {
     width: 64px;
     height: 64px;
-    margin-right: 8px;
+    margin-right: 15px;
     /* Removed suspicious positioning */
   }
 }
@@ -632,7 +632,7 @@
   /* Placer le bouton menu (hamburger) à gauche sur mobile */
   .mobile-menu-toggle {
     order: -1;
-    margin-right: 10px;
+    margin-right: 20px;
     background: linear-gradient(135deg, #32465b 0%, #32465be1 100%);
   }
 

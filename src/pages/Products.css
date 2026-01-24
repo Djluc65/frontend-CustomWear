@@ -605,13 +605,19 @@
 
 [data-theme='deep-blue'] .filter-toggle,
 [data-theme='deep-blue'] .view-controls button {
-   color: var(--text-secondary);
-  border-color: var(--border-color);
+  background-color: rgba(24, 29, 39, 1) !important;
+  /* color: var(--text-secondary);
+  border-color: var(--border-color); */
+}
+
+[data-theme='deep-blue'] .filter-toggle:not(.active):hover,
+[data-theme='deep-blue'] .view-controls button:not(.active):hover {
+  background-color: rgba(26, 39, 39, 1) !important;
 }
 
 [data-theme='deep-blue'] .filter-toggle.active,
 [data-theme='deep-blue'] .view-controls button.active {
-  background-color: #e0f2fe;
-  color: rgba(24, 29, 39, 1);
-  border-color: #e0f2fe;
+  background-color: whitesmoke !important;
+  color: black !important;
+  border-color: whitesmoke !important;
 }
