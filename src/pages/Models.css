@@ -383,7 +383,7 @@
 
 [data-theme='dark'] .model-card-description,
 [data-theme='dark'] .filter-section h3::after {
-  color: var(--text-secondary);
+  color: whitesmoke;
 }
 
 /* Deep Blue Mode Overrides */
@@ -415,5 +415,5 @@
 
 [data-theme='deep-blue'] .model-card-description,
 [data-theme='deep-blue'] .filter-section h3::after {
-  color: var(--text-secondary);
+  color: whitesmoke;
 }

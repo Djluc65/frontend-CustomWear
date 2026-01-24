@@ -161,6 +161,27 @@
   margin-bottom: 1.5rem;
 }
 
+[data-theme='dark'] .cart-summary {
+  background: rgb(35, 36, 40);
+  border: 1px solid rgba(245, 245, 245, 0.096);
+}
+
+
+[data-theme='deep-blue'] .cart-summary {
+  background: rgba(30, 41, 59);
+  border: 1px solid rgba(245, 245, 245, 0.096);
+}
+
+[data-theme='dark'] .cart-summary h2, 
+[data-theme='deep-blue'] .cart-summary h2 {
+  color: rgb(245, 245, 245) !important;
+}
+
+[data-theme='dark'] .summary-line span,
+[data-theme='deep-blue'] .cart-summary span {
+  color: rgb(245, 245, 245) !important;
+}
+
 .summary-line {
   display: flex;
   justify-content: space-between;

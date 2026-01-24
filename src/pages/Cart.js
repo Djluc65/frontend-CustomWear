@@ -164,7 +164,7 @@ const Cart = () => {
         </div>
 
         <div className="cart-summary">
-          <h2>Résumé de la commande</h2>
+          <h2 >Résumé de la commande</h2>
           
           <div className="summary-line">
             <span>Sous-total</span>

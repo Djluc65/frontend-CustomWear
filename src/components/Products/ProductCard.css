@@ -27,10 +27,12 @@
   border: 1px solid rgba(245, 245, 245, 0.22);
 }
 
-/* Dark and Deep Blue Overrides for Title */
+/* Dark and Deep Blue Overrides for Title and Description */
 [data-theme='dark'] .product-title,
-[data-theme='deep-blue'] .product-title {
-  color: whitesmoke;
+[data-theme='deep-blue'] .product-title,
+[data-theme='dark'] .product-description, p,
+[data-theme='deep-blue'] .product-description, p {
+  color: rgba(245, 245, 245, 0.88) !important;
 }
 
 .product-card:hover {
@@ -378,7 +380,7 @@
 }
 
 .product-card.loading .product-name,
-.product-card.loading .product-description,
+/* .product-card.loading .product-description, */
 .product-card.loading .current-price {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
