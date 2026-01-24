@@ -10,12 +10,13 @@ import productsReducer from './slices/productsSlice';
 import ordersReducer from './slices/ordersSlice';
 import adminReducer from './slices/adminSlice';
 import notificationsReducer from './slices/notificationsSlice';
+import themeReducer from './slices/themeSlice';
 
 // Configuration de persistance
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'cart'] // Seuls auth et cart seront persistés
+  whitelist: ['auth', 'cart', 'theme'] // Seuls auth, cart et theme seront persistés
 };
 
 // Combinaison des reducers
@@ -25,7 +26,8 @@ const rootReducer = combineReducers({
   products: productsReducer,
   orders: ordersReducer,
   admin: adminReducer,
-  notifications: notificationsReducer
+  notifications: notificationsReducer,
+  theme: themeReducer
 });
 
 // Reducer persisté

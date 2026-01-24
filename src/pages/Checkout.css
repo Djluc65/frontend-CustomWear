@@ -12,7 +12,7 @@
 .checkout-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-title);
   margin-bottom: 2rem;
 }
 
@@ -35,8 +35,8 @@
 }
 
 .step.active {
-  background: #eff6ff;
-  color: #3b82f6;
+  background: var(--info-bg);
+  color: var(--info-color);
 }
 
 .step svg {
@@ -55,16 +55,16 @@
 }
 
 .checkout-form {
-  background: white;
+  background: var(--card-bg);
   padding: 2rem;
   border-radius: 12px;
-  border: 1px solid #e2e8f0; /* slate-200 */
+  border: 1px solid var(--border-color); /* slate-200 */
 }
 
 .form-section h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-title);
   margin-bottom: 1.5rem;
 }
 
@@ -77,15 +77,17 @@
 
 .form-grid input {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 1rem;
   transition: border-color 0.2s ease;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .form-grid input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 

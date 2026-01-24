@@ -148,7 +148,7 @@ const Home = () => {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="section-title2">Nos Catégories</h2>
+            <h2 className="section-title">Nos Catégories</h2>
             <p className="section-description">
               Découvrez notre large gamme de produits personnalisables
             </p>

@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { useSelector, useDispatch } from 'react-redux';
+import { setThemeFromUser } from './store/slices/themeSlice';
 
 // Import des composants
 import Navbar from './components/Layout/Navbar';
@@ -50,6 +52,22 @@ function ScrollToTop({ children }) {
 }
 
 function App() {
+  const dispatch = useDispatch();
+  const { theme } = useSelector((state) => state.theme);
+  const { user } = useSelector((state) => state.auth);
+
+  // Appliquer le thème au montage et au changement
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  // Synchroniser le thème avec l'utilisateur connecté
+  useEffect(() => {
+    if (user && user.preferences && user.preferences.theme) {
+      dispatch(setThemeFromUser(user.preferences.theme));
+    }
+  }, [user, dispatch]);
+
   return (
     <ScrollToTop>
       <div className="App">

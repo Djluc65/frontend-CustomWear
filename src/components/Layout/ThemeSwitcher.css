@@ -1,0 +1,71 @@
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.theme-options {
+  display: flex;
+  background-color: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 16px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+  color: var(--accent-color);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-btn.active {
+  background-color: var(--bg-primary);
+  color: var(--accent-color);
+  box-shadow: 0 2px 4px var(--shadow-color);
+  font-weight: 600;
+}
+
+.theme-label {
+  display: none;
+}
+
+/* Afficher les labels sur les écrans plus larges si nécessaire, 
+   ou garder uniquement les icônes pour économiser de l'espace */
+@media (min-width: 1200px) {
+  .theme-label {
+    display: inline-block;
+    font-size: 0.8rem;
+  }
+}
+
+/* Ajustements pour le thème sombre des boutons */
+[data-theme='dark'] .theme-options,
+[data-theme='deep-blue'] .theme-options {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .theme-btn:hover,
+[data-theme='deep-blue'] .theme-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .theme-btn.active,
+[data-theme='deep-blue'] .theme-btn.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}

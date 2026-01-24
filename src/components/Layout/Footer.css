@@ -1,8 +1,9 @@
 /* Footer Styles */
 .footer {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: white;
+  background: #2c3e50;
+  color: #ffffff;
   margin-top: auto;
+  border-top: 1px solid #333;
 }
 
 .footer-container {
@@ -31,7 +32,7 @@
   font-size: 1.8rem;
   font-weight: bold;
   margin-bottom: 20px;
-  color: #3498db;
+  color: #ffffff;
 }
 
 .footer-title .logo-text {
@@ -56,8 +57,9 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #ecf0f1;
+  /* color: var(--text-title); */
   position: relative;
+  color: #ffffff;
   padding-bottom: 10px;
 }
 
@@ -68,7 +70,7 @@
   left: 0;
   width: 50px;
   height: 2px;
-  background: linear-gradient(90deg, #3498db, #2980b9);
+  background: linear-gradient(90deg, var(--accent-color), var(--info-color));
   border-radius: 2px;
 }
 
@@ -76,7 +78,7 @@
 .footer-description {
   line-height: 1.6;
   margin-bottom: 25px;
-  color: #bdc3c7;
+  color: #cccccc;
   font-size: 0.95rem;
 }
 
@@ -94,16 +96,17 @@
   height: 40px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  color: white;
+  color: #ffffff;
   text-decoration: none;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .social-link:hover {
-  background: #3498db;
+  background: var(--accent-color);
   transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+  color: var(--button-text);
 }
 
 /* Liens de navigation */
@@ -118,7 +121,7 @@
 }
 
 .footer-links a {
-  color: #bdc3c7;
+  color: #cccccc;
   text-decoration: none;
   transition: all 0.3s ease;
   position: relative;
@@ -129,13 +132,13 @@
   content: '▶';
   position: absolute;
   left: 0;
-  color: #3498db;
+  color: var(--accent-color);
   font-size: 0.8rem;
   transition: transform 0.3s ease;
 }
 
 .footer-links a:hover {
-  color: #3498db;
+  color: var(--accent-color);
   padding-left: 20px;
 }
 
@@ -152,18 +155,18 @@
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-  color: #bdc3c7;
+  color: #cccccc;
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
 .contact-item:hover {
-  color: #3498db;
+  color: var(--accent-color);
   padding-left: 5px;
 }
 
 .contact-icon {
-  color: #3498db;
+  color: var(--accent-color);
   margin-right: 12px;
   font-size: 1.1rem;
   width: 20px;
@@ -178,11 +181,11 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 10px;
-  color: #ecf0f1;
+  color: #ffffff;
 }
 
 .newsletter-description {
-  color: #bdc3c7;
+  color: #cccccc;
   font-size: 0.9rem;
   margin-bottom: 15px;
 }
@@ -200,26 +203,26 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
   background: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: #ffffff;
   font-size: 0.9rem;
   transition: all 0.3s ease;
 }
 
 .newsletter-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .newsletter-input:focus {
   outline: none;
-  border-color: #3498db;
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-color);
+  background: var(--input-bg);
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 .newsletter-button {
   padding: 12px 25px;
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-color), var(--info-color));
+  color: var(--button-text);
   border: none;
   border-radius: 25px;
   cursor: pointer;
@@ -229,7 +232,7 @@
 }
 
 .newsletter-button:hover {
-  background: linear-gradient(135deg, #2980b9, #1f5f8b);
+  background: linear-gradient(135deg, var(--info-color), var(--accent-color));
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
@@ -237,7 +240,7 @@
 /* Séparateur */
 .footer-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
   margin: 40px 0 30px;
 }
 
@@ -258,7 +261,7 @@
 
 .footer-legal p {
   margin: 0;
-  color: #95a5a6;
+  color: #999999;
   font-size: 0.9rem;
 }
 
@@ -269,14 +272,19 @@
 }
 
 .legal-links a {
-  color: #bdc3c7;
+  color: #999999;
   text-decoration: none;
   font-size: 0.85rem;
   transition: color 0.3s ease;
 }
 
+[data-theme='deep-blue'] .footer {
+  background: rgba(24, 29, 39, 1);
+  border-top: 1px solid var(--border-color);
+}
+
 .legal-links a:hover {
-  color: #3498db;
+  color: var(--accent-color);
 }
 
 /* Moyens de paiement */
@@ -288,7 +296,7 @@
 }
 
 .payment-text {
-  color: #95a5a6;
+  color: #999999;
   font-size: 0.9rem;
   white-space: nowrap;
 }
@@ -309,11 +317,13 @@
   font-size: 1.2rem;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .payment-icon:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  border-color: var(--accent-color);
 }
 
 /* Responsive */
@@ -369,4 +379,73 @@
   .payment-icons {
     justify-content: center;
   }
+}
+
+/* Dark Mode Support */
+[data-theme='dark'] .footer {
+  background: rgba(26, 27, 29, 1);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .footer-title,
+[data-theme='dark'] .newsletter-title {
+  color: #ffffff;
+}
+
+[data-theme='dark'] .footer-subtitle {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .footer-description,
+[data-theme='dark'] .footer-links a,
+[data-theme='dark'] .contact-item,
+[data-theme='dark'] .newsletter-description,
+[data-theme='dark'] .footer-legal p,
+[data-theme='dark'] .legal-links a,
+[data-theme='dark'] .payment-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme='dark'] .footer-links a:hover,
+[data-theme='dark'] .contact-item:hover,
+[data-theme='dark'] .legal-links a:hover {
+  color: var(--accent-color);
+}
+
+[data-theme='dark'] .social-link {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .social-link:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+[data-theme='dark'] .newsletter-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .newsletter-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='dark'] .newsletter-input:focus {
+  border-color: var(--accent-color);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .payment-icon {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .payment-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-color);
 }

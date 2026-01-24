@@ -103,7 +103,7 @@ const initialState = {
     { id: 'tshirts', name: 'T-shirts', icon: '👕' },
     { id: 'vestes', name: 'Vestes', icon: '🧥' },
     { id: 'casquettes', name: 'Casquettes', icon: '🧢' },
-    { id: 'vaisselle', name: 'Vaisselle', icon: '🍽️' }
+    { id: 'vaisselle', name: 'Vaiselles', icon: '🍽️' }
   ],
   pagination: {
     currentPage: 1,

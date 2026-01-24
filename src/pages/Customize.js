@@ -1566,7 +1566,7 @@ const Customize = () => {
       </nav>
 
       {/* Barre de menus au-dessus des panneaux (Desktop) / En bas (Mobile) */} 
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
+      <div className="customize-menubar fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white border-t p-2 md:relative md:bottom-auto md:border-t-2 md:border-b-2 md:border-gray-300 md:bg-white md:p-2 md:mb-4 md:justify-start md:gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none" role="navigation" aria-label="Barre de menus"> 
         <Button 
           variant={activeContextSection === 'produit' ? 'default' : 'ghost'} 
           size="sm" 
@@ -1644,7 +1644,7 @@ const Customize = () => {
             <div className="panel-content" onClick={(e) => e.stopPropagation()}>
               <div className="form-group">
                 <label>Modèle</label>
-                <select value={selectedModel?._id || ''} onChange={(e) => handleModelChange(e.target.value)}>
+                <select className="model-selector" value={selectedModel?._id || ''} onChange={(e) => handleModelChange(e.target.value)}>
                   {activeModels.map(m => (
                     <option key={m._id} value={m._id}>
                       {m.name}

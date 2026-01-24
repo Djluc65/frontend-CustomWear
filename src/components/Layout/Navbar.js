@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
+import ThemeSwitcher from './ThemeSwitcher';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -179,6 +180,7 @@ const Navbar = () => {
 
         {/* Actions */}
         <div className="navbar-actions">
+          <ThemeSwitcher />
           {/* Accueil (mobile icône) */}
           <Link to="/" className="navbar-action home-mobile" aria-label="Accueil">
             <FaHome />

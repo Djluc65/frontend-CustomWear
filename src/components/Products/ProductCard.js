@@ -6,6 +6,7 @@ import { FaShoppingCart, FaHeart, FaEye, FaStar } from 'react-icons/fa';
 import { addToCart } from '../../store/slices/cartSlice';
 import { toast } from 'react-toastify';
 import { usersAPI } from '../../services/api';
+import './ProductCard.css';
 
 const ProductCard = ({ product, activeColor }) => {
   const dispatch = useDispatch();
@@ -136,7 +137,7 @@ const ProductCard = ({ product, activeColor }) => {
 
   return (
     <motion.div
-      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition flex flex-col overflow-hidden"
+      className="product-card rounded-lg shadow-sm hover:shadow transition flex flex-col overflow-hidden"
       whileHover={{ y: -2 }}
       transition={{ duration: 0.25 }}
     >
@@ -207,7 +208,7 @@ const ProductCard = ({ product, activeColor }) => {
             <div className="text-xs text-slate-600">Genre: {formatGender(product.gender)}</div>
           )} */}
 
-          <h3 className="text-base font-semibold text-slate-900 mt-1">
+          <h3 className="text-base font-semibold product-title mt-1">
             {product.name}
           </h3>
 
@@ -225,7 +226,7 @@ const ProductCard = ({ product, activeColor }) => {
               <div className="flex items-center gap-1 text-yellow-500">
                 {renderStars(product.rating)}
               </div>
-              <span className="text-xs text-slate-600">
+              <span className="text-xs" style={{ color: 'whitesmoke' }}>
                 ({product.reviewCount || 0} avis)
               </span>
             </div>
@@ -239,10 +240,10 @@ const ProductCard = ({ product, activeColor }) => {
               return hasDiscount ? (
                 <>
                   <span className="text-sm line-through text-slate-500">{formatPrice(basePrice)}</span>
-                  <span className="text-lg font-bold text-slate-900">{formatPrice(priceCurrent)}</span>
+                  <span className="text-lg font-bold" style={{ color: 'whitesmoke' }}>{formatPrice(priceCurrent)}</span>
                 </>
               ) : (
-                <span className="text-lg font-bold text-slate-900">{formatPrice(priceCurrent)}</span>
+                <span className="text-lg font-bold">{formatPrice(priceCurrent)}</span>
               );
             })()}
           </div>
