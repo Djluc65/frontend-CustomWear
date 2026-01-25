@@ -1450,6 +1450,20 @@ const Customize = () => {
     }
   };
 
+  const duplicateImageLayer = (id) => {
+    const img = imageLayers.find(i => i.id === id);
+    if (!img) return;
+    const newImage = {
+      ...img,
+      id: 'img_' + Date.now(),
+      xPercent: Math.min((img.xPercent || 50) + 5, 95),
+      yPercent: Math.min((img.yPercent || 50) + 5, 95),
+      zIndex: (Math.max(...imageLayers.map(i => i.zIndex || 2), 2) + 1)
+    };
+    setImageLayers(prev => [...prev, newImage]);
+    setSelectedImageId(newImage.id);
+  };
+
   // --- Crop Logic ---
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
@@ -1877,6 +1891,7 @@ const Customize = () => {
                   <div className="form-group">
                     <div className="options-row">
                       <button type="button" className="chip" onClick={startCrop}>Rogner</button>
+                      <button type="button" className="chip" onClick={() => duplicateImageLayer(selectedImageId)}>Dupliquer</button>
                       <button type="button" className="chip" onClick={() => {
                         if (selectedImageId) updateImageLayer(selectedImageId, { xPercent: 50, yPercent: 50, scale: 1, rotation: 0, opacity: 1, flipX: false, zIndex: 2, side: 'front' });
                       }}>Réinitialiser</button>
@@ -2820,11 +2835,46 @@ const PreviewCanvas = React.memo(({
                 onPointerDown={(e) => onImageRotatePointerDown(img, e)}
                 title="Pivoter"
               />
+              {/* Bottom-Right */}
               <div
                 className="resize-handle"
                 style={{ 
                   left: `calc(${img.xPercent}% + ${25 * (img.scale||1)}%)`, 
-                  top: `calc(${img.yPercent}% + ${25 * (img.scale||1) / (img.aspect||1)}%)` 
+                  top: `calc(${img.yPercent}% + ${25 * (img.scale||1) / (img.aspect||1)}%)`,
+                  cursor: 'nwse-resize'
+                }}
+                onPointerDown={(e) => onImageResizePointerDown(img, e)}
+                title="Redimensionner"
+              />
+              {/* Top-Left */}
+              <div
+                className="resize-handle"
+                style={{ 
+                  left: `calc(${img.xPercent}% - ${25 * (img.scale||1)}%)`, 
+                  top: `calc(${img.yPercent}% - ${25 * (img.scale||1) / (img.aspect||1)}%)`,
+                  cursor: 'nwse-resize'
+                }}
+                onPointerDown={(e) => onImageResizePointerDown(img, e)}
+                title="Redimensionner"
+              />
+              {/* Top-Right */}
+              <div
+                className="resize-handle"
+                style={{ 
+                  left: `calc(${img.xPercent}% + ${25 * (img.scale||1)}%)`, 
+                  top: `calc(${img.yPercent}% - ${25 * (img.scale||1) / (img.aspect||1)}%)`,
+                  cursor: 'nesw-resize'
+                }}
+                onPointerDown={(e) => onImageResizePointerDown(img, e)}
+                title="Redimensionner"
+              />
+              {/* Bottom-Left */}
+              <div
+                className="resize-handle"
+                style={{ 
+                  left: `calc(${img.xPercent}% - ${25 * (img.scale||1)}%)`, 
+                  top: `calc(${img.yPercent}% + ${25 * (img.scale||1) / (img.aspect||1)}%)`,
+                  cursor: 'nesw-resize'
                 }}
                 onPointerDown={(e) => onImageResizePointerDown(img, e)}
                 title="Redimensionner"

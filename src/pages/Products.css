@@ -589,9 +589,8 @@
   border-color: whitesmoke !important;
 }
 
-[data-theme='dark'] .filter-toggle,
+/* [data-theme='dark'] .filter-toggle,
 [data-theme='dark'] .view-controls button {
-  /* background-color: rgba(26, 27, 29, 1) !important; */
   color: var(--text-secondary);
   border-color: var(--border-color);
 }
@@ -601,7 +600,7 @@
   background-color: #e0e0e0;
   color: rgba(26, 27, 29, 1);
   border-color: #e0e0e0;
-}
+} */
 
 [data-theme='deep-blue'] .filter-toggle,
 [data-theme='deep-blue'] .view-controls button {
@@ -617,6 +616,25 @@
 
 [data-theme='deep-blue'] .filter-toggle.active,
 [data-theme='deep-blue'] .view-controls button.active {
+  background-color: whitesmoke !important;
+  color: black !important;
+  border-color: whitesmoke !important;
+}
+
+[data-theme='dark'] .filter-toggle,
+[data-theme='dark'] .view-controls button {
+  background-color: rgba(26, 27, 29) !important;
+  /* color: var(--text-secondary);
+  border-color: var(--border-color); */
+}
+
+[data-theme='dark'] .filter-toggle:not(.active):hover,
+[data-theme='dark'] .view-controls button:not(.active):hover {
+  background-color:rgb(46, 48, 51)!important;
+}
+
+[data-theme='dark'] .filter-toggle.active,
+[data-theme='dark'] .view-controls button.active {
   background-color: whitesmoke !important;
   color: black !important;
   border-color: whitesmoke !important;
