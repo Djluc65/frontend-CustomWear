@@ -96,16 +96,18 @@ const Products = () => {
     setShowFilters(isDesktop);
   }, []);
 
-  // Synchroniser le filtre de catégorie avec l'URL lorsque l'utilisateur
-  // clique sur une catégorie dans la barre de navigation.
+  // Synchroniser le filtre de catégorie et de recherche avec l'URL
   useEffect(() => {
     const slugFromUrl = (category || '').toString();
-    setLocalFilters(prev => (
-      prev.category === slugFromUrl
-        ? prev
-        : { ...prev, category: slugFromUrl }
-    ));
-  }, [category]);
+    const searchFromUrl = searchParams.get('search') || '';
+    
+    setLocalFilters(prev => {
+      if (prev.category === slugFromUrl && prev.search === searchFromUrl) {
+        return prev;
+      }
+      return { ...prev, category: slugFromUrl, search: searchFromUrl };
+    });
+  }, [category, searchParams]);
 
   useEffect(() => {
     // Mettre à jour les filtres dans le store

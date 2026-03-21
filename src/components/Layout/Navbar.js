@@ -9,17 +9,18 @@ import VoiceSearch from '../Common/VoiceSearch';
 import './Navbar.css';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(new URLSearchParams(location.search).get('search') || '');
   const [debounceTimer, setDebounceTimer] = useState(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const lastScrollY = useRef(0);
   const userMenuRef = useRef(null);
   
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
   const isOnHomePage = location.pathname === '/';
   const isOnProductsPage = location.pathname.startsWith('/products');
   const isOnModelsPage = location.pathname.startsWith('/models');
@@ -51,19 +52,30 @@ const Navbar = () => {
       if (isOnModelsPage || isOnCustomizePage) {
         target = '/models';
       } else if (isOnProductsPage) {
-        target = '/products';
+        target = location.pathname;
+      } else if (location.pathname === '/search') {
+        target = '/search';
       } else {
         target = '/search';
       }
       navigate(`${target}?search=${encodeURIComponent(term)}`);
-      setSearchQuery('');
       setIsMenuOpen(false);
     }
   };
 
-  // Recherche en temps réel: naviguer vers /products avec le terme saisi
+  // Synchroniser la barre de recherche avec l'URL si elle change ailleurs
   useEffect(() => {
-    if (searchQuery === '') return;
+    const searchParam = new URLSearchParams(location.search).get('search') || '';
+    if (searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    }
+  }, [location.search]);
+
+  // Recherche en temps réel: naviguer vers la page appropriée avec le terme saisi
+  useEffect(() => {
+    // Éviter de déclencher la recherche si la valeur est déjà synchronisée avec l'URL
+    const currentSearchParam = new URLSearchParams(location.search).get('search') || '';
+    if (searchQuery === currentSearchParam) return;
 
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -71,19 +83,39 @@ const Navbar = () => {
     const timer = setTimeout(() => {
       const term = searchQuery.trim();
       let target;
+      
       if (isOnModelsPage || isOnCustomizePage) {
         target = '/models';
       } else if (isOnProductsPage) {
-        target = '/products';
-      } else {
+        target = location.pathname;
+      } else if (location.pathname === '/search') {
         target = '/search';
+      } else {
+        if (term) {
+          target = '/search';
+        } else {
+          return;
+        }
       }
-      navigate(`${target}?search=${encodeURIComponent(term)}`);
+
+      const params = new URLSearchParams(location.search);
+      if (term) {
+        params.set('search', term);
+      } else {
+        params.delete('search');
+      }
+      
+      const newSearch = params.toString();
+      const newPath = `${target}${newSearch ? `?${newSearch}` : ''}`;
+      
+      if (location.pathname + location.search !== newPath) {
+        navigate(newPath, { replace: true });
+      }
     }, 300);
     setDebounceTimer(timer);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, navigate, isOnModelsPage, isOnCustomizePage, isOnProductsPage]);
+  }, [searchQuery, navigate, isOnModelsPage, isOnCustomizePage, isOnProductsPage, location.pathname, location.search]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
