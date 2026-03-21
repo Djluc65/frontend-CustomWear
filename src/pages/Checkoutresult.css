@@ -1,0 +1,456 @@
+/* ============================================================
+   CheckoutResult.css — Adaptive themes: Light / Dark / Deep Blue
+   Used by: CheckoutSuccess.jsx & CheckoutCancel.jsx
+   Responsive: mobile (≤480px) · tablet (481–768px) · desktop (>768px)
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. CSS VARIABLES — THEME TOKENS
+   ---------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+  --cr-bg-page:            #f0f4ff;
+  --cr-bg-card:            #ffffff;
+  --cr-bg-info-block:      #f8fafc;
+  --cr-bg-info-item:       #ffffff;
+  --cr-bg-ref-block:       #f1f5f9;
+  --cr-bg-icon-success:    #dcfce7;
+  --cr-bg-icon-cancel:     #fef2f2;
+  --cr-bg-btn-secondary:   #ffffff;
+  --cr-bg-btn-secondary-hover: #f1f5f9;
+
+  --cr-border:             #e2e8f0;
+  --cr-border-info:        #e2e8f0;
+  --cr-border-ref:         #e2e8f0;
+  --cr-border-btn-secondary:#e2e8f0;
+
+  --cr-text-title:         #0f172a;
+  --cr-text-subtitle:      #475569;
+  --cr-text-info-title:    #1e293b;
+  --cr-text-info-body:     #64748b;
+  --cr-text-ref-label:     #94a3b8;
+  --cr-text-ref-value:     #1e293b;
+  --cr-text-icon-success:  #16a34a;
+  --cr-text-icon-cancel:   #dc2626;
+  --cr-text-btn-secondary: #374151;
+  --cr-text-status-ok:     #16a34a;
+  --cr-text-status-error:  #dc2626;
+
+  --cr-accent:             #3b82f6;
+  --cr-accent-hover:       #2563eb;
+  --cr-accent-text:        #ffffff;
+  --cr-accent-glow:        rgba(59,130,246,.25);
+
+  --cr-success:            #16a34a;
+  --cr-success-glow:       rgba(22,163,74,.15);
+  --cr-cancel:             #dc2626;
+  --cr-cancel-glow:        rgba(220,38,38,.12);
+
+  --cr-shadow-card:        0 8px 40px rgba(15,23,42,.1), 0 2px 12px rgba(15,23,42,.06);
+  --cr-shadow-btn:         0 4px 14px rgba(59,130,246,.25);
+}
+
+[data-theme='dark'] {
+  --cr-bg-page:            #0f1117;
+  --cr-bg-card:            #1a1d27;
+  --cr-bg-info-block:      #13161f;
+  --cr-bg-info-item:       #22263a;
+  --cr-bg-ref-block:       #13161f;
+  --cr-bg-icon-success:    rgba(22,163,74,.12);
+  --cr-bg-icon-cancel:     rgba(248,113,113,.1);
+  --cr-bg-btn-secondary:   #22263a;
+  --cr-bg-btn-secondary-hover: #2d3148;
+
+  --cr-border:             #2d3148;
+  --cr-border-info:        #2d3148;
+  --cr-border-ref:         #2d3148;
+  --cr-border-btn-secondary:#2d3148;
+
+  --cr-text-title:         #e8eaf6;
+  --cr-text-subtitle:      #8896b0;
+  --cr-text-info-title:    #e2e8f0;
+  --cr-text-info-body:     #8896b0;
+  --cr-text-ref-label:     #4e5d78;
+  --cr-text-ref-value:     #e2e8f0;
+  --cr-text-icon-success:  #4ade80;
+  --cr-text-icon-cancel:   #f87171;
+  --cr-text-btn-secondary: #8896b0;
+  --cr-text-status-ok:     #4ade80;
+  --cr-text-status-error:  #f87171;
+
+  --cr-accent:             #3b82f6;
+  --cr-accent-hover:       #2563eb;
+  --cr-accent-text:        #ffffff;
+  --cr-accent-glow:        rgba(96,165,250,.2);
+
+  --cr-success:            #4ade80;
+  --cr-success-glow:       rgba(74,222,128,.12);
+  --cr-cancel:             #f87171;
+  --cr-cancel-glow:        rgba(248,113,113,.1);
+
+  --cr-shadow-card:        0 8px 40px rgba(0,0,0,.5), 0 2px 12px rgba(0,0,0,.3);
+  --cr-shadow-btn:         0 4px 14px rgba(96,165,250,.18);
+}
+
+[data-theme='deep-blue'] {
+  --cr-bg-page:            #060c1f;
+  --cr-bg-card:            #0d1630;
+  --cr-bg-info-block:      #0a1228;
+  --cr-bg-info-item:       #131e3f;
+  --cr-bg-ref-block:       #0a1228;
+  --cr-bg-icon-success:    rgba(6,214,160,.1);
+  --cr-bg-icon-cancel:     rgba(255,107,122,.08);
+  --cr-bg-btn-secondary:   #131e3f;
+  --cr-bg-btn-secondary-hover: #1e2d5a;
+
+  --cr-border:             #1e2d5a;
+  --cr-border-info:        #1e2d5a;
+  --cr-border-ref:         #1e2d5a;
+  --cr-border-btn-secondary:#1e2d5a;
+
+  --cr-text-title:         #dce8ff;
+  --cr-text-subtitle:      #7a9acf;
+  --cr-text-info-title:    #c8deff;
+  --cr-text-info-body:     #7a9acf;
+  --cr-text-ref-label:     #3d5a8a;
+  --cr-text-ref-value:     #c8deff;
+  --cr-text-icon-success:  #06d6a0;
+  --cr-text-icon-cancel:   #ff6b7a;
+  --cr-text-btn-secondary: #7a9acf;
+  --cr-text-status-ok:     #06d6a0;
+  --cr-text-status-error:  #ff6b7a;
+
+  --cr-accent:             #3d7eff;
+  --cr-accent-hover:       #2563eb;
+  --cr-accent-text:        #ffffff;
+  --cr-accent-glow:        rgba(77,159,255,.22);
+
+  --cr-success:            #06d6a0;
+  --cr-success-glow:       rgba(6,214,160,.12);
+  --cr-cancel:             #ff6b7a;
+  --cr-cancel-glow:        rgba(255,107,122,.1);
+
+  --cr-shadow-card:        0 8px 48px rgba(0,4,40,.55), 0 2px 16px rgba(0,4,40,.35);
+  --cr-shadow-btn:         0 4px 16px rgba(77,159,255,.22);
+}
+
+/* ----------------------------------------------------------
+   2. RESET
+   ---------------------------------------------------------- */
+
+.result-page *,
+.result-page *::before,
+.result-page *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ----------------------------------------------------------
+   3. PAGE WRAPPER
+   ---------------------------------------------------------- */
+
+.result-page {
+  min-height: calc(100vh - 200px);
+  background: var(--cr-bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.25rem 4rem;
+  transition: background 0.3s ease;
+}
+
+/* ----------------------------------------------------------
+   4. CARD
+   ---------------------------------------------------------- */
+
+.result-card {
+  background: var(--cr-bg-card);
+  border: 1px solid var(--cr-border);
+  border-radius: 20px;
+  padding: 3rem 2.5rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: var(--cr-shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* ----------------------------------------------------------
+   5. ICON
+   ---------------------------------------------------------- */
+
+.result-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.result-icon--success {
+  background: var(--cr-bg-icon-success);
+  color: var(--cr-text-icon-success);
+  box-shadow: 0 0 0 8px var(--cr-success-glow);
+}
+
+.result-icon--cancel {
+  background: var(--cr-bg-icon-cancel);
+  color: var(--cr-text-icon-cancel);
+  box-shadow: 0 0 0 8px var(--cr-cancel-glow);
+}
+
+/* ----------------------------------------------------------
+   6. TITLE & SUBTITLE
+   ---------------------------------------------------------- */
+
+.result-title {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.result-title--success { color: var(--cr-text-icon-success); }
+.result-title--cancel  { color: var(--cr-text-icon-cancel); }
+
+.result-subtitle {
+  font-size: 1rem;
+  color: var(--cr-text-subtitle);
+  line-height: 1.65;
+  max-width: 440px;
+}
+
+/* ----------------------------------------------------------
+   7. REFERENCE BLOCK (session_id / paypal token)
+   ---------------------------------------------------------- */
+
+.result-ref-block {
+  width: 100%;
+  background: var(--cr-bg-ref-block);
+  border: 1px solid var(--cr-border-ref);
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.result-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.result-ref-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cr-text-ref-label);
+}
+
+.result-ref-value {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.8rem;
+  color: var(--cr-text-ref-value);
+  word-break: break-all;
+  background: transparent;
+}
+
+/* ----------------------------------------------------------
+   8. INFO BLOCK (steps / details)
+   ---------------------------------------------------------- */
+
+.result-info-block {
+  width: 100%;
+  background: var(--cr-bg-info-block);
+  border: 1px solid var(--cr-border-info);
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.result-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  background: var(--cr-bg-info-item);
+  border-bottom: 1px solid var(--cr-border-info);
+  transition: background 0.2s ease;
+}
+
+.result-info-item:last-child {
+  border-bottom: none;
+}
+
+.result-info-item--error {
+  background: var(--cr-bg-icon-cancel);
+}
+
+.result-info-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  line-height: 1;
+  padding-top: 0.1rem;
+}
+
+.result-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.result-info-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--cr-text-info-title);
+}
+
+.result-info-text span {
+  font-size: 0.85rem;
+  color: var(--cr-text-info-body);
+  line-height: 1.5;
+}
+
+.result-status--ok    { color: var(--cr-text-status-ok) !important; font-weight: 600 !important; }
+.result-status--error { color: var(--cr-text-status-error) !important; font-weight: 600 !important; }
+
+/* ----------------------------------------------------------
+   9. ACTION BUTTONS
+   ---------------------------------------------------------- */
+
+.result-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.result-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  flex: 1;
+  min-width: 140px;
+  transition: background 0.2s ease, transform 0.15s ease,
+              box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.result-btn--primary {
+  background: var(--cr-accent);
+  color: var(--cr-accent-text);
+  box-shadow: var(--cr-shadow-btn);
+}
+
+.result-btn--primary:hover {
+  background: var(--cr-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--cr-accent-glow);
+}
+
+.result-btn--secondary {
+  background: var(--cr-bg-btn-secondary);
+  color: var(--cr-text-btn-secondary);
+  border: 1.5px solid var(--cr-border-btn-secondary);
+}
+
+.result-btn--secondary:hover {
+  background: var(--cr-bg-btn-secondary-hover);
+  border-color: var(--cr-accent);
+  color: var(--cr-accent);
+  transform: translateY(-1px);
+}
+
+/* ----------------------------------------------------------
+   10. RESPONSIVE — TABLET (≤ 768px)
+   ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .result-page {
+    padding: 2rem 1rem 3rem;
+    align-items: flex-start;
+  }
+
+  .result-card {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+    gap: 1.25rem;
+  }
+
+  .result-icon {
+    width: 68px;
+    height: 68px;
+    font-size: 2rem;
+  }
+}
+
+/* ----------------------------------------------------------
+   11. RESPONSIVE — MOBILE (≤ 480px)
+   ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .result-page {
+    padding: 1.25rem 0.75rem 3rem;
+    align-items: flex-start;
+  }
+
+  .result-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 14px;
+    gap: 1rem;
+  }
+
+  .result-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .result-title {
+    font-size: 1.5rem;
+  }
+
+  .result-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .result-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 0.875rem;
+  }
+
+  .result-info-item {
+    padding: 0.875rem 1rem;
+  }
+
+  .result-ref-block {
+    padding: 0.75rem 1rem;
+  }
+
+  .result-ref-value {
+    font-size: 0.72rem;
+  }
+}

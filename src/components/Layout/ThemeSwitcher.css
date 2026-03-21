@@ -1,130 +1,273 @@
+/* ============================================================
+   ThemeSwitcher.css — Adaptive themes: Light / Dark / Deep Blue
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. CSS VARIABLES — THEME TOKENS
+   ---------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+  --ts-btn-bg:             transparent;
+  --ts-btn-bg-hover:       rgba(15,23,42,.06);
+  --ts-btn-border:         rgba(15,23,42,.18);
+  --ts-btn-color:          #475569;
+  --ts-btn-color-hover:    #3b82f6;
+  --ts-btn-shadow-hover:   0 4px 14px rgba(15,23,42,.1);
+
+  --ts-dropdown-bg:        #ffffff;
+  --ts-dropdown-border:    rgba(15,23,42,.08);
+  --ts-dropdown-shadow:    0 12px 32px rgba(15,23,42,.14), 0 2px 8px rgba(15,23,42,.06);
+
+  --ts-option-color:       #374151;
+  --ts-option-hover-bg:    #f1f5f9;
+  --ts-option-hover-color: #1e293b;
+
+  --ts-active-bg-light:    #eff6ff;
+  --ts-active-color-light: #2563eb;
+  --ts-active-bg-dark:     #f1f5f9;
+  --ts-active-color-dark:  #1e293b;
+  --ts-active-bg-deep:     #f0f4ff;
+  --ts-active-color-deep:  #1d4ed8;
+
+  --ts-icon-light:         #f59e0b;
+  --ts-icon-dark:          #6366f1;
+  --ts-icon-deep:          #3b82f6;
+}
+
+[data-theme='dark'] {
+  --ts-btn-bg:             transparent;
+  --ts-btn-bg-hover:       rgba(255,255,255,.08);
+  --ts-btn-border:         rgba(255,255,255,.18);
+  --ts-btn-color:          #9ca3cc;
+  --ts-btn-color-hover:    #ffffff;
+  --ts-btn-shadow-hover:   0 4px 14px rgba(0,0,0,.35);
+
+  --ts-dropdown-bg:        #1a1d27;
+  --ts-dropdown-border:    rgba(255,255,255,.08);
+  --ts-dropdown-shadow:    0 12px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.3);
+
+  --ts-option-color:       #e2e8f0;
+  --ts-option-hover-bg:    #22263a;
+  --ts-option-hover-color: #ffffff;
+
+  --ts-active-bg-light:    rgba(245,158,11,.1);
+  --ts-active-color-light: #fbbf24;
+  --ts-active-bg-dark:     rgba(99,102,241,.15);
+  --ts-active-color-dark:  #a5b4fc;
+  --ts-active-bg-deep:     rgba(96,165,250,.12);
+  --ts-active-color-deep:  #60a5fa;
+
+  --ts-icon-light:         #fbbf24;
+  --ts-icon-dark:          #a5b4fc;
+  --ts-icon-deep:          #60a5fa;
+}
+
+[data-theme='deep-blue'] {
+  --ts-btn-bg:             transparent;
+  --ts-btn-bg-hover:       rgba(77,159,255,.1);
+  --ts-btn-border:         rgba(77,159,255,.22);
+  --ts-btn-color:          #7a9acf;
+  --ts-btn-color-hover:    #dce8ff;
+  --ts-btn-shadow-hover:   0 4px 14px rgba(0,4,40,.4);
+
+  --ts-dropdown-bg:        #0d1630;
+  --ts-dropdown-border:    rgba(77,159,255,.12);
+  --ts-dropdown-shadow:    0 12px 36px rgba(0,4,50,.6), 0 2px 8px rgba(0,4,40,.35);
+
+  --ts-option-color:       #c8deff;
+  --ts-option-hover-bg:    #131e3f;
+  --ts-option-hover-color: #dce8ff;
+
+  --ts-active-bg-light:    rgba(245,158,11,.08);
+  --ts-active-color-light: #ffbc2e;
+  --ts-active-bg-dark:     rgba(99,102,241,.1);
+  --ts-active-color-dark:  #a5b4fc;
+  --ts-active-bg-deep:     rgba(77,159,255,.15);
+  --ts-active-color-deep:  #7ab8ff;
+
+  --ts-icon-light:         #ffbc2e;
+  --ts-icon-dark:          #a5b4fc;
+  --ts-icon-deep:          #7ab8ff;
+}
+
+/* ----------------------------------------------------------
+   2. WRAPPER
+   ---------------------------------------------------------- */
+
 .theme-switcher {
   position: relative;
   display: flex;
   align-items: center;
-  margin-left: 1rem;
 }
 
+/* ----------------------------------------------------------
+   3. TOGGLE BUTTON
+   ---------------------------------------------------------- */
+
 .theme-toggle-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
+  background: var(--ts-btn-bg);
+  border: 1.5px solid var(--ts-btn-border);
+  color: var(--ts-btn-color);
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  transition:
+    background  0.2s ease,
+    color       0.2s ease,
+    border-color 0.2s ease,
+    transform   0.18s ease,
+    box-shadow  0.2s ease;
 }
 
 .theme-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--accent-color);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: var(--ts-btn-bg-hover);
+  color: var(--ts-btn-color-hover);
+  border-color: var(--ts-btn-color-hover);
+  transform: translateY(-2px) rotate(15deg);
+  box-shadow: var(--ts-btn-shadow-hover);
 }
+
+.theme-toggle-btn:active {
+  transform: translateY(0) rotate(0deg);
+}
+
+/* ----------------------------------------------------------
+   4. DROPDOWN PANEL
+   ---------------------------------------------------------- */
 
 .theme-dropdown {
   position: absolute;
-  top: 120%;
+  top: calc(100% + 10px);
   right: 0;
-  background: white;
-  border-radius: 12px;
-  padding: 8px;
-  min-width: 150px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--ts-dropdown-bg);
+  border: 1px solid var(--ts-dropdown-border);
+  border-radius: 14px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: var(--ts-dropdown-shadow);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
+  z-index: 1001;
+
+  /* Hidden state */
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 1000;
+  transform: translateY(-8px) scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity    0.2s cubic-bezier(0.16,1,0.3,1),
+    visibility 0.2s cubic-bezier(0.16,1,0.3,1),
+    transform  0.2s cubic-bezier(0.16,1,0.3,1);
+  pointer-events: none;
 }
 
 .theme-dropdown.open {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
+
+/* ----------------------------------------------------------
+   5. THEME OPTIONS
+   ---------------------------------------------------------- */
 
 .theme-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 10px;
+  padding: 9px 14px;
   width: 100%;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
-  color: #333;
-  font-size: 0.95rem;
+  color: var(--ts-option-color);
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  font-family: inherit;
   text-align: left;
+  transition:
+    background 0.18s ease,
+    color      0.18s ease,
+    transform  0.15s ease;
 }
 
 .theme-option:hover {
-  background-color: #f0f0f0;
+  background: var(--ts-option-hover-bg);
+  color: var(--ts-option-hover-color);
   transform: translateX(3px);
 }
 
-.theme-option.active {
-  background-color: #e6f0ff;
-  color: #0066cc;
-  font-weight: 600;
-}
+/* Icon colors per option */
+.theme-option[data-theme-value='light'] svg { color: var(--ts-icon-light); }
+.theme-option[data-theme-value='dark']  svg { color: var(--ts-icon-dark);  }
+.theme-option[data-theme-value='deep-blue'] svg { color: var(--ts-icon-deep); }
 
 .theme-option svg {
-  font-size: 1rem;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
-/* Dark Mode Overrides */
-[data-theme='dark'] .theme-toggle-btn,
-[data-theme='deep-blue'] .theme-toggle-btn {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #e0e0e0;
+.theme-option:hover svg {
+  transform: scale(1.15) rotate(-5deg);
 }
 
-[data-theme='dark'] .theme-toggle-btn:hover,
-[data-theme='deep-blue'] .theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+/* Active states per option */
+.theme-option.active[data-theme-value='light'] {
+  background: var(--ts-active-bg-light);
+  color: var(--ts-active-color-light);
+  font-weight: 700;
 }
 
-[data-theme='dark'] .theme-dropdown,
-[data-theme='deep-blue'] .theme-dropdown {
-  background: #1a1b1d; /* Dark theme background */
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+.theme-option.active[data-theme-value='dark'] {
+  background: var(--ts-active-bg-dark);
+  color: var(--ts-active-color-dark);
+  font-weight: 700;
 }
 
-[data-theme='deep-blue'] .theme-dropdown {
-  background: #1e293b; /* Deep blue theme background */
+.theme-option.active[data-theme-value='deep-blue'] {
+  background: var(--ts-active-bg-deep);
+  color: var(--ts-active-color-deep);
+  font-weight: 700;
 }
 
-[data-theme='dark'] .theme-option,
-[data-theme='deep-blue'] .theme-option {
-  color: #e0e0e0;
+/* Active check mark */
+.theme-option.active::after {
+  content: '✓';
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.85;
 }
 
-[data-theme='dark'] .theme-option:hover,
-[data-theme='deep-blue'] .theme-option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
+/* ----------------------------------------------------------
+   6. RESPONSIVE — MOBILE (≤ 480px)
+   ---------------------------------------------------------- */
 
-[data-theme='dark'] .theme-option.active {
-  background-color: rgba(62, 166, 255, 0.2);
-  color: #3ea6ff;
-}
+@media (max-width: 480px) {
+  .theme-toggle-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
 
-[data-theme='deep-blue'] .theme-option.active {
-  background-color: rgba(62, 166, 255, 0.2);
-  color: #3ea6ff;
+  .theme-dropdown {
+    min-width: 148px;
+    right: 0;
+    /* On very small screens, keep within viewport */
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .theme-option {
+    padding: 8px 12px;
+    font-size: 0.84rem;
+  }
 }

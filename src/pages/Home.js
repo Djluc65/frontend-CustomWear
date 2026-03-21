@@ -9,12 +9,14 @@ import './Home.css';
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { featuredProducts, loading } = useSelector((state) => state.products);
+  const { featuredProducts, isLoading, featuredProductsFetched } = useSelector((state) => state.products);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    dispatch(fetchFeaturedProducts());
-  }, [dispatch]);
+    if (!featuredProductsFetched && !isLoading) {
+      dispatch(fetchFeaturedProducts());
+    }
+  }, [dispatch, featuredProductsFetched, isLoading]);
 
   const features = [
     {
@@ -195,7 +197,7 @@ const Home = () => {
             </p>
           </motion.div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="loading-grid">
               {[...Array(4)].map((_, index) => (
                 <div key={index} className="product-skeleton">

@@ -1,83 +1,85 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setTheme, syncThemeWithUser } from '../../store/slices/themeSlice';
-import { FaSun, FaMoon, FaTint, FaPalette } from 'react-icons/fa';
+import { FaSun, FaMoon, FaTint } from 'react-icons/fa';
 import './ThemeSwitcher.css';
+
+const THEMES = [
+  { value: 'light',     label: 'Light',     icon: <FaSun /> },
+  { value: 'dark',      label: 'Dark',      icon: <FaMoon /> },
+  { value: 'deep-blue', label: 'Deep Blue', icon: <FaTint /> },
+];
 
 const ThemeSwitcher = () => {
   const dispatch = useDispatch();
-  const { theme } = useSelector((state) => state.theme);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { theme } = useSelector(state => state.theme);
+  const { isAuthenticated } = useSelector(state => state.auth);
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const handleThemeChange = (newTheme) => {
     dispatch(setTheme(newTheme));
-    if (isAuthenticated) {
-      dispatch(syncThemeWithUser(newTheme));
-    }
+    if (isAuthenticated) dispatch(syncThemeWithUser(newTheme));
     setIsOpen(false);
   };
 
-  // Fermer le menu si on clique en dehors
+  /* Close on outside click */
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const onOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
   }, []);
 
-  const getThemeIcon = () => {
-    switch (theme) {
-      case 'light': return <FaSun />;
-      case 'dark': return <FaMoon />;
-      case 'deep-blue': return <FaTint />;
-      default: return <FaPalette />;
-    }
-  };
+  /* Close on Escape */
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  const currentTheme = THEMES.find(t => t.value === theme) ?? THEMES[0];
 
   return (
     <div className="theme-switcher" ref={dropdownRef}>
-      <button 
+
+      {/* ── Toggle button ── */}
+      <button
         className="theme-toggle-btn"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(prev => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={`Thème actuel : ${currentTheme.label}. Cliquer pour changer.`}
         title="Changer de thème"
       >
-        {getThemeIcon()}
-        {/* <span className="theme-current-label">{theme}</span> */}
+        {currentTheme.icon}
       </button>
 
-      <div className={`theme-dropdown ${isOpen ? 'open' : ''}`}>
-        <button
-          className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-          onClick={() => handleThemeChange('light')}
-        >
-          <FaSun />
-          <span>Light</span>
-        </button>
-        
-        <button
-          className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-          onClick={() => handleThemeChange('dark')}
-        >
-          <FaMoon />
-          <span>Dark</span>
-        </button>
-        
-        <button
-          className={`theme-option ${theme === 'deep-blue' ? 'active' : ''}`}
-          onClick={() => handleThemeChange('deep-blue')}
-        >
-          <FaTint />
-          <span>Deep Blue</span>
-        </button>
+      {/* ── Dropdown ── */}
+      <div
+        className={`theme-dropdown ${isOpen ? 'open' : ''}`}
+        role="listbox"
+        aria-label="Choisir un thème"
+      >
+        {THEMES.map(({ value, label, icon }) => (
+          <button
+            key={value}
+            className={`theme-option ${theme === value ? 'active' : ''}`}
+            data-theme-value={value}
+            role="option"
+            aria-selected={theme === value}
+            onClick={() => handleThemeChange(value)}
+          >
+            {icon}
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
+
     </div>
   );
 };

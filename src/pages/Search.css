@@ -1,16 +1,354 @@
+/* ============================================================
+   Search.css — Adaptive themes: Light / Dark / Deep Blue
+   Responsive: mobile (≤480px) · tablet (481–768px) · desktop (>768px)
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. CSS VARIABLES — THEME TOKENS
+   ---------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+  --sr-bg-page:            #f4f6fb;
+  --sr-bg-card:            #ffffff;
+  --sr-bg-empty:           #f8fafc;
+  --sr-bg-spinner-track:   #e2e8f0;
+
+  --sr-border:             #e2e8f0;
+  --sr-border-section:     #e2e8f0;
+
+  --sr-text-title:         #0f172a;
+  --sr-text-query:         #3b82f6;
+  --sr-text-secondary:     #475569;
+  --sr-text-muted:         #94a3b8;
+  --sr-text-count:         #64748b;
+  --sr-text-section-h2:    #1e293b;
+
+  --sr-accent:             #3b82f6;
+  --sr-accent-soft:        #eff6ff;
+
+  --sr-shadow-card:        0 2px 12px rgba(15,23,42,.06);
+  --sr-spinner-fill:       #3b82f6;
+
+  --sr-empty-icon:         #cbd5e1;
+}
+
+[data-theme='dark'] {
+  --sr-bg-page:            #0f1117;
+  --sr-bg-card:            #1a1d27;
+  --sr-bg-empty:           #13161f;
+  --sr-bg-spinner-track:   #2d3148;
+
+  --sr-border:             #2d3148;
+  --sr-border-section:     #2d3148;
+
+  --sr-text-title:         #e8eaf6;
+  --sr-text-query:         #60a5fa;
+  --sr-text-secondary:     #8896b0;
+  --sr-text-muted:         #4e5d78;
+  --sr-text-count:         #4e5d78;
+  --sr-text-section-h2:    #e2e8f0;
+
+  --sr-accent:             #3b82f6;
+  --sr-accent-soft:        rgba(96,165,250,.1);
+
+  --sr-shadow-card:        0 2px 16px rgba(0,0,0,.35);
+  --sr-spinner-fill:       #60a5fa;
+
+  --sr-empty-icon:         #2d3148;
+}
+
+[data-theme='deep-blue'] {
+  --sr-bg-page:            #060c1f;
+  --sr-bg-card:            #0d1630;
+  --sr-bg-empty:           #0a1228;
+  --sr-bg-spinner-track:   #1e2d5a;
+
+  --sr-border:             #1e2d5a;
+  --sr-border-section:     #1e2d5a;
+
+  --sr-text-title:         #dce8ff;
+  --sr-text-query:         #4d9fff;
+  --sr-text-secondary:     #7a9acf;
+  --sr-text-muted:         #3d5a8a;
+  --sr-text-count:         #3d5a8a;
+  --sr-text-section-h2:    #c8deff;
+
+  --sr-accent:             #3d7eff;
+  --sr-accent-soft:        rgba(77,159,255,.1);
+
+  --sr-shadow-card:        0 2px 20px rgba(0,4,40,.4);
+  --sr-spinner-fill:       #4d9fff;
+
+  --sr-empty-icon:         #1e2d5a;
+}
+
+/* ----------------------------------------------------------
+   2. RESET / BASE
+   ---------------------------------------------------------- */
+
+.search-page *,
+.search-page *::before,
+.search-page *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ----------------------------------------------------------
+   3. PAGE WRAPPER
+   ---------------------------------------------------------- */
+
 .search-page {
-  min-height: 60vh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+  min-height: 70vh;
+  background: var(--sr-bg-page);
+  color: var(--sr-text-secondary);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ----------------------------------------------------------
+   4. PAGE TITLE
+   ---------------------------------------------------------- */
+
+.search-page > h1 {
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  font-weight: 800;
+  color: var(--sr-text-title);
+  margin-bottom: 2.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+/* Highlighted query term */
+.search-page > h1 em,
+.search-query-highlight {
+  font-style: normal;
+  color: var(--sr-text-query);
+}
+
+/* ----------------------------------------------------------
+   5. SECTION BLOCKS
+   ---------------------------------------------------------- */
+
+.search-section {
+  margin-bottom: 3.5rem;
 }
 
 .search-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #f3f4f6;
-  padding-bottom: 0.5rem;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 700;
+  color: var(--sr-text-section-h2);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--sr-border-section);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  letter-spacing: -0.01em;
 }
+
+/* Count badge next to section title */
+.search-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sr-text-count);
+  background: var(--sr-accent-soft);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sr-border);
+}
+
+/* ----------------------------------------------------------
+   6. PRODUCTS GRID
+   ---------------------------------------------------------- */
 
 .search-section .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 2rem;
+  gap: 1.5rem;
+}
+
+/* ----------------------------------------------------------
+   7. MODELS GRID
+   ---------------------------------------------------------- */
+
+.search-section .models-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Model card — overrides inline styles, inherits from Models.css
+   but ensures width fills the grid cell */
+.search-section .model-card {
+  width: 100% !important;
+  max-width: none !important;
+  background: var(--sr-bg-card);
+  border: 1px solid var(--sr-border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: var(--sr-shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.search-section .model-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(15,23,42,.12);
+  border-color: var(--sr-accent);
+}
+
+.search-section .model-card-thumb {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--sr-bg-empty);
+}
+
+.search-section .model-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.search-section .model-card:hover .model-card-thumb img {
+  transform: scale(1.05);
+}
+
+.search-section .model-card-meta {
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.search-section .model-card-title {
+  font-size: 0.925rem;
+  font-weight: 700;
+  color: var(--sr-text-section-h2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-section .model-card-price {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sr-text-query);
+}
+
+/* ----------------------------------------------------------
+   8. LOADING SPINNER
+   ---------------------------------------------------------- */
+
+.search-section .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--sr-bg-spinner-track);
+  border-top-color: var(--sr-spinner-fill);
+  border-radius: 50%;
+  animation: srSpin 0.8s linear infinite;
+  margin: 2rem auto;
+}
+
+@keyframes srSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ----------------------------------------------------------
+   9. EMPTY STATES
+   ---------------------------------------------------------- */
+
+.text-muted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  background: var(--sr-bg-empty);
+  border: 1px dashed var(--sr-border);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: var(--sr-text-muted);
+  text-align: center;
+}
+
+/* ----------------------------------------------------------
+   10. EMPTY SEARCH (no query)
+   ---------------------------------------------------------- */
+
+.search-page .search-no-query {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  text-align: center;
+}
+
+.search-no-query h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--sr-text-title);
+}
+
+.search-no-query p {
+  color: var(--sr-text-muted);
+  font-size: 1rem;
+  max-width: 400px;
+}
+
+/* ----------------------------------------------------------
+   11. RESPONSIVE — TABLET (≤ 768px)
+   ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .search-page {
+    padding: 1.75rem 1rem 3.5rem;
+  }
+
+  .search-section .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .search-section .models-list {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ----------------------------------------------------------
+   12. RESPONSIVE — MOBILE (≤ 480px)
+   ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .search-page {
+    padding: 1.25rem 0.75rem 3rem;
+  }
+
+  .search-page > h1 {
+    font-size: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .search-section h2 {
+    font-size: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .search-section .products-grid,
+  .search-section .models-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+
+  .search-section {
+    margin-bottom: 2.5rem;
+  }
 }

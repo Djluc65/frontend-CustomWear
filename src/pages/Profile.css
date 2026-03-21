@@ -1,28 +1,238 @@
+/* ============================================================
+   Profile.css — Adaptive themes: Light / Dark / Deep Blue
+   Responsive: mobile (≤480px) · tablet (481–768px) · desktop (>768px)
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. CSS VARIABLES — THEME TOKENS
+   ---------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+  --pf-bg-page:             #f4f6fb;
+  --pf-bg-card:             #ffffff;
+  --pf-bg-surface:          #f8fafc;
+  --pf-bg-input:            #ffffff;
+  --pf-bg-span:             #f8fafc;
+  --pf-bg-status-ok:        #ecfdf5;
+  --pf-bg-status-err:       #fef2f2;
+
+  --pf-border:              #e2e8f0;
+  --pf-border-card:         #e2e8f0;
+  --pf-border-input:        #cbd5e1;
+  --pf-border-section:      #f1f5f9;
+  --pf-border-focus:        #3b82f6;
+
+  --pf-text-title:          #0f172a;
+  --pf-text-primary:        #1e293b;
+  --pf-text-secondary:      #475569;
+  --pf-text-muted:          #94a3b8;
+  --pf-text-label:          #374151;
+  --pf-text-span:           #374151;
+  --pf-text-h2:             #0f172a;
+  --pf-text-status-ok:      #065f46;
+  --pf-text-status-err:     #b91c1c;
+
+  --pf-avatar-ring:         #3b82f6;
+  --pf-avatar-shadow:       0 4px 20px rgba(59,130,246,.25);
+
+  --pf-accent:              #3b82f6;
+  --pf-accent-hover:        #2563eb;
+  --pf-accent-text:         #ffffff;
+  --pf-accent-glow:         rgba(59,130,246,.2);
+
+  --pf-green:               #10b981;
+  --pf-green-hover:         #059669;
+  --pf-red:                 #ef4444;
+  --pf-red-hover:           #dc2626;
+
+  --pf-stat-1:              linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  --pf-stat-2:              linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --pf-stat-3:              linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --pf-stat-4:              linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+
+  --pf-shadow-card:         0 2px 12px rgba(15,23,42,.07);
+  --pf-shadow-card-hover:   0 8px 28px rgba(15,23,42,.12);
+  --pf-shadow-avatar-btn:   0 4px 12px rgba(0,0,0,.18);
+}
+
+[data-theme='dark'] {
+  --pf-bg-page:             #0f1117;
+  --pf-bg-card:             #1a1d27;
+  --pf-bg-surface:          #13161f;
+  --pf-bg-input:            #22263a;
+  --pf-bg-span:             #22263a;
+  --pf-bg-status-ok:        rgba(16,185,129,.1);
+  --pf-bg-status-err:       rgba(239,68,68,.1);
+
+  --pf-border:              #2d3148;
+  --pf-border-card:         #2d3148;
+  --pf-border-input:        #2d3148;
+  --pf-border-section:      #22263a;
+  --pf-border-focus:        #60a5fa;
+
+  --pf-text-title:          #e8eaf6;
+  --pf-text-primary:        #e2e8f0;
+  --pf-text-secondary:      #8896b0;
+  --pf-text-muted:          #4e5d78;
+  --pf-text-label:          #9ca3cc;
+  --pf-text-span:           #c4cce6;
+  --pf-text-h2:             #e8eaf6;
+  --pf-text-status-ok:      #34d399;
+  --pf-text-status-err:     #f87171;
+
+  --pf-avatar-ring:         #60a5fa;
+  --pf-avatar-shadow:       0 4px 20px rgba(96,165,250,.2);
+
+  --pf-accent:              #3b82f6;
+  --pf-accent-hover:        #2563eb;
+  --pf-accent-text:         #ffffff;
+  --pf-accent-glow:         rgba(96,165,250,.18);
+
+  --pf-green:               #10b981;
+  --pf-green-hover:         #059669;
+  --pf-red:                 #ef4444;
+  --pf-red-hover:           #dc2626;
+
+  --pf-stat-1:              linear-gradient(135deg, #1e3a6e 0%, #2d2f6b 100%);
+  --pf-stat-2:              linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  --pf-stat-3:              linear-gradient(135deg, #78350f 0%, #92400e 100%);
+  --pf-stat-4:              linear-gradient(135deg, #831843 0%, #9d174d 100%);
+
+  --pf-shadow-card:         0 2px 16px rgba(0,0,0,.4);
+  --pf-shadow-card-hover:   0 10px 32px rgba(0,0,0,.55);
+  --pf-shadow-avatar-btn:   0 4px 12px rgba(0,0,0,.4);
+}
+
+[data-theme='deep-blue'] {
+  --pf-bg-page:             #060c1f;
+  --pf-bg-card:             #0d1630;
+  --pf-bg-surface:          #0a1228;
+  --pf-bg-input:            #131e3f;
+  --pf-bg-span:             #131e3f;
+  --pf-bg-status-ok:        rgba(6,214,160,.08);
+  --pf-bg-status-err:       rgba(255,107,122,.08);
+
+  --pf-border:              #1e2d5a;
+  --pf-border-card:         #1e2d5a;
+  --pf-border-input:        #1e2d5a;
+  --pf-border-section:      #131e3f;
+  --pf-border-focus:        #4d9fff;
+
+  --pf-text-title:          #dce8ff;
+  --pf-text-primary:        #c8deff;
+  --pf-text-secondary:      #7a9acf;
+  --pf-text-muted:          #3d5a8a;
+  --pf-text-label:          #8ba5d4;
+  --pf-text-span:           #a8c4f0;
+  --pf-text-h2:             #dce8ff;
+  --pf-text-status-ok:      #06d6a0;
+  --pf-text-status-err:     #ff6b7a;
+
+  --pf-avatar-ring:         #4d9fff;
+  --pf-avatar-shadow:       0 4px 20px rgba(77,159,255,.22);
+
+  --pf-accent:              #3d7eff;
+  --pf-accent-hover:        #2563eb;
+  --pf-accent-text:         #ffffff;
+  --pf-accent-glow:         rgba(77,159,255,.2);
+
+  --pf-green:               #06d6a0;
+  --pf-green-hover:         #05b689;
+  --pf-red:                 #ef4444;
+  --pf-red-hover:           #dc2626;
+
+  --pf-stat-1:              linear-gradient(135deg, #0e2a6b 0%, #1a2060 100%);
+  --pf-stat-2:              linear-gradient(135deg, #023d2c 0%, #024e38 100%);
+  --pf-stat-3:              linear-gradient(135deg, #4d2008 0%, #62280a 100%);
+  --pf-stat-4:              linear-gradient(135deg, #4a0e32 0%, #5c1140 100%);
+
+  --pf-shadow-card:         0 2px 20px rgba(0,4,40,.45);
+  --pf-shadow-card-hover:   0 12px 36px rgba(0,6,60,.65);
+  --pf-shadow-avatar-btn:   0 4px 14px rgba(0,4,40,.5);
+}
+
+/* ----------------------------------------------------------
+   2. RESET / BASE
+   ---------------------------------------------------------- */
+
+.profile-page *,
+.profile-page *::before,
+.profile-page *::after {
+  box-sizing: border-box;
+}
+
+/* ----------------------------------------------------------
+   3. PAGE WRAPPER
+   ---------------------------------------------------------- */
+
 .profile-page {
-  max-width: 1000px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2.5rem 1.5rem 4rem;
+  background: var(--pf-bg-page);
+  color: var(--pf-text-primary);
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .profile-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
+
+/* ----------------------------------------------------------
+   4. STATUS MESSAGE
+   ---------------------------------------------------------- */
+
+/* status message from JSX uses inline style — styled via explicit class .profile-status */
+
+.profile-status {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: var(--pf-bg-status-ok);
+  color: var(--pf-text-status-ok);
+  border: 1px solid currentColor;
+  border-color: var(--pf-text-status-ok);
+  opacity: 0.9;
+}
+
+.profile-status.error {
+  background: var(--pf-bg-status-err);
+  color: var(--pf-text-status-err);
+}
+
+
+
+/* ----------------------------------------------------------
+   5. PROFILE HEADER CARD
+   ---------------------------------------------------------- */
 
 .profile-header {
   display: flex;
   align-items: center;
   gap: 2rem;
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #e1e5e9;
+  background: var(--pf-bg-card);
+  border: 1.5px solid var(--pf-border-card);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  box-shadow: var(--pf-shadow-card);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
+
+/* ----------------------------------------------------------
+   6. AVATAR
+   ---------------------------------------------------------- */
 
 .profile-avatar {
   flex-shrink: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .profile-avatar img {
@@ -30,152 +240,207 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #3b82f6;
+  border: 3px solid var(--pf-avatar-ring);
+  box-shadow: var(--pf-avatar-shadow);
+  display: block;
 }
 
 .avatar-edit-btn {
   position: absolute;
   left: 50%;
-  bottom: -8px;
+  bottom: -10px;
   transform: translateX(-50%);
-  padding: 0.4rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   background: #111827;
-  color: white;
+  color: #ffffff;
   border: none;
-  border-radius: 9999px;
-  font-size: 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  opacity: 0.95;
-  transition: all 0.2s ease;
+  box-shadow: var(--pf-shadow-avatar-btn);
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .avatar-edit-btn:hover {
-  opacity: 1;
   background: #374151;
 }
 
 .avatar-edit-btn:active {
-  transform: translateX(-50%) scale(0.98);
+  transform: translateX(-50%) scale(0.97);
 }
+
+/* ----------------------------------------------------------
+   7. PROFILE INFO
+   ---------------------------------------------------------- */
 
 .profile-info {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .profile-info h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 0.5rem;
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 800;
+  color: var(--pf-text-title);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile-info p {
-  color: #666;
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: var(--pf-text-secondary);
 }
 
 .member-since {
-  font-size: 0.9rem;
-  color: #9ca3af;
+  font-size: 0.82rem;
+  color: var(--pf-text-muted);
 }
+
+/* ----------------------------------------------------------
+   8. PROFILE ACTION BUTTONS
+   ---------------------------------------------------------- */
 
 .profile-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
 }
 
 .edit-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
+  gap: 0.45rem;
+  padding: 0.7rem 1.4rem;
+  background: var(--pf-accent);
+  color: var(--pf-accent-text);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px var(--pf-accent-glow);
 }
 
 .edit-btn:hover {
-  background: #2563eb;
+  background: var(--pf-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--pf-accent-glow);
 }
 
 .edit-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .save-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #10b981;
-  color: white;
+  gap: 0.45rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--pf-green);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 2px 8px rgba(16,185,129,.25);
 }
 
-.save-btn:hover {
-  background: #059669;
+.save-btn:hover:not(:disabled) {
+  background: var(--pf-green-hover);
+  transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .cancel-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #ef4444;
-  color: white;
+  gap: 0.45rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--pf-red);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 2px 8px rgba(239,68,68,.2);
 }
 
-.cancel-btn:hover {
-  background: #dc2626;
+.cancel-btn:hover:not(:disabled) {
+  background: var(--pf-red-hover);
+  transform: translateY(-1px);
 }
+
+.cancel-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ----------------------------------------------------------
+   9. PROFILE CONTENT
+   ---------------------------------------------------------- */
 
 .profile-content {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.25rem;
 }
 
+/* ----------------------------------------------------------
+   10. PROFILE SECTIONS
+   ---------------------------------------------------------- */
+
 .profile-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #e1e5e9;
+  background: var(--pf-bg-card);
+  border: 1.5px solid var(--pf-border-card);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: var(--pf-shadow-card);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .profile-section h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f3f4f6;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--pf-text-h2);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--pf-border-section);
+  letter-spacing: -0.01em;
 }
+
+/* ----------------------------------------------------------
+   11. FORM GRID
+   ---------------------------------------------------------- */
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .form-group.full-width {
@@ -183,93 +448,226 @@
 }
 
 .form-group label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.9rem;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pf-text-label);
 }
 
 .form-group label svg {
-  color: #3b82f6;
+  color: var(--pf-accent);
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .form-group input,
 .form-group select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  padding: 0.65rem 0.875rem;
+  border: 1.5px solid var(--pf-border-input);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--pf-bg-input);
+  color: var(--pf-text-primary);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  font-family: inherit;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--pf-border-focus);
+  box-shadow: 0 0 0 3px var(--pf-accent-glow);
 }
 
-.form-group span {
-  padding: 0.75rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  color: #374151;
+.form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--pf-bg-surface);
 }
+
+.form-group input::placeholder {
+  color: var(--pf-text-muted);
+}
+
+/* Read-only display span */
+.form-group span {
+  padding: 0.65rem 0.875rem;
+  background: var(--pf-bg-span);
+  border: 1.5px solid var(--pf-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--pf-text-span);
+  line-height: 1.4;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* ----------------------------------------------------------
+   12. STATS GRID
+   ---------------------------------------------------------- */
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 1.5rem;
   border-radius: 12px;
+  padding: 1.4rem 1.25rem;
   text-align: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:nth-child(1) { background: var(--pf-stat-1); }
+.stat-card:nth-child(2) { background: var(--pf-stat-2); }
+.stat-card:nth-child(3) { background: var(--pf-stat-3); }
+.stat-card:nth-child(4) { background: var(--pf-stat-4); }
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
 }
 
 .stat-card h3 {
-  font-size: 0.9rem;
-  font-weight: 500;
-  opacity: 0.9;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
   margin-bottom: 0.5rem;
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.9rem;
+  font-weight: 800;
   display: block;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
+
+/* ----------------------------------------------------------
+   13. RESPONSIVE — TABLET (481px – 768px)
+   ---------------------------------------------------------- */
 
 @media (max-width: 768px) {
   .profile-page {
-    padding: 1rem;
+    padding: 1.5rem 1rem 3rem;
   }
-  
+
   .profile-header {
     flex-direction: column;
     text-align: center;
-    gap: 1rem;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 1.75rem;
+    align-items: center;
   }
-  
+
   .profile-info {
+    align-items: center;
+  }
+
+  .profile-info h1 {
+    white-space: normal;
     text-align: center;
   }
-  
+
+  .profile-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .save-btn,
+  .cancel-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
-  .edit-actions {
-    flex-direction: column;
+
+  .form-group.full-width {
+    grid-column: 1;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-section {
+    padding: 1.25rem;
+  }
+}
+
+/* ----------------------------------------------------------
+   14. RESPONSIVE — MOBILE SMALL (≤ 480px)
+   ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .profile-page {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  .profile-header {
+    padding: 1.25rem 1rem 1.5rem;
+    border-radius: 12px;
+    gap: 1rem;
+  }
+
+  .profile-avatar img {
+    width: 84px;
+    height: 84px;
+  }
+
+  .profile-section {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .profile-section h2 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 1.1rem 0.875rem;
+  }
+
+  .stat-number {
+    font-size: 1.6rem;
+  }
+
+  .edit-actions {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .save-btn,
+  .cancel-btn {
+    width: 100%;
+    justify-content: center;
   }
 }

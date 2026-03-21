@@ -63,6 +63,13 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (step !== 2) {
+      // Valider l'email avant de passer à l'étape paiement
+      const email = formData?.shipping?.email || user?.email;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        alert("Veuillez entrer une adresse email valide.");
+        return;
+      }
       // Forcer le passage à l’étape paiement si on n’y est pas
       return setStep(2);
     }
@@ -119,6 +126,8 @@ const Checkout = () => {
       }
     } catch (err) {
       console.error('Erreur lors de l’initiation du paiement:', err);
+      const errorMsg = err.response?.data?.message || 'Une erreur est survenue lors du paiement. Veuillez réessayer.';
+      alert(errorMsg);
     } finally {
       setIsPaying(false);
     }

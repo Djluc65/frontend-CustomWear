@@ -98,6 +98,7 @@ export const fetchCategories = createAsyncThunk(
 const initialState = {
   products: [],
   featuredProducts: [],
+  featuredProductsFetched: false,
   currentProduct: null,
   categories: [
     { id: 'tshirts', name: 'T-shirts', icon: '👕' },
@@ -193,10 +194,12 @@ const productsSlice = createSlice({
       .addCase(fetchFeaturedProducts.fulfilled, (state, action) => {
         state.isLoading = false;
         state.featuredProducts = action.payload.data.products;
+        state.featuredProductsFetched = true;
         state.error = null;
       })
       .addCase(fetchFeaturedProducts.rejected, (state, action) => {
         state.isLoading = false;
+        state.featuredProductsFetched = true;
         state.error = action.payload;
       })
       
