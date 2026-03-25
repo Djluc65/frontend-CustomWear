@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiLock, FiArrowLeft, FiKey } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import { toast } from 'react-toastify';
-import './ResetPassword.css';
+import './Resetpassword.css';
 
 const ResetPassword = () => {
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiXCircle, FiShoppingCart, FiArrowLeft } from 'react-icons/fi';
-import './CheckoutResult.css';
+import './Checkoutresult.css';
 
 const CheckoutCancel = () => {
   return (

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { FiCheckCircle, FiUser, FiArrowLeft, FiLoader } from 'react-icons/fi';
 import api from '../services/api';
-import './CheckoutResult.css';
+import './Checkoutresult.css';
 
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
