@@ -3,18 +3,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import * as reactRedux from 'react-redux';
 import Navbar from './Navbar';
-import '@testing-library/jest-dom';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock react-redux
-jest.mock('react-redux', () => ({
-  useDispatch: () => jest.fn(),
-  useSelector: jest.fn(),
+vi.mock('react-redux', () => ({
+  useDispatch: () => vi.fn(),
+  useSelector: vi.fn(),
 }));
 
 // Mock react-router-dom's useNavigate
-const mockedNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
+const mockedNavigate = vi.fn();
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
   useNavigate: () => mockedNavigate,
 }));
 
@@ -42,6 +42,7 @@ describe('Navbar Component - Admin Access', () => {
           isAuthenticated: true,
           user: { role: 'admin', name: 'Admin User' }
         },
+        theme: { theme: 'light' },
         cart: { totalQuantity: 2 }
       };
       return selector(mockState);
@@ -62,6 +63,7 @@ describe('Navbar Component - Admin Access', () => {
           isAuthenticated: true,
           user: { role: 'moderator', name: 'Mod User' }
         },
+        theme: { theme: 'light' },
         cart: { totalQuantity: 0 }
       };
       return selector(mockState);
@@ -81,6 +83,7 @@ describe('Navbar Component - Admin Access', () => {
           isAuthenticated: true,
           user: { role: 'user', name: 'Standard User' }
         },
+        theme: { theme: 'light' },
         cart: { totalQuantity: 0 }
       };
       return selector(mockState);
@@ -100,6 +103,7 @@ describe('Navbar Component - Admin Access', () => {
           isAuthenticated: false,
           user: null
         },
+        theme: { theme: 'light' },
         cart: { totalQuantity: 0 }
       };
       return selector(mockState);

@@ -136,11 +136,20 @@ const Customize = () => {
 
   const [activeContextSection, setActiveContextSection] = useState(null);
   const [contextOpen, setContextOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
   const produitRef = useRef(null);
   const imageRef   = useRef(null);
   const texteRef   = useRef(null);
   const saveRef    = useRef(null);
+
+  /* Detect mobile resize */
+  React.useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handler, { passive: true });
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   const scrollToSection = (key) => {
     const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
@@ -641,7 +650,15 @@ const Customize = () => {
             key={key}
             type="button"
             className={`chip ${activeContextSection===key?'active':''}`}
-            onClick={()=>{setActiveContextSection(key);setContextOpen(true);scrollToSection(key);}}
+            onClick={()=>{
+              setActiveContextSection(key);
+              setContextOpen(true);
+              if (isMobile) {
+                setSheetOpen(true);
+              } else {
+                scrollToSection(key);
+              }
+            }}
             aria-pressed={activeContextSection===key}
           >{label}</button>
         ))}
@@ -972,6 +989,249 @@ const Customize = () => {
               </div>
             )}
 
+          </div>
+        </div>
+
+        {/* ── MOBILE BOTTOM SHEET ── */}
+        {/* Backdrop */}
+        <div
+          className={`cz-sheet-backdrop ${sheetOpen && isMobile ? 'open' : ''}`}
+          onClick={() => { setSheetOpen(false); setActiveContextSection(null); }}
+          aria-hidden="true"
+        />
+
+        {/* Sheet */}
+        <div
+          className={`cz-bottom-sheet ${sheetOpen && isMobile ? 'open' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeContextSection ? {
+            produit: 'Filtrer les modèles',
+            image:   'Ajouter une image',
+            texte:   'Ajouter un texte',
+            save:    'Sauvegarde',
+          }[activeContextSection] : ''}
+        >
+          {/* Drag handle */}
+          <div className="cz-sheet-handle" />
+
+          {/* Header */}
+          <div className="cz-sheet-header">
+            <p className="cz-sheet-title">
+              {{
+                produit: 'Filtrer les modèles',
+                image:   'Ajouter une image',
+                texte:   'Ajouter un texte',
+                save:    'Sauvegarde',
+              }[activeContextSection] || ''}
+            </p>
+            <button
+              type="button"
+              className="cz-sheet-close"
+              onClick={() => { setSheetOpen(false); setActiveContextSection(null); }}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Scrollable body — mirrors the desktop panel content */}
+          <div className="cz-sheet-body">
+            {activeContextSection === 'produit' && (
+              <div className="panel-content" onClick={e => e.stopPropagation()}>
+                <div className="form-group">
+                  <label>Modèle</label>
+                  <select value={selectedModel?._id||''} onChange={e=>handleModelChange(e.target.value)}>
+                    {activeModels.map(m=><option key={m._id} value={m._id}>{m.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Prix du modèle</label>
+                  <div className="model-price-inline">
+                    {Number.isFinite(Number(selectedModel?.basePrice))?`${Number(selectedModel.basePrice).toFixed(2)} €`:`${Number(DEFAULT_MODEL_PLACEHOLDER.basePrice).toFixed(2)} €`}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Couleur</label>
+                  <div className="options-row">
+                    {availableColors.map(color=>(
+                      <button key={color} className={`chip color-chip ${selectedColor===color?'active':''}`} onClick={()=>setSelectedColor(color)}>
+                        <div className="color-swatch" style={{backgroundColor:color.toLowerCase()}} />{color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Tailles</label>
+                  <div className="options-row">
+                    {availableSizes.map(size=>(
+                      <button key={size} type="button" className={`chip ${selectedSize===size?'active':''}`} onClick={()=>setSelectedSize(size)}>{size}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeContextSection === 'image' && (
+              <div className="panel-content" onClick={e => e.stopPropagation()}>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImageUploaderOpen(o=>!o)} style={toggleLabelStyle(imageUploaderOpen)}>
+                    Uploader une image (PNG/JPG/SVG)
+                  </label>
+                  {imageUploaderOpen&&(<>
+                    <input type="file" accept="image/*,.svg" onChange={handleFileUpload} />
+                    <div className="quick-actions" style={{marginTop:8}}>
+                      <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
+                      <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
+                      <button className="chip" disabled={!uploadedImageUrl||bgRemoving} onClick={handleRemoveBackground}>{bgRemoving?'Suppression…':'Supprimer le fond'}</button>
+                    </div>
+                  </>)}
+                </div>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImageSizeOpen(o=>!o)} style={toggleLabelStyle(imageSizeOpen)}>Taille</label>
+                  {imageSizeOpen&&<input type="range" min="0.2" max="3" step="0.05" value={imageScale} onChange={e=>setImageScale(Number(e.target.value))} />}
+                </div>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImageRotationOpen(o=>!o)} style={toggleLabelStyle(imageRotationOpen)}>Rotation</label>
+                  {imageRotationOpen&&<input type="range" min="-180" max="180" step="1" value={imageRotation} onChange={e=>setImageRotation(Number(e.target.value))} />}
+                </div>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImageVisibilityOpen(o=>!o)} style={toggleLabelStyle(imageVisibilityOpen)}>Visible</label>
+                  {imageVisibilityOpen&&(
+                    <div className="options-row">
+                      <label className="chip"><input type="checkbox" checked={imageVisible} onChange={()=>setImageVisible(v=>!v)} /> Visible</label>
+                      <button type="button" className={`chip ${imageLocked?'active':''}`} onClick={()=>setImageLocked(v=>!v)}>{imageLocked?'Déverrouiller':'Verrouiller'}</button>
+                      <button type="button" className="chip" onClick={()=>setImageSide(s=>s==='front'?'back':'front')}>{imageSide==='front'?'Envoyer à arrière':'Envoyer à avant'}</button>
+                    </div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImageOpacityOpen(o=>!o)} style={toggleLabelStyle(imageOpacityOpen)}>Opacité</label>
+                  {imageOpacityOpen&&<input type="range" min="0" max="1" step="0.05" value={imageOpacity} onChange={e=>setImageOpacity(Number(e.target.value))} />}
+                </div>
+                <div className="form-group">
+                  <label role="button" tabIndex={0} onClick={()=>setImagePositionOpen(o=>!o)} style={toggleLabelStyle(imagePositionOpen)}>Position</label>
+                  {imagePositionOpen&&(<>
+                    <div className="options-row">
+                      <button type="button" className="chip" onClick={()=>setImageXPercent(p=>Math.max(5,p-5))}>←</button>
+                      <button type="button" className="chip" onClick={()=>setImageXPercent(p=>Math.min(95,p+5))}>→</button>
+                      <button type="button" className="chip" onClick={()=>setImageYPercent(p=>Math.max(5,p-5))}>↑</button>
+                      <button type="button" className="chip" onClick={()=>setImageYPercent(p=>Math.min(95,p+5))}>↓</button>
+                      <button type="button" className="chip" onClick={()=>{setImageXPercent(50);setImageYPercent(50);}}>Centrer</button>
+                    </div>
+                    <div className="options-row" style={{marginTop:8}}>
+                      <button type="button" className="chip" onClick={()=>setImageFlipX(f=>!f)}>{imageFlipX?'Annuler flip':'Flip H'}</button>
+                      <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.max(1,z-1))}>Arrière</button>
+                      <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.min(10,z+1))}>Premier plan</button>
+                    </div>
+                  </>)}
+                </div>
+                <div className="form-group">
+                  <div className="options-row">
+                    <button type="button" className="chip" onClick={()=>{setImageXPercent(50);setImageYPercent(50);setImageScale(1);setImageRotation(0);setImageOpacity(1);setImageFlipX(false);setImageZIndex(2);setImageSide('front');}}>Réinitialiser</button>
+                    <button type="button" className="chip" onClick={()=>{if(uploadedImageUrl?.startsWith('blob:'))try{URL.revokeObjectURL(uploadedImageUrl);}catch(_){}setUploadedImageUrl('');}}>Supprimer l'image</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeContextSection === 'texte' && (
+              <div className="panel-content" onClick={e => e.stopPropagation()}>
+                <div className="form-group">
+                  <button type="button" className="chip" onClick={addTextLayer}>+ Ajouter un texte</button>
+                </div>
+                <div className="form-group">
+                  <label>Zones de texte</label>
+                  <div className="layers-list">
+                    {textLayers.length===0&&<p style={{color:'var(--cz-text-muted)'}}>Aucun texte ajouté.</p>}
+                    {textLayers.map((t,idx)=>(
+                      <div key={t.id} className={`layer-item ${selectedTextId===t.id?'active':''}`}>
+                        <div className="layer-row">
+                          <button type="button" className="chip" onClick={()=>setSelectedTextId(t.id)}>{t.name||`Texte ${idx+1}`}</button>
+                        </div>
+                        <div className="layer-actions">
+                          <label className="chip"><input type="checkbox" checked={t.visible??true} onChange={()=>toggleVisibilityTextLayer(t.id)} /> Visible</label>
+                          <button type="button" className={`chip ${t.locked?'active':''}`} onClick={()=>toggleLockTextLayer(t.id)}>{t.locked?'Déverr.':'Verr.'}</button>
+                          <button type="button" className="chip" onClick={()=>duplicateTextLayer(t.id)}>Dupliquer</button>
+                          <button type="button" className="chip" onClick={()=>deleteTextLayer(t.id)} style={{color:'var(--cz-text-error,#ef4444)'}}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {selectedTextId && (() => {
+                  const t = textLayers.find(x=>x.id===selectedTextId);
+                  if (!t) return null;
+                  return (<>
+                    <div className="form-group">
+                      <label>Contenu</label>
+                      <input type="text" maxLength={textCharLimit} value={t.content||''} onChange={e=>updateTextLayer(selectedTextId,{content:e.target.value})} />
+                    </div>
+                    <div className="form-group"><label>Couleur</label><input type="color" value={t.color||'#111827'} onChange={e=>updateTextLayer(selectedTextId,{color:e.target.value})} /></div>
+                    <div className="form-group">
+                      <label>Police</label>
+                      <select value={t.fontFamily||'Arial, Helvetica, sans-serif'} onChange={e=>updateTextLayer(selectedTextId,{fontFamily:e.target.value})}>
+                        <option value="Arial, Helvetica, sans-serif">Arial</option>
+                        <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                        <option value="Montserrat, Arial, sans-serif">Montserrat</option>
+                        <option value="Roboto, Arial, sans-serif">Roboto</option>
+                      </select>
+                    </div>
+                    <div className="form-group"><label>Taille</label><input type="range" min="8" max="200" step="1" value={t.fontSize||32} onChange={e=>updateTextLayer(selectedTextId,{fontSize:Number(e.target.value)})} /></div>
+                    <div className="options-row">
+                      <button className={`chip ${t.fontWeight===700?'active':''}`} onClick={()=>updateTextLayer(selectedTextId,{fontWeight:t.fontWeight===700?400:700})}>Gras</button>
+                      <button className={`chip ${t.fontStyle==='italic'?'active':''}`} onClick={()=>updateTextLayer(selectedTextId,{fontStyle:t.fontStyle==='italic'?'normal':'italic'})}>Italique</button>
+                      <button className={`chip ${t.textDecoration==='underline'?'active':''}`} onClick={()=>updateTextLayer(selectedTextId,{textDecoration:t.textDecoration==='underline'?'none':'underline'})}>Souligné</button>
+                    </div>
+                    <div className="form-group"><label>Rotation</label><input type="range" min="-180" max="180" step="1" value={t.rotation||0} onChange={e=>updateTextLayer(selectedTextId,{rotation:Number(e.target.value)})} /></div>
+                  </>);
+                })()}
+              </div>
+            )}
+
+            {activeContextSection === 'save' && (
+              <div className="save-panel">
+                {hasAutoDraft && (
+                  <div className="save-draft-alert">
+                    <span>💾 Brouillon disponible.</span>
+                    <button className="save-btn save-btn-outline" onClick={loadAutoDraft}>Reprendre</button>
+                  </div>
+                )}
+                <div className="save-name-row">
+                  <input type="text" className="save-name-input" placeholder="Nom de la sauvegarde" value={savedName} onChange={e=>setSavedName(e.target.value)} />
+                </div>
+                <div className="save-actions">
+                  <button className="save-btn save-btn-primary"  onClick={saveCustomizationLocal}>💾 Enregistrer</button>
+                  <button className="save-btn save-btn-outline"  onClick={loadCustomizationLocal}>📂 Charger</button>
+                  <button className="save-btn save-btn-outline"  onClick={generateShareLink}>🔗 Lien</button>
+                  <button className="save-btn save-btn-ghost"    onClick={downloadPreviewImage}>⬇ Aperçu</button>
+                  <button className="save-btn save-btn-primary"  onClick={saveCustomizationServer}>☁️ En ligne</button>
+                </div>
+                <div className="save-actions" style={{marginTop:'0.5rem'}}>
+                  <button className="save-btn save-btn-outline" onClick={undo}>↩ Annuler</button>
+                  <button className="save-btn save-btn-outline" onClick={redo}>↪ Rétablir</button>
+                </div>
+                {savedList.length > 0 && (
+                  <div style={{marginTop:'0.75rem'}}>
+                    <p className="save-list-title">Sauvegardes ({savedList.length})</p>
+                    <ul className="save-list">
+                      {savedList.slice(0, 5).map(s=>(
+                        <li key={s.id} className="save-list-item">
+                          <div className="save-list-name">
+                            <span className="save-list-name-text">{s.name}</span>
+                            <span className="save-list-date">{new Date(s.timestamp).toLocaleDateString()}</span>
+                          </div>
+                          <div className="save-list-actions">
+                            <button className="save-btn save-btn-outline" onClick={()=>loadSavedById(s.id)}>Charger</button>
+                            <button className="save-btn save-btn-danger"  onClick={()=>deleteSavedById(s.id)}>✕</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
