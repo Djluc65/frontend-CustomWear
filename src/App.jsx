@@ -23,6 +23,11 @@ import Customize from './pages/Customize';
 import Search from './pages/Search';
 import About from './pages/About';
 import TestAdmin from './pages/TestAdmin';
+import Events from './pages/Events';
+import CreateDesign from './pages/CreateDesign';
+import DesignSuccess from './pages/DesignSuccess';
+import DesignCancel from './pages/DesignCancel';
+import DesignMessages from './pages/DesignMessages';
 
 // Import des composants Admin
 import AdminRoute from './components/Admin/AdminRoute';
@@ -37,6 +42,7 @@ import AdminSettings from './pages/Admin/AdminSettings';
 import AdminProductCreate from './pages/Admin/AdminProductCreate';
 import AdminModels from './pages/Admin/AdminModels';
 import AdminProductEdit from './pages/Admin/AdminProductEdit';
+import AdminDesignRequests from './pages/Admin/AdminDesignRequests';
 
 // Import des styles
 import 'react-toastify/dist/ReactToastify.css';
@@ -90,6 +96,7 @@ function App() {
             <Route path="products/:id/edit" element={<AdminProductEdit />} />
             <Route path="models" element={<AdminModels />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="design-requests" element={<AdminDesignRequests />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
@@ -116,6 +123,11 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/customize" element={<Customize />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/events" element={<Events />} />
+                  <Route path="/design" element={<CreateDesign />} />
+                  <Route path="/design/success" element={<DesignSuccess />} />
+                  <Route path="/design/cancel" element={<DesignCancel />} />
+                  <Route path="/design/messages" element={<DesignMessages />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/test-admin" element={<TestAdmin />} />
                 </Routes>

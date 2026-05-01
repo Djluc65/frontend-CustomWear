@@ -338,11 +338,18 @@
 
 .hero .hero-text .hero-description {
   color: #9ca3af !important; /* Force le gris pour le mode Light */
+  font-weight: 800;
 }
-
 [data-theme='dark'] .hero .hero-text .hero-description,
 [data-theme='deep-blue'] .hero .hero-text .hero-description {
   color: var(--hm-text-hero-sub) !important;
+  font-weight: 800;
+}
+
+@media (min-width: 993px) {
+  .hero-description {
+    margin-bottom: 10px;
+  }
 }
 
 .hero-buttons {

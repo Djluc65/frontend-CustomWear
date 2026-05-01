@@ -8,6 +8,7 @@ import {
   FiShoppingBag, 
   FiUsers, 
   FiBarChart2, 
+  FiPenTool,
   FiSettings, 
   FiLogOut, 
   FiMenu, 
@@ -40,6 +41,7 @@ const AdminLayout = () => {
     { path: '/admin/products', icon: FiPackage, label: 'Produits' },
     { path: '/admin/models', icon: FiLayers, label: 'Modèles' },
     { path: '/admin/orders', icon: FiShoppingBag, label: 'Commandes' },
+    { path: '/admin/design-requests', icon: FiPenTool, label: 'Demandes Design' },
     { path: '/admin/users', icon: FiUsers, label: 'Utilisateurs' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytiques' },
     { path: '/admin/settings', icon: FiSettings, label: 'Paramètres' }

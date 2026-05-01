@@ -14,6 +14,11 @@ const api = axios.create({
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
   (config) => {
+    if (typeof FormData !== 'undefined' && config?.data instanceof FormData) {
+      if (config.headers && config.headers['Content-Type']) {
+        delete config.headers['Content-Type'];
+      }
+    }
     const token = store.getState().auth.token || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -154,7 +159,14 @@ export const adminAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress
     });
-  }
+  },
+
+  // Demandes de design
+  getDesignRequests: (params = {}) => api.get('/api/design-requests/admin/list', { params }),
+  getDesignRequest: (id) => api.get(`/api/design-requests/admin/${id}`),
+  updateDesignRequest: (id, payload) => api.patch(`/api/design-requests/admin/${id}`, payload),
+  sendDesignRequestMessage: (id, payload) => api.post(`/api/design-requests/admin/${id}/messages`, payload),
+  markDesignRequestRead: (id) => api.post(`/api/design-requests/admin/${id}/mark-read`),
 };
 
 // Services API pour l'authentification

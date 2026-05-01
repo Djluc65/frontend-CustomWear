@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine, FaInfoCircle } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine, FaInfoCircle, FaCalendarAlt, FaBrush } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -202,6 +202,14 @@ const Navbar = () => {
             <FaInfoCircle className="navbar-icon" />
             À Propos
           </Link>
+          <Link to="/events" className="navbar-link">
+            <FaCalendarAlt className="navbar-icon" />
+            Événements
+          </Link>
+          <Link to="/design" className="navbar-link">
+            <FaBrush className="navbar-icon" />
+            Design
+          </Link>
           <Link to="/products" className="navbar-link">
             <FaBox className="navbar-icon" />
             Produits disponibles
@@ -266,19 +274,23 @@ const Navbar = () => {
           ) : (
             <>
               {/* Icône Connexion (mobile uniquement) */}
-              <Link to="/auth" className="navbar-action login-mobile" aria-label="Connexion">
+              {/* <Link to="/auth" className="navbar-action login-mobile" aria-label="Connexion">
                 <FaUser />
               </Link>
+              <Link to="/auth?mode=register" className="navbar-button signup-cta" aria-label="Inscription">
+                <FaUserPlus className="navbar-icon" />
+                <span className="signup-cta-text">Inscription</span>
+              </Link> */}
               {/* Liens texte (desktop) */}
               <div className="auth-links">
                 <Link to="/auth" className="navbar-link">
                   <FaSignInAlt className="navbar-icon" />
-                  Connexion
+                  Se Connecter
                 </Link>
-                <Link to="/auth?mode=register" className="navbar-button">
+                {/* <Link to="/auth?mode=register" className="navbar-button">
                   <FaUserPlus className="navbar-icon" />
                   Inscription
-                </Link>
+                </Link> */}
               </div>
             </>
           )}
@@ -331,6 +343,14 @@ const Navbar = () => {
           <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
             <FaHome className="mobile-icon" />
             Accueil
+          </Link>
+          <Link to="/events" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+            <FaCalendarAlt className="mobile-icon" />
+            Événements
+          </Link>
+          <Link to="/design" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+            <FaBrush className="mobile-icon" />
+            Créer mon design
           </Link>
           <Link to="/products" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
             <FaBox className="mobile-icon" />

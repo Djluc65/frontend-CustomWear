@@ -621,6 +621,10 @@
   max-width: 300px;
 }
 
+[data-theme='light'] .auth-image p {
+  color: #ffffff !important;
+}
+
 /* ----------------------------------------------------------
    16. USER PROFILE CARD (connected state)
    ---------------------------------------------------------- */

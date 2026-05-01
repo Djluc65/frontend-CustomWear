@@ -1100,19 +1100,17 @@
 @media (max-width: 768px) {
   :root {
     --cz-menubar-h: 56px;
-    --cz-tool-panel-h: 52vh; /* height of the slide-up tool panel */
   }
 
-  /* Extra bottom padding so content isn't hidden behind tab bar + tool panel */
   .customize-page {
     padding: 1rem 0.75rem calc(var(--cz-menubar-h) + env(safe-area-inset-bottom) + 1rem);
   }
 
-  /* ── Tab bar: fixed at very bottom ── */
+  /* Sticky bottom tab bar */
   .customize-menubar {
     position: fixed;
     left: 0; right: 0; bottom: 0;
-    z-index: 300;
+    z-index: 100;
     margin: 0;
     padding: 0.5rem 0.5rem calc(env(safe-area-inset-bottom));
     height: var(--cz-menubar-h);
@@ -1125,30 +1123,28 @@
     align-items: center;
     flex-wrap: nowrap;
     gap: 0.25rem;
-    background: var(--cz-bg-menubar);
-    backdrop-filter: blur(10px);
   }
 
   .customize-menubar .chip {
     flex: 1;
     justify-content: center;
     text-align: center;
-    font-size: 0.72rem;
-    padding: 0.32rem 0.3rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.4rem;
     border-radius: 8px;
   }
 
-  /* ── Desktop tools column: hidden on mobile
-     Content is shown in the slide-up panel instead ── */
-  .customize-tools {
-    display: none;
-  }
-
-  /* ── Page content: single column, preview first ── */
   .customize-content {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     gap: 0.75rem;
+  }
+
+  .customize-tools {
+    grid-column: 1;
+    grid-row: 1;
+    max-height: none;
+    overflow: visible;
   }
 
   .container-panel {
@@ -1157,12 +1153,12 @@
 
   .customize-preview {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
   }
 
   .preview-sidebar-right {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     max-height: none;
   }
 
@@ -1179,107 +1175,6 @@
   .checkout-btn {
     width: 100%;
     min-width: 0;
-  }
-
-  /* ────────────────────────────────────────────────────────
-     MOBILE TOOL PANEL — slides up just above the tab bar
-     ──────────────────────────────────────────────────────── */
-
-  /* Panel wrapper: fixed, sits above the tab bar */
-  .cz-mobile-tool-panel {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(var(--cz-menubar-h) + env(safe-area-inset-bottom));
-    z-index: 200;
-    background: var(--cz-bg-panel);
-    border-top: 1.5px solid var(--cz-border-panel);
-    border-radius: 18px 18px 0 0;
-    box-shadow: 0 -6px 32px rgba(0,0,0,.18);
-    max-height: var(--cz-tool-panel-h);
-    display: flex;
-    flex-direction: column;
-    /* hidden state */
-    transform: translateY(100%);
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      transform 0.3s cubic-bezier(0.32,0.72,0,1),
-      opacity   0.25s ease;
-  }
-
-  .cz-mobile-tool-panel.open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Drag handle */
-  .cz-mobile-tool-panel-handle {
-    width: 36px;
-    height: 4px;
-    background: var(--cz-border);
-    border-radius: 2px;
-    margin: 10px auto 0;
-    flex-shrink: 0;
-  }
-
-  /* Header row: title + close */
-  .cz-mobile-tool-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 1rem 0.5rem;
-    border-bottom: 1px solid var(--cz-border);
-    flex-shrink: 0;
-  }
-
-  .cz-mobile-tool-panel-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--cz-accent);
-    margin: 0;
-  }
-
-  .cz-mobile-tool-panel-close {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid var(--cz-border);
-    background: var(--cz-bg-chip);
-    color: var(--cz-text-secondary);
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition: background 0.18s, color 0.18s;
-  }
-
-  .cz-mobile-tool-panel-close:hover {
-    background: var(--cz-accent-soft);
-    color: var(--cz-accent);
-  }
-
-  /* Scrollable body */
-  .cz-mobile-tool-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0.75rem 1rem 1rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--cz-border) transparent;
-  }
-
-  /* Inside the panel, strip panel wrapper styling */
-  .cz-mobile-tool-panel-body .panel {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
   }
 }
 
