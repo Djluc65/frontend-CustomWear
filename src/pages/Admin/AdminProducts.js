@@ -24,6 +24,19 @@ const STATUSES = [
 
 const PAGE_SIZE = 12;
 
+const getProductImage = (product) => {
+  const imgs = product?.images;
+  if (!imgs || !imgs.length) return null;
+  if (typeof imgs[0] === 'object' && imgs[0] !== null) {
+    const primary = imgs.find(i => i?.isPrimary && i?.side === 'front')
+      || imgs.find(i => i?.isPrimary)
+      || imgs.find(i => i?.side === 'front')
+      || imgs[0];
+    return primary?.url || primary?.secure_url || null;
+  }
+  return typeof imgs[0] === 'string' ? imgs[0] : null;
+};
+
 const AdminProducts = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -215,8 +228,8 @@ const AdminProducts = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             <div className="relative h-12 w-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0">
-                              {product.images && product.images[0] ? (
-                                <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                              {getProductImage(product) ? (
+                                <img src={getProductImage(product)} alt="" className="h-full w-full object-cover" />
                               ) : (
                                 <div className="h-full w-full flex items-center justify-center text-slate-400">
                                   <FiPackage />
@@ -268,8 +281,8 @@ const AdminProducts = () => {
                  products.map((product) => (
                    <div key={product._id} className="p-4 flex gap-4 items-start bg-white">
                      <div className="h-20 w-20 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0">
-                        {product.images && product.images[0] ? (
-                          <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                        {getProductImage(product) ? (
+                          <img src={getProductImage(product)} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center text-slate-400">
                             <FiPackage size={24} />

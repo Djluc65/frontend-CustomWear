@@ -755,41 +755,77 @@
     gap: 1rem;
   }
 
+  /* ── Barre de contrôles : tout sur une ligne, sans wrap ── */
   .products-controls {
+    display: flex;
+    flex-direction: row;
     flex-wrap: nowrap;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
+    align-items: center;
+    gap: 0.4rem;
+    overflow: visible;
   }
 
-  .products-controls::-webkit-scrollbar {
-    display: none;
-  }
-
+  /* ── Assistant réduit : prend l'espace restant mais limité ── */
   .assistant-compact {
-    flex: 1;
-    min-width: 160px;
+    flex: 1 1 0;
+    min-width: 0;
     max-width: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    gap: 0.25rem;
   }
 
+  .assistant-compact-form {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+  }
+
+  /* Input très compact sur mobile */
   .assistant-compact-input {
-    font-size: 0.82rem;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
   }
 
+  /* Bouton "Conseil" encore plus petit */
   .assistant-compact-button {
-    font-size: 0.78rem;
-    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
+  /* Réponse de l'assistant sous la form, pas de débordement */
+  .assistant-compact-reply {
+    font-size: 0.75rem;
+    padding: 0.4rem 1.8rem 0.4rem 0.6rem;
+  }
+
+  /* ── Bouton Filtres : fixe, ne rétrécit pas ── */
   .filter-toggle {
     flex-shrink: 0;
-    padding: 0.6rem 0.8rem;
-    font-size: 0.82rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    border-radius: 8px;
   }
 
+  /* ── Boutons vue grille/liste : toujours visibles, fixes ── */
   .view-controls {
     flex-shrink: 0;
+    display: flex;
+    border: 1.5px solid var(--pr-btn-ghost-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .view-controls button {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.9rem;
   }
 
   .filters-sidebar {
@@ -819,17 +855,32 @@
   }
 
   .products-controls {
-    gap: 0.4rem;
+    gap: 0.3rem;
+  }
+
+  /* Placeholder raccourci sur très petit écran */
+  .assistant-compact-input::placeholder {
+    content: 'Conseil ?';
+  }
+
+  .assistant-compact-input {
+    font-size: 0.7rem;
+    padding: 0.28rem 0.5rem;
+  }
+
+  .assistant-compact-button {
+    font-size: 0.65rem;
+    padding: 0.28rem 0.45rem;
   }
 
   .filter-toggle {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.8rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.75rem;
   }
 
   .view-controls button {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.9rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
   }
 
   .category-quick {

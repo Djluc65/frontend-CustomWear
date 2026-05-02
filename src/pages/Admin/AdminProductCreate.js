@@ -24,9 +24,9 @@ const GENDERS = [
   { value: 'enfant', label: 'Enfant' }
 ];
 
-const ALLOWED_COLORS = ['Noir', 'Blanc', 'Bleu', 'Marron', 'Rose', 'Jaune', 'Vert', 'Mauve', 'Gris'];
+const ALLOWED_COLORS = ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Marron', 'Rose', 'Jaune', 'Vert', 'Mauve', 'Gris'];
 
-const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'Unique'];
 
 const AdminProductCreate = () => {
   const navigate = useNavigate();
@@ -119,14 +119,14 @@ const AdminProductCreate = () => {
       window.alert('Veuillez renseigner le nom, la description et le prix de base');
       return;
     }
-    if (!mainImages.front || !mainImages.back) {
-      window.alert('Veuillez téléverser les images principales (avant et arrière)');
+    if (!mainImages.front) {
+      window.alert('Veuillez téléverser au moins l\'image avant du produit');
       return;
     }
     for (const c of form.colors) {
       const entry = colorImages[c] || {};
-      if (!entry.front || !entry.back) {
-        window.alert(`Veuillez téléverser avant et arrière pour la couleur: ${c}`);
+      if (!entry.front) {
+        window.alert(`Veuillez téléverser au moins l'image avant pour la couleur: ${c}`);
         return;
       }
     }
@@ -140,11 +140,13 @@ const AdminProductCreate = () => {
         isPrimary: true,
         side: 'front'
       });
-      imagesPayload.push({
-        url: mainImages.back.secure_url || mainImages.back.url,
-        publicId: mainImages.back.public_id || mainImages.back.publicId,
-        side: 'back'
-      });
+      if (mainImages.back) {
+        imagesPayload.push({
+          url: mainImages.back.secure_url || mainImages.back.url,
+          publicId: mainImages.back.public_id || mainImages.back.publicId,
+          side: 'back'
+        });
+      }
       for (const c of form.colors) {
         const entry = colorImages[c];
         imagesPayload.push({
@@ -153,12 +155,14 @@ const AdminProductCreate = () => {
           color: c,
           side: 'front'
         });
-        imagesPayload.push({
-          url: entry.back.secure_url || entry.back.url,
-          publicId: entry.back.public_id || entry.back.publicId,
-          color: c,
-          side: 'back'
-        });
+        if (entry.back) {
+          imagesPayload.push({
+            url: entry.back.secure_url || entry.back.url,
+            publicId: entry.back.public_id || entry.back.publicId,
+            color: c,
+            side: 'back'
+          });
+        }
       }
 
       const payload = {
@@ -301,7 +305,7 @@ const AdminProductCreate = () => {
             <Card className="p-6 bg-white shadow-sm border-slate-200">
               <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                 <span className="w-1 h-6 bg-blue-600 rounded-full"></span>
-                Images principales <span className="text-red-500">*</span>
+                Images principales <span className="text-red-500">*</span> <span className="text-xs font-normal text-slate-400">(arrière optionnelle)</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ImageUploadBox 
@@ -476,7 +480,7 @@ const AdminProductCreate = () => {
                           checked={form.colors.includes(c)} 
                           onChange={() => toggleColor(c)} 
                         />
-                        <span className={`w-3 h-3 rounded-full border border-white/20`} style={{ backgroundColor: c === 'Blanc' ? '#fff' : c === 'Noir' ? '#000' : c === 'Marron' ? '#8B4513' : c === 'Rose' ? '#FFC0CB' : c === 'Jaune' ? '#FFD700' : c === 'Vert' ? '#008000' : c === 'Mauve' ? '#800080' : c === 'Gris' ? '#808080' : c.toLowerCase() }}></span>
+                        <span className={`w-3 h-3 rounded-full border border-white/20`} style={{ backgroundColor: c === 'Blanc' ? '#fff' : c === 'Noir' ? '#000' : c === 'Rouge' ? '#DC2626' : c === 'Bleu' ? '#1E3A8A' : c === 'Marron' ? '#8B4513' : c === 'Rose' ? '#FFC0CB' : c === 'Jaune' ? '#FFD700' : c === 'Vert' ? '#008000' : c === 'Mauve' ? '#800080' : c === 'Gris' ? '#808080' : c.toLowerCase() }}></span>
                         {c}
                       </label>
                     ))}
@@ -486,6 +490,25 @@ const AdminProductCreate = () => {
             </Card>
           </div>
         </div>
+
+        {/* Bottom sticky action bar */}
+        <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end gap-3"> 
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => navigate('/admin/products')} 
+          > 
+            Annuler 
+          </Button> 
+          <Button 
+            type="submit" 
+            className="bg-blue-600 hover:bg-blue-700 text-white" 
+            disabled={creating || uploading} 
+          > 
+            {creating ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />} 
+            {creating ? 'Création...' : 'Créer le produit'} 
+          </Button> 
+        </div> 
       </form>
     </div>
   );

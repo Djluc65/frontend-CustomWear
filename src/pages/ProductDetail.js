@@ -529,6 +529,9 @@ const ProductDetail = () => {
           </div>
 
           <div className="product-description">
+            {currentProduct.shortDescription && (
+              <p className="product-short-desc">{currentProduct.shortDescription}</p>
+            )}
             <p>{currentProduct.description}</p>
           </div>
 
@@ -547,7 +550,13 @@ const ProductDetail = () => {
             {currentProduct.sku && (
               <p><strong>SKU:</strong> {currentProduct.sku}</p>
             )}
-            <p><strong>Quantité totale:</strong> {currentProduct.totalStock ?? 0}</p>
+            <div className={`pd-stock-indicator ${(currentProduct.totalStock ?? 0) > 0 ? 'in-stock' : 'out-of-stock'}`}>
+              <span className="pd-stock-dot" />
+              {(currentProduct.totalStock ?? 0) > 0
+                ? <span><strong>{currentProduct.totalStock}</strong> article{currentProduct.totalStock > 1 ? 's' : ''} disponible{currentProduct.totalStock > 1 ? 's' : ''}</span>
+                : <span>Rupture de stock</span>
+              }
+            </div>
           </div>
 
           {/* Sélecteurs Couleur et Taille */}
@@ -641,17 +650,23 @@ const ProductDetail = () => {
         {/* Galerie complète des images */}
         {allImages.length > 0 && (
           <div className="all-images-gallery">
-            <h3>Toutes les images</h3>
+            <h3>Toutes les images ({allImages.length})</h3>
             <div className="all-images-grid">
               {allImages.map((image, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  className="all-image-item"
+                  className={`all-image-item ${getImageUrl(image) === selectedCartImageUrl ? 'selected' : ''}`}
                   onClick={() => handleAllImageClick(image)}
                   aria-label={`Afficher image ${idx + 1}`}
                 >
                   <img src={getImageUrl(image)} alt={`${currentProduct.name} ${idx + 1}`} />
+                  {(image.side || image.color) && (
+                    <div className="all-image-label">
+                      {image.color && <span className="label-color">{image.color}</span>}
+                      {image.side && <span className="label-side">{image.side}</span>}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
