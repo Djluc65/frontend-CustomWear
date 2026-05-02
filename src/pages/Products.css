@@ -858,11 +858,6 @@
     gap: 0.3rem;
   }
 
-  /* Placeholder raccourci sur très petit écran */
-  .assistant-compact-input::placeholder {
-    content: 'Conseil ?';
-  }
-
   .assistant-compact-input {
     font-size: 0.7rem;
     padding: 0.28rem 0.5rem;
@@ -892,14 +887,38 @@
     padding: 0.38rem 0.7rem;
   }
 
+  /* ── GRILLE PRODUITS MOBILE ── */
+  .products-content {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .products-grid {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Vue grille : 2 colonnes strictes, largeur contrôlée */
   .products-grid.grid,
   .products-grid.with-sidebar.grid {
-    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  /* Vue liste : 1 colonne pleine largeur */
+  .products-grid.list {
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
-  .products-grid.list {
-    grid-template-columns: 1fr;
+  /* Chaque carte ne dépasse jamais son conteneur */
+  .products-grid > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .filters-sidebar {
@@ -912,5 +931,143 @@
   .filter-group input[type="number"] {
     font-size: 0.82rem;
     padding: 0.45rem 0.6rem;
+  }
+}
+
+/* ── Cartes produit adaptées mobile ── */
+@media (max-width: 480px) {
+  /* Image plus courte pour gagner de la hauteur */
+  .pc-img-zone {
+    height: 140px;
+  }
+
+  /* Galerie miniatures : icônes plus petites */
+  .pc-all-images {
+    padding: 4px 8px;
+    gap: 3px;
+  }
+
+  .pc-img-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 5px;
+  }
+
+  /* Couleurs : boules légèrement plus petites */
+  .pc-colors {
+    padding: 5px 8px 0;
+    gap: 4px;
+  }
+
+  .pc-color-dot {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Tailles : chips ultra-compacts */
+  .pc-sizes {
+    padding: 3px 8px 0;
+    gap: 3px;
+  }
+
+  .pc-size-chip {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Zone texte très compacte */
+  .pc-info {
+    padding: 5px 8px 7px;
+    gap: 2px;
+  }
+
+  .pc-category {
+    font-size: 0.6rem;
+  }
+
+  .pc-name {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  /* Description : 1 seule ligne sur mobile */
+  .pc-desc {
+    font-size: 0.65rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 1;
+  }
+
+  /* Prix + stock sur la même ligne, tout petit */
+  .pc-footer {
+    margin-top: 2px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .pc-price-current {
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .pc-price-old {
+    font-size: 0.65rem;
+  }
+
+  .pc-stock-badge {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+    gap: 3px;
+  }
+
+  .pc-stock-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  /* Stars : plus petites */
+  .pc-rating {
+    gap: 2px;
+  }
+
+  .pc-stars {
+    font-size: 0.6rem;
+  }
+
+  .pc-rating-count {
+    font-size: 0.6rem;
+  }
+
+  /* Badge personnalisable : caché sur très petit écran */
+  .pc-custom-badge {
+    font-size: 0.58rem;
+    padding: 1px 6px;
+  }
+
+  /* Boutons d'action overlay plus petits */
+  .pc-action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .pc-overlay-actions {
+    gap: 4px;
+  }
+
+  /* Badges promo */
+  .pc-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    top: 6px;
+  }
+
+  .pc-badge-sale {
+    right: 6px;
+  }
+
+  .pc-badge-new {
+    left: 6px;
   }
 }
