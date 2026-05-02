@@ -56,6 +56,7 @@ function ScrollToTop({ children }) {
 
     const path = location.pathname || '/';
     const brand = 'CustomWear';
+    const siteUrl = 'https://customwear.company';
 
     const routes = [
       { match: /^\/$/, title: `Accueil | ${brand}`, description: "CustomWear : vêtements personnalisés, modèles et designs uniques. Créez votre produit, ajoutez texte ou image, et commandez en ligne." },
@@ -83,6 +84,18 @@ function ScrollToTop({ children }) {
     document.title = title;
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) metaDescription.setAttribute('content', description);
+
+    const canonical = `${siteUrl}${path === '/' ? '/' : path}`;
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonical);
+
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', canonical);
   }, [location.pathname]);
 
   return children;
