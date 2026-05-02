@@ -16,7 +16,9 @@ const getApiUrl = () => {
   const isHttpsProd = protocol === 'https:' && hostname !== 'localhost';
 
   if (isVercel || isCustomWearDomain || isHttpsProd) {
-    return 'https://backend-custom-wear.vercel.app';
+    return (typeof window !== 'undefined' && window.location && window.location.origin)
+      ? window.location.origin
+      : 'https://customwear.company';
   }
     
   const PORT = 5000;
