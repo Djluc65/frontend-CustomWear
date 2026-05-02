@@ -4,13 +4,14 @@ import { API_BASE_URL } from '../../config';
 
 // Configuration axios (normalisation de l'URL de base)
 const API_URL = API_BASE_URL.endsWith('/api') ? API_BASE_URL : `${API_BASE_URL}/api`;
+const DEBUG_AUTH = Boolean(import.meta?.env?.DEV);
 
 // Actions asynchrones
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      console.log('[authSlice] loginUser request', { email });
+      if (DEBUG_AUTH) console.log('[authSlice] loginUser request', { email });
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       
       // Extraction des tokens depuis les headers ou le body
@@ -23,7 +24,7 @@ export const loginUser = createAsyncThunk(
       if (headerToken) data.token = headerToken;
       if (headerRefreshToken) data.refreshToken = headerRefreshToken;
       
-      console.log('[authSlice] loginUser response', data);
+      if (DEBUG_AUTH) console.log('[authSlice] loginUser response', { hasUser: Boolean(data?.user), hasToken: Boolean(data?.token), hasRefreshToken: Boolean(data?.refreshToken) });
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -32,7 +33,7 @@ export const loginUser = createAsyncThunk(
       }
       return data;
     } catch (error) {
-      console.error('[authSlice] loginUser error', error?.response?.data || error);
+      if (DEBUG_AUTH) console.error('[authSlice] loginUser error', error?.response?.data || error);
       return rejectWithValue(
         error.response?.data?.message || 'Erreur de connexion'
       );
@@ -44,7 +45,7 @@ export const registerUser = createAsyncThunk(
   'auth/register',
   async ({ firstName, lastName, email, password, confirmPassword }, { rejectWithValue }) => {
     try {
-      console.log('[authSlice] registerUser request', { email, firstName, lastName });
+      if (DEBUG_AUTH) console.log('[authSlice] registerUser request', { email, firstName, lastName });
       const response = await axios.post(`${API_URL}/auth/register`, {
         firstName,
         lastName,
@@ -63,7 +64,7 @@ export const registerUser = createAsyncThunk(
       if (headerToken) data.token = headerToken;
       if (headerRefreshToken) data.refreshToken = headerRefreshToken;
 
-      console.log('[authSlice] registerUser response', data);
+      if (DEBUG_AUTH) console.log('[authSlice] registerUser response', { hasUser: Boolean(data?.user), hasToken: Boolean(data?.token), hasRefreshToken: Boolean(data?.refreshToken) });
       // Stocker le token dans localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -72,7 +73,7 @@ export const registerUser = createAsyncThunk(
       }
       return data;
     } catch (error) {
-      console.error('[authSlice] registerUser error', error?.response?.data || error);
+      if (DEBUG_AUTH) console.error('[authSlice] registerUser error', error?.response?.data || error);
       const firstValidationError = error.response?.data?.errors?.[0]?.message;
       const message = firstValidationError || error.response?.data?.message || 'Erreur d\'inscription';
       return rejectWithValue(message);
@@ -149,7 +150,7 @@ export const loadUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('token');
-      console.log('[authSlice] loadUser start', { hasToken: Boolean(token) });
+      if (DEBUG_AUTH) console.log('[authSlice] loadUser start', { hasToken: Boolean(token) });
       if (!token) {
         return rejectWithValue('Aucun token trouvé');
       }
@@ -159,14 +160,14 @@ export const loadUser = createAsyncThunk(
         }
       });
       const data = response.data?.data || response.data;
-      console.log('[authSlice] loadUser response', data);
+      if (DEBUG_AUTH) console.log('[authSlice] loadUser response', { hasUser: Boolean(data?.user) });
       // Synchroniser user en localStorage
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       return data;
     } catch (error) {
-      console.error('[authSlice] loadUser error', error?.response?.data || error);
+      if (DEBUG_AUTH) console.error('[authSlice] loadUser error', error?.response?.data || error);
       localStorage.removeItem('token');
       return rejectWithValue(
         error.response?.data?.message || 'Token invalide'
