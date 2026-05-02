@@ -262,7 +262,7 @@ const Checkout = () => {
                   </label>
                 </div>
 
-                {formData.payment.method === 'card' && (
+                {/* {formData.payment.method === 'card' && (
                   <div className="card-form">
                     <input
                       type="text"
@@ -295,7 +295,7 @@ const Checkout = () => {
                       />
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {formData.payment.method === 'paypal' && (
                   <div className="paypal-info" style={{ marginTop: '0.5rem', color: '#374151' }}>

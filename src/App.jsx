@@ -53,6 +53,36 @@ function ScrollToTop({ children }) {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const path = location.pathname || '/';
+    const brand = 'CustomWear';
+
+    const routes = [
+      { match: /^\/$/, title: `Accueil | ${brand}`, description: "CustomWear : vêtements personnalisés, modèles et designs uniques. Créez votre produit, ajoutez texte ou image, et commandez en ligne." },
+      { match: /^\/products(\/.*)?$/, title: `Produits | ${brand}`, description: "Découvrez les produits CustomWear : modèles, catégories et nouveautés. Filtrez, comparez et commandez." },
+      { match: /^\/product\/[^/]+$/, title: `Produit | ${brand}`, description: "Détails du produit CustomWear : options, images, stock et achat en ligne." },
+      { match: /^\/models$/, title: `Modèles | ${brand}`, description: "Choisissez un modèle CustomWear puis personnalisez-le avec une image et/ou un texte." },
+      { match: /^\/customize$/, title: `Personnalisation | ${brand}`, description: "Personnalisez votre modèle : ajoutez une image, du texte, et enregistrez votre création." },
+      { match: /^\/events$/, title: `Événements | ${brand}`, description: "Événements saisonniers, collections et offres CustomWear." },
+      { match: /^\/design(\/.*)?$/, title: `Créer mon design | ${brand}`, description: "Créez votre design personnalisé : brief, choix du pack et échange avec l'équipe." },
+      { match: /^\/cart$/, title: `Panier | ${brand}`, description: "Votre panier CustomWear : produits, options et quantités avant paiement." },
+      { match: /^\/checkout(\/.*)?$/, title: `Paiement | ${brand}`, description: "Finalisez votre commande CustomWear en toute sécurité." },
+      { match: /^\/auth$/, title: `Connexion | ${brand}`, description: "Connectez-vous à CustomWear pour accéder à votre compte et à vos sauvegardes." },
+      { match: /^\/profile$/, title: `Profil | ${brand}`, description: "Gérez votre profil et vos informations de compte CustomWear." },
+      { match: /^\/about$/, title: `À propos | ${brand}`, description: "Découvrez CustomWear : notre mission, nos produits et notre qualité d'impression." },
+      { match: /^\/search$/, title: `Recherche | ${brand}`, description: "Recherchez un produit ou un modèle sur CustomWear." },
+      { match: /^\/admin(\/.*)?$/, title: `Admin | ${brand}`, description: "Espace administration CustomWear." },
+    ];
+
+    const match = routes.find((r) => r.match.test(path));
+    const title = match?.title || `${brand} | Vêtements personnalisés`;
+    const description =
+      match?.description ||
+      "CustomWear : vêtements personnalisés, modèles et designs uniques. Créez votre produit, ajoutez texte ou image, et commandez en ligne.";
+
+    document.title = title;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.setAttribute('content', description);
   }, [location.pathname]);
 
   return children;
