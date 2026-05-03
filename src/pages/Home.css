@@ -358,6 +358,11 @@
   flex-wrap: wrap;
 }
 
+.hero-buttons .btn {
+  flex: 1 1 240px;
+  justify-content: center;
+}
+
 .hero-image {
   display: flex;
   justify-content: center;

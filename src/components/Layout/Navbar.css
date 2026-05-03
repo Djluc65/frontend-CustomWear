@@ -811,6 +811,30 @@
 }
 
 /* ----------------------------------------------------------
+   13b. RESPONSIVE — DESKTOP NARROW (≤ 1100px)
+   ---------------------------------------------------------- */
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .navbar-menu,
+  .auth-links {
+    display: none;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+
+  .mobile-menu {
+    display: block;
+    top: 70px;
+  }
+
+  .navbar-container {
+    padding: 0 16px;
+  }
+}
+
+/* ----------------------------------------------------------
    14. RESPONSIVE — MOBILE (≤ 768px)
    ---------------------------------------------------------- */
 

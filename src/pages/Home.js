@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaShoppingCart, FaPalette, FaTruck, FaShieldAlt, FaStar, FaArrowRight } from 'react-icons/fa';
+import { FaShoppingCart, FaPalette, FaTruck, FaShieldAlt, FaStar, FaArrowRight, FaCalendarAlt, FaPenNib } from 'react-icons/fa';
 import { fetchFeaturedProducts } from '../store/slices/productsSlice';
 import ProductCard from '../components/Products/ProductCard';
 import './Home.css';
@@ -115,6 +115,14 @@ const Home = () => {
               <Link to="/models" className="btn btn-secondary">
                  <FaPalette />
                  Personnaliser Maintenant
+              </Link>
+              <Link to="/events" className="btn btn-outline">
+                <FaCalendarAlt />
+                Événements
+              </Link>
+              <Link to="/design" className="btn btn-outline">
+                <FaPenNib />
+                Créer mon design
               </Link>
               {isAuthenticated && user?.role === 'admin' && (
                 <Link to="/admin/login" className="btn btn-outline" style={{ marginTop: '10px', fontSize: '0.9em' }}>
