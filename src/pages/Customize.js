@@ -680,11 +680,11 @@ const Customize = () => {
       {/* ── Menubar ── */}
       <div className="customize-menubar" role="navigation" aria-label="Barre de menus">
         {[
-          { key:'produit', label:'Filtrer les modèles' },
-          { key:'image',   label:'Ajouter une image'  },
-          { key:'texte',   label:'Ajouter un texte'   },
-          { key:'save',    label:'Sauvegarde'          },
-        ].map(({key,label})=>(
+          { key:'produit', label:'Filtrer les modèles', shortLabel:'Filtrer' },
+          { key:'image',   label:'Ajouter une image',   shortLabel:'Image'   },
+          { key:'texte',   label:'Ajouter un texte',    shortLabel:'Texte'   },
+          { key:'save',    label:'Sauvegarde',          shortLabel:'Sauver'  },
+        ].map(({key,label,shortLabel})=>(
           <button
             key={key}
             type="button"
@@ -707,7 +707,8 @@ const Customize = () => {
             aria-pressed={activeContextSection===key}
           >
             {menubarIconByKey[key] || null}
-            <span className="customize-menubar-label">{label}</span>
+            <span className="customize-menubar-label full">{label}</span>
+            <span className="customize-menubar-label short">{shortLabel}</span>
           </button>
         ))}
       </div>
@@ -1162,7 +1163,7 @@ const Customize = () => {
           aria-label={
             activeContextSection === 'produit' ? 'Filtrer les modèles' :
             activeContextSection === 'image'   ? 'Ajouter une image'   :
-            activeContextSection === 'texte'   ? 'texte'    :
+            activeContextSection === 'texte'   ? 'Ajouter un texte'    :
             activeContextSection === 'save'    ? 'Sauvegarde'          : ''
           }
         >
@@ -1174,7 +1175,7 @@ const Customize = () => {
             <p className="cz-mobile-tool-panel-title">
               {activeContextSection === 'produit' ? 'Filtrer les modèles' :
                activeContextSection === 'image'   ? 'Ajouter une image'   :
-               activeContextSection === 'texte'   ? 'texte'    :
+               activeContextSection === 'texte'   ? 'Ajouter un texte'    :
                activeContextSection === 'save'    ? 'Sauvegarde'          : ''}
             </p>
             <button

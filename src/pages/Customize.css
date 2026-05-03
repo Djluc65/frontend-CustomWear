@@ -297,6 +297,14 @@
   font-weight: 600;
 }
 
+.customize-menubar-label.short {
+  display: none;
+}
+
+.customize-menubar-label.full {
+  display: inline;
+}
+
 /* ----------------------------------------------------------
    7. MAIN CONTENT GRID
    ---------------------------------------------------------- */
@@ -1057,6 +1065,14 @@
 @media (max-width: 1024px) {
   .customize-page {
     padding-bottom: calc(72px + env(safe-area-inset-bottom) + 1rem);
+  }
+
+  .customize-menubar-label.full {
+    display: none;
+  }
+
+  .customize-menubar-label.short {
+    display: inline;
   }
 
   .customize-content {
