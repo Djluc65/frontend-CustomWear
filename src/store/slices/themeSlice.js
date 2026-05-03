@@ -23,13 +23,8 @@ const getInitialTheme = () => {
   if (localTheme && ['light', 'dark', 'deep-blue'].includes(localTheme)) {
     return localTheme;
   }
-  
-  // 2. Vérifier préférence système
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  
-  // 3. Fallback
+
+  // 2. Fallback
   return 'light';
 };
 

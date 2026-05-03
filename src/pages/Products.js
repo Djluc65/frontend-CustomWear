@@ -576,29 +576,29 @@ const Products = () => {
                 <ProductCard product={product} viewMode={viewMode} activeColor={localFilters.color || ''} />
               </motion.div>
             ))}
+
+          {products.length === 0 && !isLoading && (
+            <div className="no-products">
+              <h3>Aucun produit trouvé</h3>
+              <p>Essayez de modifier vos critères de recherche</p>
+              <button onClick={handleClearFilters}>
+                Effacer les filtres
+              </button>
+            </div>
+          )}
+
+          {((pagination?.page || pagination?.currentPage || 1) < (pagination?.pages || pagination?.totalPages || 1)) && (
+            <div className="load-more">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="load-more-btn"
+              >
+                {isLoading ? 'Chargement...' : 'Charger plus'}
+              </button>
+            </div>
+          )}
         </div>
-        
-        {products.length === 0 && !isLoading && (
-          <div className="no-products">
-            <h3>Aucun produit trouvé</h3>
-            <p>Essayez de modifier vos critères de recherche</p>
-            <button onClick={handleClearFilters}>
-              Effacer les filtres
-            </button>
-          </div>
-        )}
-        
-        {((pagination?.page || pagination?.currentPage || 1) < (pagination?.pages || pagination?.totalPages || 1)) && (
-          <div className="load-more">
-            <button 
-              onClick={handleLoadMore}
-              disabled={isLoading}
-              className="load-more-btn"
-            >
-              {isLoading ? 'Chargement...' : 'Charger plus'}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
