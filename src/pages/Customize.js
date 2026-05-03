@@ -138,7 +138,10 @@ const Customize = () => {
   const [productError,   setProductError]   = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
-  const [activeContextSection, setActiveContextSection] = useState(null);
+  const [activeContextSection, setActiveContextSection] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    return window.innerWidth > 768 ? 'produit' : null;
+  });
   const [contextOpen, setContextOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -154,6 +157,12 @@ const Customize = () => {
     window.addEventListener('resize', handler, { passive: true });
     return () => window.removeEventListener('resize', handler);
   }, []);
+
+  React.useEffect(() => {
+    if (!isMobile && !activeContextSection) {
+      setActiveContextSection('produit');
+    }
+  }, [isMobile, activeContextSection]);
 
   const scrollToSection = (key) => {
     const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
@@ -175,6 +184,9 @@ const Customize = () => {
   const [imageZIndex,        setImageZIndex]        = useState(2);
   const [imageSide,          setImageSide]          = useState('front');
 
+  // ── UNIFIED SELECTION: 'image' | textId | null ──
+  const [selectedElement, setSelectedElement] = useState(null);
+
   /* Image panel toggles */
   const [imageUploaderOpen,  setImageUploaderOpen]  = useState(false);
   const [imageSizeOpen,      setImageSizeOpen]      = useState(false);
@@ -188,7 +200,9 @@ const Customize = () => {
 
   /* Text layers */
   const [textLayers,    setTextLayers]    = useState([]);
-  const [selectedTextId,setSelectedTextId]= useState(null);
+  // Keep selectedTextId in sync with selectedElement for backward-compat
+  const selectedTextId = (selectedElement && selectedElement !== 'image') ? selectedElement : null;
+  const setSelectedTextId = (id) => setSelectedElement(id || null);
   const [editingTextId, setEditingTextId] = useState(null);
   const [textCharLimit, setTextCharLimit] = useState(50);
 
@@ -272,7 +286,7 @@ const Customize = () => {
     const idx  = textLayers.length + 1;
     const next = createTextLayer({ name: `Texte ${idx}`, side: showBack ? 'back' : 'front', visible: true, zIndex: idx });
     setTextLayers(prev => [...prev, next]);
-    setSelectedTextId(next.id);
+    setSelectedElement(next.id);
     setEditingTextId(next.id);
     pushHistory('Ajouter texte');
   };
@@ -285,7 +299,7 @@ const Customize = () => {
   const deleteTextLayer = (id) => {
     pushHistory('Supprimer texte');
     setTextLayers(prev => prev.filter(t => t.id !== id).map((t, i) => ({ ...t, zIndex: i + 1 })));
-    if (selectedTextId === id) setSelectedTextId(null);
+    if (selectedTextId === id) setSelectedElement(null);
     if (editingTextId  === id) setEditingTextId(null);
   };
 
@@ -295,7 +309,7 @@ const Customize = () => {
     const clone = createTextLayer({ ...base, id: `text-${Date.now()}-copy`, name: `${base.name} (copie)`, xPercent: Math.min(base.xPercent+3,95), yPercent: Math.min(base.yPercent+3,95), zIndex: textLayers.length+1 });
     pushHistory('Dupliquer texte');
     setTextLayers(prev => [...prev, clone]);
-    setSelectedTextId(clone.id);
+    setSelectedElement(clone.id);
   };
 
   const toggleLockTextLayer      = (id) => { const t = textLayers.find(x=>x.id===id); if(!t) return; updateTextLayer(id,{locked:!t.locked},t.locked?'Déverrouiller':'Verrouiller'); };
@@ -327,6 +341,16 @@ const Customize = () => {
     setTextLayers(prev => { const i=prev.findIndex(t=>t.id===id); if(i<0)return prev; const item=prev[i]; const n=[item,...prev.slice(0,i),...prev.slice(i+1)]; return n.map((t,j)=>({...t,zIndex:j+1})); }); pushHistory('Arrière-plan');
   };
 
+  // ── Image z-index helpers (bring to front / send to back) ──
+  const bringImageToFront = () => {
+    const maxZ = Math.max(...textLayers.map(t => t.zIndex || 1), imageZIndex);
+    setImageZIndex(maxZ + 1);
+  };
+  const sendImageToBack = () => {
+    const minZ = Math.min(...textLayers.map(t => t.zIndex || 1), imageZIndex);
+    setImageZIndex(Math.max(1, minZ - 1));
+  };
+
   const alignTextHorizontal = (id, pos) => updateTextLayer(id,{xPercent:{left:8,center:50,right:92}[pos]??50},'Aligner H');
   const alignTextVertical   = (id, pos) => updateTextLayer(id,{yPercent:{top:8,middle:50,bottom:92}[pos]??50},'Aligner V');
   const rotateTextTo        = (id, angle) => updateTextLayer(id,{rotation:angle},'Rotation');
@@ -356,7 +380,7 @@ const Customize = () => {
     if (typeof data.imageFlipX    === 'boolean') setImageFlipX(data.imageFlipX);
     if (typeof data.imageZIndex   === 'number') setImageZIndex(data.imageZIndex);
     if (typeof data.imageSide     === 'string') setImageSide(data.imageSide);
-    setSelectedTextId(null); setEditingTextId(null);
+    setSelectedElement(null); setEditingTextId(null);
   };
 
   /* ── Save helpers ── */
@@ -714,7 +738,6 @@ const Customize = () => {
             className={`chip ${activeContextSection===key?'active':''} ${key==='save'?'btn-save':''}`}
             onClick={()=>{
               if (activeContextSection === key && isMobile) {
-                // Toggle off: close the panel
                 setSheetOpen(false);
                 setActiveContextSection(null);
               } else {
@@ -838,8 +861,11 @@ const Customize = () => {
                       <div className="form-group" style={{marginTop:8}}>
                         <div className="options-row">
                           <button type="button" className="chip" onClick={()=>setImageFlipX(f=>!f)}>{imageFlipX?'Annuler flip':'Flip horizontal'}</button>
-                          <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.max(1,z-1))}>Arrière-plan</button>
-                          <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.min(10,z+1))}>Premier plan</button>
+                          {/* ── Bring to front / Send to back for image ── */}
+                          <button type="button" className="chip" onClick={bringImageToFront}>Premier plan ↑</button>
+                          <button type="button" className="chip" onClick={sendImageToBack}>Arrière-plan ↓</button>
+                          <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.max(1,z-1))}>z−</button>
+                          <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.min(10,z+1))}>z+</button>
                         </div>
                         <small style={{color:'var(--cz-text-muted)'}}>z-index: {imageZIndex} • face: {imageSide}</small>
                       </div>
@@ -874,7 +900,7 @@ const Customize = () => {
                       {textLayers.map((t,idx)=>(
                         <div key={t.id} className={`layer-item ${selectedTextId===t.id?'active':''}`}>
                           <div className="layer-row">
-                            <button type="button" className="chip" onClick={()=>setSelectedTextId(t.id)}>{t.name||`Texte ${idx+1}`}</button>
+                            <button type="button" className="chip" onClick={()=>setSelectedElement(t.id)}>{t.name||`Texte ${idx+1}`}</button>
                             <input type="text" value={t.name||''} onChange={e=>renameTextLayer(t.id,e.target.value)} placeholder={`Texte ${idx+1}`} style={{marginLeft:'0.5rem'}} />
                           </div>
                           <div className="layer-actions">
@@ -882,8 +908,9 @@ const Customize = () => {
                             <button type="button" className={`chip ${t.locked?'active':''}`} onClick={()=>toggleLockTextLayer(t.id)}>{t.locked?'Déverrouiller':'Verrouiller'}</button>
                             <button type="button" className="chip" onClick={()=>moveTextLayerUp(t.id)}>Monter</button>
                             <button type="button" className="chip" onClick={()=>moveTextLayerDown(t.id)}>Descendre</button>
-                            <button type="button" className="chip" onClick={()=>bringTextLayerToFront(t.id)}>Premier plan</button>
-                            <button type="button" className="chip" onClick={()=>sendTextLayerToBack(t.id)}>Arrière-plan</button>
+                            {/* ── Bring to front / Send to back for text ── */}
+                            <button type="button" className="chip" onClick={()=>bringTextLayerToFront(t.id)}>Premier plan ↑</button>
+                            <button type="button" className="chip" onClick={()=>sendTextLayerToBack(t.id)}>Arrière-plan ↓</button>
                             <button type="button" className="chip" onClick={()=>updateTextLayer(t.id,{side:t.side==='front'?'back':'front'},'Basculer face')}>{t.side==='front'?'→ Arrière':'→ Avant'}</button>
                             <button type="button" className="chip" onClick={()=>duplicateTextLayer(t.id)}>Dupliquer</button>
                             <button type="button" className="chip" onClick={()=>deleteTextLayer(t.id)} style={{color:'var(--cz-text-error,#ef4444)'}}>Supprimer</button>
@@ -1104,7 +1131,9 @@ const Customize = () => {
             setImageXPercent={setImageXPercent} setImageYPercent={setImageYPercent} setImageRotation={setImageRotation}
             canvasRef={canvasRef}
             textLayers={textLayers} selectedTextId={selectedTextId}
-            setSelectedTextId={setSelectedTextId} updateTextLayer={updateTextLayer}
+            setSelectedTextId={setSelectedTextId}
+            selectedElement={selectedElement} setSelectedElement={setSelectedElement}
+            updateTextLayer={updateTextLayer}
             editingTextId={editingTextId} setEditingTextId={setEditingTextId}
             previewMode={previewMode} canvasZoom={canvasZoom} rulerUnit={rulerUnit}
             guideLines={guideLines} updateGuideLine={updateGuideLine} deleteGuideLine={deleteGuideLine}
@@ -1179,7 +1208,7 @@ const Customize = () => {
           </div>
         </div>
 
-        {/* ── MOBILE TOOL PANEL (slide up above tab bar) ── */}
+        {/* ── MOBILE TOOL PANEL ── */}
         <div
           className={`cz-mobile-tool-panel ${sheetOpen && isMobile ? 'open' : ''}`}
           role="dialog"
@@ -1191,10 +1220,7 @@ const Customize = () => {
             activeContextSection === 'save'    ? 'Sauvegarde'          : ''
           }
         >
-          {/* Drag handle */}
           <div className="cz-mobile-tool-panel-handle" />
-
-          {/* Header */}
           <div className="cz-mobile-tool-panel-header">
             <p className="cz-mobile-tool-panel-title">
               {activeContextSection === 'produit' ? 'Filtrer les modèles' :
@@ -1210,7 +1236,6 @@ const Customize = () => {
             >×</button>
           </div>
 
-          {/* Scrollable body */}
           <div className="cz-mobile-tool-panel-body">
 
             {activeContextSection === 'produit' && (
@@ -1297,9 +1322,10 @@ const Customize = () => {
                     </div>
                     <div className="options-row" style={{marginTop:8}}>
                       <button type="button" className="chip" onClick={()=>setImageFlipX(f=>!f)}>{imageFlipX?'Annuler flip':'Flip H'}</button>
-                      <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.max(1,z-1))}>Arrière</button>
-                      <button type="button" className="chip" onClick={()=>setImageZIndex(z=>Math.min(10,z+1))}>Premier plan</button>
+                      <button type="button" className="chip" onClick={bringImageToFront}>Premier plan ↑</button>
+                      <button type="button" className="chip" onClick={sendImageToBack}>Arrière-plan ↓</button>
                     </div>
+                    <small style={{color:'var(--cz-text-muted)'}}>z-index: {imageZIndex} • face: {imageSide}</small>
                   </>)}
                 </div>
                 <div className="form-group">
@@ -1323,14 +1349,17 @@ const Customize = () => {
                     {textLayers.map((t,idx)=>(
                       <div key={t.id} className={`layer-item ${selectedTextId===t.id?'active':''}`}>
                         <div className="layer-row">
-                          <button type="button" className="chip" onClick={()=>setSelectedTextId(t.id)}>{t.name||`Texte ${idx+1}`}</button>
+                          <button type="button" className="chip" onClick={()=>setSelectedElement(t.id)}>{t.name||`Texte ${idx+1}`}</button>
                         </div>
                         <div className="layer-actions">
                           <label className="chip"><input type="checkbox" checked={t.visible??true} onChange={()=>toggleVisibilityTextLayer(t.id)} /> Visible</label>
                           <button type="button" className={`chip ${t.locked?'active':''}`} onClick={()=>toggleLockTextLayer(t.id)}>{t.locked?'Déverr.':'Verr.'}</button>
+                          <button type="button" className="chip" onClick={()=>bringTextLayerToFront(t.id)}>↑ Avant</button>
+                          <button type="button" className="chip" onClick={()=>sendTextLayerToBack(t.id)}>↓ Arrière</button>
                           <button type="button" className="chip" onClick={()=>duplicateTextLayer(t.id)}>Dupliquer</button>
                           <button type="button" className="chip" onClick={()=>deleteTextLayer(t.id)} style={{color:'var(--cz-text-error,#ef4444)'}}>✕</button>
                         </div>
+                        <small style={{color:'var(--cz-text-muted)'}}>z-index: {t.zIndex} • face: {t.side}</small>
                       </div>
                     ))}
                   </div>
@@ -1408,22 +1437,20 @@ const Customize = () => {
                 )}
               </div>
             )}
-          
+
           </div>
         </div>
 
-
-      {imageEditorOpen && uploadedImageUrl && (
-        <ImageEditor
-          src={uploadedImageUrl}
-          onCancel={() => setImageEditorOpen(false)}
-          onConfirm={handleConfirmImageCrop}
-        />
-      )}
+        {imageEditorOpen && uploadedImageUrl && (
+          <ImageEditor
+            src={uploadedImageUrl}
+            onCancel={() => setImageEditorOpen(false)}
+            onConfirm={handleConfirmImageCrop}
+          />
+        )}
       </div>
     </div>
   );
-
 };
 
 export default Customize;
@@ -1436,7 +1463,9 @@ const PreviewCanvas = React.memo(({
   imageXPercent, imageYPercent, imageScale, imageRotation,
   imageVisible, imageLocked, imageOpacity, imageFlipX, imageZIndex, imageSide,
   setImageXPercent, setImageYPercent, setImageRotation,
-  canvasRef, textLayers, selectedTextId, setSelectedTextId, updateTextLayer,
+  canvasRef, textLayers, selectedTextId, setSelectedTextId,
+  selectedElement, setSelectedElement,
+  updateTextLayer,
   editingTextId, setEditingTextId, previewMode, canvasZoom, rulerUnit,
   guideLines, updateGuideLine, deleteGuideLine,
 }) => {
@@ -1446,149 +1475,282 @@ const PreviewCanvas = React.memo(({
     ? (colorImages?.back  || defaultImages?.back  || DEFAULT_MODEL_PLACEHOLDER.images.back)
     : (colorImages?.front || defaultImages?.front || DEFAULT_MODEL_PLACEHOLDER.images.front);
 
-  const dragState   = React.useRef(null);
-  const rotateState = React.useRef(null);
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 
+  // ── Click on canvas background: deselect everything ──
+  const onCanvasPointerDown = (e) => {
+    // Only deselect if clicking directly on the canvas container (not on a child element)
+    if (e.target === canvasRef.current || e.target.classList.contains('product-base')) {
+      setSelectedElement(null);
+      setEditingTextId(null);
+    }
+  };
+
+  // ── Uploaded image: click to select, drag to move ──
   const onImagePointerDown = (e) => {
-    if (imageLocked) return; e.stopPropagation();
-    const rect=canvasRef.current?.getBoundingClientRect(); if(!rect) return;
-    const sx=e.clientX,sy=e.clientY,ox=imageXPercent,oy=imageYPercent;
-    const onMove=(ev)=>{setImageXPercent(clamp(ox+(ev.clientX-sx)/rect.width*100,5,95));setImageYPercent(clamp(oy+(ev.clientY-sy)/rect.height*100,5,95));};
-    const onUp=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);};
-    window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp);
+    if (imageLocked) return;
+    e.stopPropagation();
+    // Select the image element
+    setSelectedElement('image');
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const sx = e.clientX, sy = e.clientY;
+    const ox = imageXPercent, oy = imageYPercent;
+    let hasMoved = false;
+
+    const onMove = (ev) => {
+      hasMoved = true;
+      setImageXPercent(clamp(ox + (ev.clientX - sx) / rect.width * 100, 5, 95));
+      setImageYPercent(clamp(oy + (ev.clientY - sy) / rect.height * 100, 5, 95));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
   };
 
   const onImageRotatePointerDown = (e) => {
-    if (imageLocked) return; e.stopPropagation();
-    const rect=canvasRef.current?.getBoundingClientRect(); if(!rect) return;
-    const cx=rect.left+(imageXPercent/100)*rect.width, cy=rect.top+(imageYPercent/100)*rect.height;
-    const onMove=(ev)=>{
-      let angle=Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI;
-      if(ev.shiftKey){const snaps=[-180,-135,-90,-45,0,45,90,135,180];angle=snaps.reduce((p,c)=>Math.abs(c-angle)<Math.abs(p-angle)?c:p,0);}
+    if (imageLocked) return;
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + (imageXPercent / 100) * rect.width;
+    const cy = rect.top  + (imageYPercent / 100) * rect.height;
+    const onMove = (ev) => {
+      let angle = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI;
+      if (ev.shiftKey) {
+        const snaps = [-180,-135,-90,-45,0,45,90,135,180];
+        angle = snaps.reduce((p,c) => Math.abs(c-angle) < Math.abs(p-angle) ? c : p, 0);
+      }
       setImageRotation(angle);
     };
-    const onUp=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);};
-    window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp);
-  };
-
-  const onLayerPointerDown = (t,e) => {
-    if(t.locked) return; e.stopPropagation();
-    const rect=canvasRef.current?.getBoundingClientRect(); if(!rect) return;
-    setSelectedTextId(t.id);
-    const sx=e.clientX,sy=e.clientY,ox=t.xPercent,oy=t.yPercent;
-    dragState.current={id:t.id};
-    const onMove=(ev)=>{updateTextLayer(t.id,{xPercent:Math.max(5,Math.min(95,ox+(ev.clientX-sx)/rect.width*100)),yPercent:Math.max(5,Math.min(95,oy+(ev.clientY-sy)/rect.height*100))});};
-    const onUp=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);dragState.current=null;};
-    window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp);
-  };
-
-  const onRotatePointerDown = (t,e) => {
-    if(t.locked) return; e.stopPropagation();
-    const rect=canvasRef.current?.getBoundingClientRect(); if(!rect) return;
-    const cx=rect.left+(t.xPercent/100)*rect.width, cy=rect.top+(t.yPercent/100)*rect.height;
-    const onMove=(ev)=>{
-      let angle=Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI;
-      if(ev.shiftKey){const snaps=[-180,-135,-90,-45,0,45,90,135,180];angle=snaps.reduce((p,c)=>Math.abs(c-angle)<Math.abs(p-angle)?c:p,0);}
-      updateTextLayer(t.id,{rotation:angle});
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
     };
-    const onUp=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);};
-    window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
   };
 
-  const onEditInput = (t,e) => updateTextLayer(t.id,{content:(e.currentTarget.textContent||'').slice(0,200)});
-
-  const selected    = selectedTextId ? textLayers.find(x=>x.id===selectedTextId) : null;
-  const nearCenterX = selected ? Math.abs((selected.xPercent??0)-50)<1 : false;
-  const nearCenterY = selected ? Math.abs((selected.yPercent??0)-50)<1 : false;
-
-  const PX_PER_CM=37.795;
-  const canvasW=canvasRef.current?.clientWidth||0;
-  const canvasH=canvasRef.current?.clientHeight||0;
-  const minorStep=rulerUnit==='cm'?PX_PER_CM*0.5:50;
-  const majorStep=rulerUnit==='cm'?PX_PER_CM:100;
-  const xTicks=Array.from({length:Math.max(1,Math.floor(canvasW/minorStep)+1)},(_,i)=>Math.round(i*minorStep));
-  const yTicks=Array.from({length:Math.max(1,Math.floor(canvasH/minorStep)+1)},(_,i)=>Math.round(i*minorStep));
-
-  const onGuidePointerDown = (g,e) => {
+  // ── Text layer: click to select, drag to move ──
+  const onLayerPointerDown = (t, e) => {
+    if (t.locked) return;
     e.stopPropagation();
-    const rect=canvasRef.current?.getBoundingClientRect(); if(!rect) return;
-    const sx=e.clientX,sy=e.clientY,orig=g.percent;
-    const onMove=(ev)=>{
-      if(g.type==='vertical') updateGuideLine(g.id,{percent:Math.max(0,Math.min(100,orig+(ev.clientX-sx)/rect.width*100))});
-      else updateGuideLine(g.id,{percent:Math.max(0,Math.min(100,orig+(ev.clientY-sy)/rect.height*100))});
+    setSelectedElement(t.id);
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const sx = e.clientX, sy = e.clientY;
+    const ox = t.xPercent, oy = t.yPercent;
+
+    const onMove = (ev) => {
+      updateTextLayer(t.id, {
+        xPercent: Math.max(5, Math.min(95, ox + (ev.clientX - sx) / rect.width  * 100)),
+        yPercent: Math.max(5, Math.min(95, oy + (ev.clientY - sy) / rect.height * 100)),
+      });
     };
-    const onUp=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);};
-    window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp);
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
   };
+
+  const onRotatePointerDown = (t, e) => {
+    if (t.locked) return;
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + (t.xPercent / 100) * rect.width;
+    const cy = rect.top  + (t.yPercent / 100) * rect.height;
+    const onMove = (ev) => {
+      let angle = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI;
+      if (ev.shiftKey) {
+        const snaps = [-180,-135,-90,-45,0,45,90,135,180];
+        angle = snaps.reduce((p,c) => Math.abs(c-angle) < Math.abs(p-angle) ? c : p, 0);
+      }
+      updateTextLayer(t.id, { rotation: angle });
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  const onEditInput = (t, e) => updateTextLayer(t.id, { content: (e.currentTarget.textContent || '').slice(0, 200) });
+
+  const selected    = selectedTextId ? textLayers.find(x => x.id === selectedTextId) : null;
+  const nearCenterX = selected ? Math.abs((selected.xPercent ?? 0) - 50) < 1 : false;
+  const nearCenterY = selected ? Math.abs((selected.yPercent ?? 0) - 50) < 1 : false;
+
+  const PX_PER_CM = 37.795;
+  const canvasW   = canvasRef.current?.clientWidth  || 0;
+  const canvasH   = canvasRef.current?.clientHeight || 0;
+  const minorStep = rulerUnit === 'cm' ? PX_PER_CM * 0.5 : 50;
+  const majorStep = rulerUnit === 'cm' ? PX_PER_CM : 100;
+  const xTicks = Array.from({ length: Math.max(1, Math.floor(canvasW / minorStep) + 1) }, (_, i) => Math.round(i * minorStep));
+  const yTicks = Array.from({ length: Math.max(1, Math.floor(canvasH / minorStep) + 1) }, (_, i) => Math.round(i * minorStep));
+
+  const onGuidePointerDown = (g, e) => {
+    e.stopPropagation();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const sx = e.clientX, sy = e.clientY, orig = g.percent;
+    const onMove = (ev) => {
+      if (g.type === 'vertical')
+        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (ev.clientX - sx) / rect.width  * 100)) });
+      else
+        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (ev.clientY - sy) / rect.height * 100)) });
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  const isImageSelected = selectedElement === 'image';
 
   return (
     <div
-      className={`canvas-container ${previewMode?'preview-mode':''}`}
+      className={`canvas-container ${previewMode ? 'preview-mode' : ''}`}
       ref={canvasRef}
-      onPointerDown={()=>setEditingTextId(null)}
-      style={{transform:`scale(${canvasZoom})`,transformOrigin:'center center'}}
+      onPointerDown={onCanvasPointerDown}
+      style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}
     >
-      <img className="product-base" src={baseSrc} alt="Base produit" />
+      {/* ── Base model image: pointer-events disabled, completely static ── */}
+      <img
+        className="product-base"
+        src={baseSrc}
+        alt="Base produit"
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+        draggable={false}
+      />
 
-      {uploadedImageUrl&&(showBack?imageSide==='back':imageSide==='front')&&imageVisible&&(<>
+      {/* ── Uploaded image overlay ── */}
+      {uploadedImageUrl && (showBack ? imageSide === 'back' : imageSide === 'front') && imageVisible && (<>
         <img
-          src={uploadedImageUrl} alt="Upload" className="uploaded-image"
-          style={{left:`${imageXPercent}%`,top:`${imageYPercent}%`,transform:`translate(-50%,-50%) scale(${imageFlipX?-imageScale:imageScale},${imageScale}) rotate(${imageRotation}deg)`,width:'50%',zIndex:imageZIndex,opacity:imageOpacity}}
+          src={uploadedImageUrl}
+          alt="Upload"
+          className={`uploaded-image${isImageSelected && !previewMode ? ' selected' : ''}`}
+          style={{
+            left:      `${imageXPercent}%`,
+            top:       `${imageYPercent}%`,
+            transform: `translate(-50%,-50%) scale(${imageFlipX ? -imageScale : imageScale},${imageScale}) rotate(${imageRotation}deg)`,
+            width:     '50%',
+            zIndex:    imageZIndex,
+            opacity:   imageOpacity,
+            cursor:    imageLocked ? 'not-allowed' : 'move',
+            outline:   isImageSelected && !previewMode ? '2px solid #3b82f6' : 'none',
+            outlineOffset: '3px',
+          }}
           onPointerDown={onImagePointerDown}
+          draggable={false}
         />
-        {!previewMode&&!imageLocked&&(
-          <div className="rotate-handle" style={{left:`${imageXPercent}%`,top:`calc(${imageYPercent}% - 24px)`}} onPointerDown={onImageRotatePointerDown} />
+        {!previewMode && !imageLocked && isImageSelected && (
+          <div
+            className="rotate-handle"
+            style={{ left: `${imageXPercent}%`, top: `calc(${imageYPercent}% - 24px)` }}
+            onPointerDown={onImageRotatePointerDown}
+          />
         )}
       </>)}
 
-      {textLayers?.filter(t=>(showBack?t.side==='back':t.side==='front')&&(t.visible??true)).map(t=>(
+      {/* ── Text layers ── */}
+      {textLayers?.filter(t => (showBack ? t.side === 'back' : t.side === 'front') && (t.visible ?? true)).map(t => (
         <div
           key={t.id}
-          className={`text-layer ${!previewMode&&selectedTextId===t.id?'selected':''} ${t.locked?'locked':''}`}
-          style={{left:`${t.xPercent}%`,top:`${t.yPercent}%`,transform:`translate(-50%,-50%) rotate(${t.rotation||0}deg) scale(${t.scale||1})`,opacity:t.opacity??1,zIndex:t.zIndex??3}}
-          onPointerDown={e=>onLayerPointerDown(t,e)}
-          onDoubleClick={e=>{if(!t.locked){setSelectedTextId(t.id);setEditingTextId(t.id);}}}
+          className={`text-layer ${!previewMode && selectedTextId === t.id ? 'selected' : ''} ${t.locked ? 'locked' : ''}`}
+          style={{
+            left:      `${t.xPercent}%`,
+            top:       `${t.yPercent}%`,
+            transform: `translate(-50%,-50%) rotate(${t.rotation || 0}deg) scale(${t.scale || 1})`,
+            opacity:   t.opacity ?? 1,
+            zIndex:    t.zIndex ?? 3,
+          }}
+          onPointerDown={e => onLayerPointerDown(t, e)}
+          onDoubleClick={e => { if (!t.locked) { setSelectedElement(t.id); setEditingTextId(t.id); } }}
         >
           <div
             className="text-box"
-            style={{fontFamily:t.fontFamily||'Arial',fontSize:`${t.fontSize||32}px`,fontWeight:t.fontWeight||400,fontStyle:t.fontStyle||'normal',letterSpacing:`${t.letterSpacing||0}px`,lineHeight:t.lineHeight||1.2,color:t.color||'#111827',textDecoration:t.textDecoration||'none',background:t.backgroundEnabled?(t.backgroundColor||'#fff'):'transparent',padding:t.backgroundEnabled?`${t.padding||4}px`:'0px',border:t.borderEnabled?`${t.borderWidth||1}px ${t.borderStyle||'solid'} ${t.borderColor||'#000'}`:'none',boxShadow:t.shadowEnabled?`${t.shadowX||0}px ${t.shadowY||0}px ${t.shadowBlur||0}px ${t.shadowColor||'rgba(0,0,0,0.3)'}`:'none',cursor:t.locked?'not-allowed':'move',userSelect:editingTextId===t.id?'text':'none'}}
-            contentEditable={editingTextId===t.id}
+            style={{
+              fontFamily:     t.fontFamily || 'Arial',
+              fontSize:       `${t.fontSize || 32}px`,
+              fontWeight:     t.fontWeight || 400,
+              fontStyle:      t.fontStyle || 'normal',
+              letterSpacing:  `${t.letterSpacing || 0}px`,
+              lineHeight:     t.lineHeight || 1.2,
+              color:          t.color || '#111827',
+              textDecoration: t.textDecoration || 'none',
+              background:     t.backgroundEnabled ? (t.backgroundColor || '#fff') : 'transparent',
+              padding:        t.backgroundEnabled ? `${t.padding || 4}px` : '0px',
+              border:         t.borderEnabled ? `${t.borderWidth || 1}px ${t.borderStyle || 'solid'} ${t.borderColor || '#000'}` : 'none',
+              boxShadow:      t.shadowEnabled ? `${t.shadowX || 0}px ${t.shadowY || 0}px ${t.shadowBlur || 0}px ${t.shadowColor || 'rgba(0,0,0,0.3)'}` : 'none',
+              cursor:         t.locked ? 'not-allowed' : 'move',
+              userSelect:     editingTextId === t.id ? 'text' : 'none',
+            }}
+            contentEditable={editingTextId === t.id}
             suppressContentEditableWarning
-            onInput={e=>onEditInput(t,e)}
-            onBlur={()=>setEditingTextId(null)}
-          >{t.content||'Votre texte'}</div>
-          {selectedTextId===t.id&&!t.locked&&(<>
+            onInput={e => onEditInput(t, e)}
+            onBlur={() => setEditingTextId(null)}
+          >{t.content || 'Votre texte'}</div>
+          {selectedTextId === t.id && !t.locked && (<>
             <div className="selection-ring" />
-            <div className="rotate-handle" onPointerDown={e=>onRotatePointerDown(t,e)} />
+            <div className="rotate-handle" onPointerDown={e => onRotatePointerDown(t, e)} />
           </>)}
         </div>
       ))}
 
-      {nearCenterX&&<div className="guide-line vertical" />}
-      {nearCenterY&&<div className="guide-line horizontal" />}
-      {uploadedImageUrl&&Math.abs(imageXPercent-50)<1&&<div className="guide-line vertical" />}
-      {uploadedImageUrl&&Math.abs(imageYPercent-50)<1&&<div className="guide-line horizontal" />}
+      {nearCenterX && <div className="guide-line vertical" />}
+      {nearCenterY && <div className="guide-line horizontal" />}
+      {uploadedImageUrl && Math.abs(imageXPercent - 50) < 1 && <div className="guide-line vertical" />}
+      {uploadedImageUrl && Math.abs(imageYPercent - 50) < 1 && <div className="guide-line horizontal" />}
 
-      {!previewMode&&(<>
+      {!previewMode && (<>
         <div className="safe-area" aria-hidden="true" />
-        <div className="guide-line vertical" aria-hidden="true" />
+        <div className="guide-line vertical"   aria-hidden="true" />
         <div className="guide-line horizontal" aria-hidden="true" />
         <div className="ruler ruler-bottom" aria-hidden="true">
-          {xTicks.map(x=>(<React.Fragment key={`rx-${x}`}>
-            <div className="ruler-tick" style={{left:`${x}px`}} />
-            {x%Math.round(majorStep)===0&&<div className="ruler-label" style={{left:`${x}px`}}>{rulerUnit==='px'?`${x}px`:`${(x/PX_PER_CM).toFixed(1)}cm`}</div>}
-          </React.Fragment>))}
+          {xTicks.map(x => (
+            <React.Fragment key={`rx-${x}`}>
+              <div className="ruler-tick" style={{ left: `${x}px` }} />
+              {x % Math.round(majorStep) === 0 && (
+                <div className="ruler-label" style={{ left: `${x}px` }}>
+                  {rulerUnit === 'px' ? `${x}px` : `${(x / PX_PER_CM).toFixed(1)}cm`}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
         <div className="ruler ruler-left" aria-hidden="true">
-          {yTicks.map(y=>(<React.Fragment key={`ry-${y}`}>
-            <div className="ruler-tick" style={{top:`${y}px`}} />
-            {y%Math.round(majorStep)===0&&<div className="ruler-label" style={{top:`${y}px`}}>{rulerUnit==='px'?`${y}px`:`${(y/PX_PER_CM).toFixed(1)}cm`}</div>}
-          </React.Fragment>))}
+          {yTicks.map(y => (
+            <React.Fragment key={`ry-${y}`}>
+              <div className="ruler-tick" style={{ top: `${y}px` }} />
+              {y % Math.round(majorStep) === 0 && (
+                <div className="ruler-label" style={{ top: `${y}px` }}>
+                  {rulerUnit === 'px' ? `${y}px` : `${(y / PX_PER_CM).toFixed(1)}cm`}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
-        {guideLines?.filter(g=>showBack?g.side==='back':g.side==='front').map(g=>(
-          <div key={g.id} className={`user-guide ${g.type}`} style={g.type==='vertical'?{left:`${g.percent}%`}:{top:`${g.percent}%`}} onPointerDown={e=>onGuidePointerDown(g,e)}>
-            <button className="guide-delete" title="Supprimer" onClick={e=>{e.stopPropagation();deleteGuideLine(g.id);}}>×</button>
+        {guideLines?.filter(g => showBack ? g.side === 'back' : g.side === 'front').map(g => (
+          <div
+            key={g.id}
+            className={`user-guide ${g.type}`}
+            style={g.type === 'vertical' ? { left: `${g.percent}%` } : { top: `${g.percent}%` }}
+            onPointerDown={e => onGuidePointerDown(g, e)}
+          >
+            <button className="guide-delete" title="Supprimer" onClick={e => { e.stopPropagation(); deleteGuideLine(g.id); }}>×</button>
           </div>
         ))}
       </>)}

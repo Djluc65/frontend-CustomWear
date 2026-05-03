@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiTrash2, FiMinus, FiPlus, FiShoppingBag } from 'react-icons/fi';
 import { updateQuantity, removeFromCart, clearCart } from '../store/slices/cartSlice';
+import CustomizationPreview from '../components/CustomizationPreview'; // ← adapter selon votre arborescence
 import './Cart.css';
 
 const Cart = () => {
@@ -42,13 +43,15 @@ const Cart = () => {
     else dispatch(updateQuantity({ id: itemId, quantity: newQty }));
   };
 
+  const hasCustom = (item) =>
+    (item?.customization?.textLayers?.length > 0) ||
+    Boolean(item?.customization?.image?.url);
+
   /* ── Empty state ── */
   if (items.length === 0) {
     return (
       <div className="cart-empty">
-        <div className="empty-icon">
-          <FiShoppingBag />
-        </div>
+        <div className="empty-icon"><FiShoppingBag /></div>
         <h2>Votre panier est vide</h2>
         <p>Découvrez nos produits et ajoutez-les à votre panier</p>
         <button onClick={() => navigate('/products')} className="shop-now-btn">
@@ -58,7 +61,6 @@ const Cart = () => {
     );
   }
 
-  /* ── Cart ── */
   return (
     <div className="cart-page">
       <div className="cart-header">
@@ -78,12 +80,16 @@ const Cart = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
             >
-              {/* Image */}
+              {/* Image ou aperçu de personnalisation */}
               <div className="item-image">
-                <img
-                  src={item.image || '/placeholder-product.jpg'}
-                  alt={item.name}
-                />
+                {hasCustom(item) ? (
+                  <CustomizationPreview item={item} size="sm" showSide="front" />
+                ) : (
+                  <img
+                    src={item.image || '/placeholder-product.jpg'}
+                    alt={item.name}
+                  />
+                )}
               </div>
 
               {/* Details */}
@@ -96,10 +102,9 @@ const Cart = () => {
                     {item.color && `Couleur: ${item.color}`}
                   </p>
                 )}
-                {item.customization?.text && (
-                  <p className="item-customization">
-                    Personnalisé: {item.customization.text}
-                  </p>
+                {/* Badge personnalisé */}
+                {hasCustom(item) && (
+                  <span className="item-custom-badge">🎨 Personnalisé</span>
                 )}
               </div>
 
@@ -112,7 +117,7 @@ const Cart = () => {
                 <FiTrash2 />
               </button>
 
-              {/* Controls: quantity + price */}
+              {/* Controls */}
               <div className="item-controls">
                 <div className="item-quantity">
                   <button
@@ -136,6 +141,14 @@ const Cart = () => {
                   <span className="total-price">{getItemTotal(item).toFixed(2)} €</span>
                 </div>
               </div>
+
+              {/* ── Aperçu complet de la personnalisation ── */}
+              {hasCustom(item) && (
+                <div className="item-customization-preview">
+                  <CustomizationPreview item={item} size="md" showSide="both" />
+                </div>
+              )}
+
             </motion.div>
           ))}
 
