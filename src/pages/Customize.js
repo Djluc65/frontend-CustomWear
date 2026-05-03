@@ -1162,7 +1162,7 @@ const Customize = () => {
           aria-label={
             activeContextSection === 'produit' ? 'Filtrer les modèles' :
             activeContextSection === 'image'   ? 'Ajouter une image'   :
-            activeContextSection === 'texte'   ? 'Ajouter un texte'    :
+            activeContextSection === 'texte'   ? 'texte'    :
             activeContextSection === 'save'    ? 'Sauvegarde'          : ''
           }
         >
@@ -1174,7 +1174,7 @@ const Customize = () => {
             <p className="cz-mobile-tool-panel-title">
               {activeContextSection === 'produit' ? 'Filtrer les modèles' :
                activeContextSection === 'image'   ? 'Ajouter une image'   :
-               activeContextSection === 'texte'   ? 'Ajouter un texte'    :
+               activeContextSection === 'texte'   ? 'texte'    :
                activeContextSection === 'save'    ? 'Sauvegarde'          : ''}
             </p>
             <button
