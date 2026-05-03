@@ -6,6 +6,7 @@ import './Customize.css';
 
 import CustomizationPricing from '../components/Customization/CustomizationPricing';
 import CustomizationSelector from '../components/Customization/CustomizationSelector';
+import ImageEditor from '../components/Customization/ImageEditor';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import { toast } from 'react-toastify';
@@ -33,6 +34,9 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
+const WHITE_PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='800'%20height='800'%3E%3Crect%20width='100%25'%20height='100%25'%20fill='white'/%3E%3C/svg%3E";
+
 const DEFAULT_MODEL_PLACEHOLDER = {
   name: 'Produit personnalisable',
   type: 't-shirt',
@@ -42,8 +46,8 @@ const DEFAULT_MODEL_PLACEHOLDER = {
   sizes: ['S', 'M', 'L', 'XL'],
   colors: ['Blanc', 'Noir', 'Bleu'],
   images: {
-    front: 'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg',
-    back:  'https://res.cloudinary.com/demo/image/upload/w_800,h_800,c_fit/sample.jpg',
+    front: WHITE_PLACEHOLDER_IMAGE,
+    back: WHITE_PLACEHOLDER_IMAGE,
   },
 };
 
@@ -178,6 +182,7 @@ const Customize = () => {
   const [imageVisibilityOpen,setImageVisibilityOpen]= useState(false);
   const [imageOpacityOpen,   setImageOpacityOpen]   = useState(false);
   const [imagePositionOpen,  setImagePositionOpen]  = useState(false);
+  const [imageEditorOpen,    setImageEditorOpen]    = useState(false);
 
   const canvasRef = useRef(null);
 
@@ -597,6 +602,24 @@ const Customize = () => {
     setUploadedImageUrl(URL.createObjectURL(file));
   };
 
+  const handleOpenImageEditor = () => {
+    if (!uploadedImageUrl) {
+      toast.info("Ajoutez une image d'abord.");
+      return;
+    }
+    setImageEditorOpen(true);
+  };
+
+  const handleConfirmImageCrop = (nextUrl) => {
+    try {
+      if (uploadedImageUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(uploadedImageUrl);
+      }
+    } catch (_) {}
+    setUploadedImageUrl(nextUrl);
+    setImageEditorOpen(false);
+  };
+
   const handleRemoveBackground = async () => {
     if(!uploadedImageUrl){toast.error("Uploadez d'abord une image.");return;}
     try {
@@ -770,6 +793,7 @@ const Customize = () => {
                       <div className="quick-actions" style={{marginTop:8}}>
                         <button className="chip" onClick={nudgeImageRight}>Déplacer à droite</button>
                         <button className="chip" onClick={alignImageRight}>Aligner à droite</button>
+                        <button className="chip" disabled={!uploadedImageUrl} onClick={handleOpenImageEditor}>Recadrer</button>
                         <button className="chip" disabled={!uploadedImageUrl||bgRemoving} onClick={handleRemoveBackground}>{bgRemoving?'Suppression…':'Supprimer le fond'}</button>
                       </div>
                     </>)}
@@ -1388,9 +1412,18 @@ const Customize = () => {
           </div>
         </div>
 
+
+      {imageEditorOpen && uploadedImageUrl && (
+        <ImageEditor
+          src={uploadedImageUrl}
+          onCancel={() => setImageEditorOpen(false)}
+          onConfirm={handleConfirmImageCrop}
+        />
+      )}
       </div>
     </div>
   );
+
 };
 
 export default Customize;

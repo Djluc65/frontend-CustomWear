@@ -305,6 +305,108 @@
   display: inline;
 }
 
+.cz-image-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.cz-image-editor-modal {
+  width: min(920px, 100%);
+  max-height: min(86vh, 860px);
+  background: var(--cz-bg-panel);
+  border: 1px solid var(--cz-border-panel);
+  border-radius: 14px;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cz-image-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--cz-border);
+}
+
+.cz-image-editor-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--cz-text-title);
+}
+
+.cz-image-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cz-ie-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--cz-border);
+  background: var(--cz-bg-chip);
+  color: var(--cz-text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+}
+
+.cz-ie-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cz-ie-btn-ghost {
+  background: transparent;
+}
+
+.cz-ie-btn-primary {
+  border-color: transparent;
+  background: var(--cz-accent);
+  color: #fff;
+}
+
+.cz-ie-btn-primary:hover:not(:disabled) {
+  background: var(--cz-accent-hover);
+  transform: translateY(-1px);
+}
+
+.cz-image-editor-body {
+  padding: 0.75rem 1rem 1rem;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cz-image-editor-img {
+  max-width: 100%;
+  max-height: 62vh;
+  display: block;
+  border-radius: 10px;
+}
+
+.cz-image-editor-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.6rem 1rem 0.85rem;
+  border-top: 1px solid var(--cz-border);
+  color: var(--cz-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 /* ----------------------------------------------------------
    7. MAIN CONTENT GRID
    ---------------------------------------------------------- */
