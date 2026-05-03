@@ -138,10 +138,7 @@ const Customize = () => {
   const [productError,   setProductError]   = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
-  const [activeContextSection, setActiveContextSection] = useState(() => {
-    if (typeof window === 'undefined') return null;
-    return window.innerWidth > 768 ? 'produit' : null;
-  });
+  const [activeContextSection, setActiveContextSection] = useState(null);
   const [contextOpen, setContextOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -157,12 +154,6 @@ const Customize = () => {
     window.addEventListener('resize', handler, { passive: true });
     return () => window.removeEventListener('resize', handler);
   }, []);
-
-  React.useEffect(() => {
-    if (!isMobile && !activeContextSection) {
-      setActiveContextSection('produit');
-    }
-  }, [isMobile, activeContextSection]);
 
   const scrollToSection = (key) => {
     const map = { produit: produitRef, image: imageRef, texte: texteRef, save: saveRef };
@@ -1457,6 +1448,9 @@ export default Customize;
 
 /* ================================================================
    PreviewCanvas — memoized
+   DOM-ref drag: only the dragged element moves during pointermove.
+   setState / pushHistory called ONCE on pointerup → zero re-render
+   of other layers during drag (fixes mobile/tablet element-jumping).
    ================================================================ */
 const PreviewCanvas = React.memo(({
   showBack, selectedModel, selectedColor, uploadedImageUrl,
@@ -1469,128 +1463,213 @@ const PreviewCanvas = React.memo(({
   editingTextId, setEditingTextId, previewMode, canvasZoom, rulerUnit,
   guideLines, updateGuideLine, deleteGuideLine,
 }) => {
-  const colorImages  = selectedModel?.imagesByColor?.[selectedColor];
-  const defaultImages= selectedModel?.images;
+  const colorImages   = selectedModel?.imagesByColor?.[selectedColor];
+  const defaultImages = selectedModel?.images;
   const baseSrc = showBack
     ? (colorImages?.back  || defaultImages?.back  || DEFAULT_MODEL_PLACEHOLDER.images.back)
     : (colorImages?.front || defaultImages?.front || DEFAULT_MODEL_PLACEHOLDER.images.front);
 
-  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-  // ── Click on canvas background: deselect everything ──
+  /* ── DOM refs: keyed by layer id for texts, dedicated for image ── */
+  const layerDomRefs    = React.useRef({}); // { [id]: HTMLDivElement }
+  const imageDomRef     = React.useRef(null);
+  const imageRotHandRef = React.useRef(null);
+
+  /* ── Deselect on canvas background click ── */
   const onCanvasPointerDown = (e) => {
-    // Only deselect if clicking directly on the canvas container (not on a child element)
     if (e.target === canvasRef.current || e.target.classList.contains('product-base')) {
       setSelectedElement(null);
       setEditingTextId(null);
     }
   };
 
-  // ── Uploaded image: click to select, drag to move ──
+  /* ── Helper: get client coords from pointer OR touch event ── */
+  const getXY = (ev) => ({
+    x: ev.clientX ?? ev.touches?.[0]?.clientX ?? 0,
+    y: ev.clientY ?? ev.touches?.[0]?.clientY ?? 0,
+  });
+
+  /* ================================================================
+     UPLOADED IMAGE — drag
+     ================================================================ */
   const onImagePointerDown = (e) => {
     if (imageLocked) return;
     e.stopPropagation();
-    // Select the image element
+    e.preventDefault();
     setSelectedElement('image');
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const sx = e.clientX, sy = e.clientY;
+    const { x: x0, y: y0 } = getXY(e);
     const ox = imageXPercent, oy = imageYPercent;
-    let hasMoved = false;
+    let fx = ox, fy = oy;
+
+    const imgEl = imageDomRef.current;
+    const rotEl = imageRotHandRef.current;
 
     const onMove = (ev) => {
-      hasMoved = true;
-      setImageXPercent(clamp(ox + (ev.clientX - sx) / rect.width * 100, 5, 95));
-      setImageYPercent(clamp(oy + (ev.clientY - sy) / rect.height * 100, 5, 95));
+      ev.preventDefault();
+      const { x, y } = getXY(ev);
+      fx = clamp(ox + (x - x0) / rect.width  * 100, 5, 95);
+      fy = clamp(oy + (y - y0) / rect.height * 100, 5, 95);
+      /* Mutate only this element's DOM style — no React re-render */
+      if (imgEl) { imgEl.style.left = `${fx}%`; imgEl.style.top = `${fy}%`; }
+      if (rotEl) { rotEl.style.left = `${fx}%`; rotEl.style.top = `calc(${fy}% - 24px)`; }
     };
+
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('touchmove',   onMove);
+      window.removeEventListener('touchend',    onUp);
+      /* Commit to React state exactly once */
+      setImageXPercent(fx);
+      setImageYPercent(fy);
     };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('touchmove',   onMove, { passive: false });
+    window.addEventListener('touchend',    onUp);
   };
 
+  /* ── Rotate handle for uploaded image ── */
   const onImageRotatePointerDown = (e) => {
     if (imageLocked) return;
     e.stopPropagation();
+    e.preventDefault();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const cx = rect.left + (imageXPercent / 100) * rect.width;
     const cy = rect.top  + (imageYPercent / 100) * rect.height;
+    let finalAngle = imageRotation;
+    const imgEl = imageDomRef.current;
+
     const onMove = (ev) => {
-      let angle = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI;
+      ev.preventDefault();
+      const { x, y } = getXY(ev);
+      let angle = Math.atan2(y - cy, x - cx) * 180 / Math.PI;
       if (ev.shiftKey) {
         const snaps = [-180,-135,-90,-45,0,45,90,135,180];
-        angle = snaps.reduce((p,c) => Math.abs(c-angle) < Math.abs(p-angle) ? c : p, 0);
+        angle = snaps.reduce((p, c) => Math.abs(c - angle) < Math.abs(p - angle) ? c : p, 0);
       }
-      setImageRotation(angle);
+      finalAngle = angle;
+      if (imgEl) {
+        const sx = imageFlipX ? -imageScale : imageScale;
+        imgEl.style.transform = `translate(-50%,-50%) scale(${sx},${imageScale}) rotate(${angle}deg)`;
+      }
     };
+
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('touchmove',   onMove);
+      window.removeEventListener('touchend',    onUp);
+      setImageRotation(finalAngle);
     };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('touchmove',   onMove, { passive: false });
+    window.addEventListener('touchend',    onUp);
   };
 
-  // ── Text layer: click to select, drag to move ──
+  /* ================================================================
+     TEXT LAYER — drag
+     Only the target layer's DOM node moves during pointermove.
+     All other layers are completely untouched.
+     ================================================================ */
   const onLayerPointerDown = (t, e) => {
     if (t.locked) return;
     e.stopPropagation();
+    e.preventDefault();
     setSelectedElement(t.id);
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const sx = e.clientX, sy = e.clientY;
+    const { x: x0, y: y0 } = getXY(e);
     const ox = t.xPercent, oy = t.yPercent;
+    let fx = ox, fy = oy;
+
+    /* Grab this layer's DOM node via the ref map */
+    const layerEl = layerDomRefs.current[t.id];
 
     const onMove = (ev) => {
-      updateTextLayer(t.id, {
-        xPercent: Math.max(5, Math.min(95, ox + (ev.clientX - sx) / rect.width  * 100)),
-        yPercent: Math.max(5, Math.min(95, oy + (ev.clientY - sy) / rect.height * 100)),
-      });
+      ev.preventDefault();
+      const { x, y } = getXY(ev);
+      fx = Math.max(5, Math.min(95, ox + (x - x0) / rect.width  * 100));
+      fy = Math.max(5, Math.min(95, oy + (y - y0) / rect.height * 100));
+      /* Move ONLY this layer's DOM node — zero re-render, other layers unchanged */
+      if (layerEl) { layerEl.style.left = `${fx}%`; layerEl.style.top = `${fy}%`; }
     };
+
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('touchmove',   onMove);
+      window.removeEventListener('touchend',    onUp);
+      /* Commit final position ONCE — pushHistory called once, not 60× per second */
+      updateTextLayer(t.id, { xPercent: fx, yPercent: fy }, 'Déplacer texte');
     };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('touchmove',   onMove, { passive: false });
+    window.addEventListener('touchend',    onUp);
   };
 
+  /* ── Rotate handle for text layer ── */
   const onRotatePointerDown = (t, e) => {
     if (t.locked) return;
     e.stopPropagation();
+    e.preventDefault();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const cx = rect.left + (t.xPercent / 100) * rect.width;
     const cy = rect.top  + (t.yPercent / 100) * rect.height;
+    let finalAngle = t.rotation ?? 0;
+    const layerEl = layerDomRefs.current[t.id];
+
     const onMove = (ev) => {
-      let angle = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI;
+      ev.preventDefault();
+      const { x, y } = getXY(ev);
+      let angle = Math.atan2(y - cy, x - cx) * 180 / Math.PI;
       if (ev.shiftKey) {
         const snaps = [-180,-135,-90,-45,0,45,90,135,180];
-        angle = snaps.reduce((p,c) => Math.abs(c-angle) < Math.abs(p-angle) ? c : p, 0);
+        angle = snaps.reduce((p, c) => Math.abs(c - angle) < Math.abs(p - angle) ? c : p, 0);
       }
-      updateTextLayer(t.id, { rotation: angle });
+      finalAngle = angle;
+      if (layerEl) {
+        layerEl.style.transform = `translate(-50%,-50%) rotate(${angle}deg) scale(${t.scale ?? 1})`;
+      }
     };
+
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('touchmove',   onMove);
+      window.removeEventListener('touchend',    onUp);
+      updateTextLayer(t.id, { rotation: finalAngle }, 'Rotation texte');
     };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('touchmove',   onMove, { passive: false });
+    window.addEventListener('touchend',    onUp);
   };
 
-  const onEditInput = (t, e) => updateTextLayer(t.id, { content: (e.currentTarget.textContent || '').slice(0, 200) });
+  const onEditInput = (t, e) =>
+    updateTextLayer(t.id, { content: (e.currentTarget.textContent || '').slice(0, 200) });
 
+  /* ── Snap guides ── */
   const selected    = selectedTextId ? textLayers.find(x => x.id === selectedTextId) : null;
   const nearCenterX = selected ? Math.abs((selected.xPercent ?? 0) - 50) < 1 : false;
   const nearCenterY = selected ? Math.abs((selected.yPercent ?? 0) - 50) < 1 : false;
 
+  /* ── Rulers ── */
   const PX_PER_CM = 37.795;
   const canvasW   = canvasRef.current?.clientWidth  || 0;
   const canvasH   = canvasRef.current?.clientHeight || 0;
@@ -1599,27 +1678,33 @@ const PreviewCanvas = React.memo(({
   const xTicks = Array.from({ length: Math.max(1, Math.floor(canvasW / minorStep) + 1) }, (_, i) => Math.round(i * minorStep));
   const yTicks = Array.from({ length: Math.max(1, Math.floor(canvasH / minorStep) + 1) }, (_, i) => Math.round(i * minorStep));
 
+  /* ── Guide drag ── */
   const onGuidePointerDown = (g, e) => {
     e.stopPropagation();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const sx = e.clientX, sy = e.clientY, orig = g.percent;
+    const { x: sx, y: sy } = getXY(e);
+    const orig = g.percent;
     const onMove = (ev) => {
+      const { x, y } = getXY(ev);
       if (g.type === 'vertical')
-        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (ev.clientX - sx) / rect.width  * 100)) });
+        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (x - sx) / rect.width  * 100)) });
       else
-        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (ev.clientY - sy) / rect.height * 100)) });
+        updateGuideLine(g.id, { percent: Math.max(0, Math.min(100, orig + (y - sy) / rect.height * 100)) });
     };
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup',   onUp);
     };
     window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointerup',   onUp);
   };
 
   const isImageSelected = selectedElement === 'image';
 
+  /* ================================================================
+     RENDER
+     ================================================================ */
   return (
     <div
       className={`canvas-container ${previewMode ? 'preview-mode' : ''}`}
@@ -1627,7 +1712,7 @@ const PreviewCanvas = React.memo(({
       onPointerDown={onCanvasPointerDown}
       style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}
     >
-      {/* ── Base model image: pointer-events disabled, completely static ── */}
+      {/* ── Base garment: fully inert ── */}
       <img
         className="product-base"
         src={baseSrc}
@@ -1636,89 +1721,105 @@ const PreviewCanvas = React.memo(({
         draggable={false}
       />
 
-      {/* ── Uploaded image overlay ── */}
+      {/* ── Uploaded image ── */}
       {uploadedImageUrl && (showBack ? imageSide === 'back' : imageSide === 'front') && imageVisible && (<>
         <img
+          ref={imageDomRef}
           src={uploadedImageUrl}
           alt="Upload"
           className={`uploaded-image${isImageSelected && !previewMode ? ' selected' : ''}`}
           style={{
-            left:      `${imageXPercent}%`,
-            top:       `${imageYPercent}%`,
-            transform: `translate(-50%,-50%) scale(${imageFlipX ? -imageScale : imageScale},${imageScale}) rotate(${imageRotation}deg)`,
-            width:     '50%',
-            zIndex:    imageZIndex,
-            opacity:   imageOpacity,
-            cursor:    imageLocked ? 'not-allowed' : 'move',
-            outline:   isImageSelected && !previewMode ? '2px solid #3b82f6' : 'none',
+            left:          `${imageXPercent}%`,
+            top:           `${imageYPercent}%`,
+            transform:     `translate(-50%,-50%) scale(${imageFlipX ? -imageScale : imageScale},${imageScale}) rotate(${imageRotation}deg)`,
+            width:         '50%',
+            zIndex:        imageZIndex,
+            opacity:       imageOpacity,
+            cursor:        imageLocked ? 'not-allowed' : 'move',
+            outline:       isImageSelected && !previewMode ? '2px solid #3b82f6' : 'none',
             outlineOffset: '3px',
+            touchAction:   'none',
           }}
           onPointerDown={onImagePointerDown}
           draggable={false}
         />
         {!previewMode && !imageLocked && isImageSelected && (
           <div
+            ref={imageRotHandRef}
             className="rotate-handle"
-            style={{ left: `${imageXPercent}%`, top: `calc(${imageYPercent}% - 24px)` }}
+            style={{ left: `${imageXPercent}%`, top: `calc(${imageYPercent}% - 24px)`, touchAction: 'none' }}
             onPointerDown={onImageRotatePointerDown}
           />
         )}
       </>)}
 
       {/* ── Text layers ── */}
-      {textLayers?.filter(t => (showBack ? t.side === 'back' : t.side === 'front') && (t.visible ?? true)).map(t => (
-        <div
-          key={t.id}
-          className={`text-layer ${!previewMode && selectedTextId === t.id ? 'selected' : ''} ${t.locked ? 'locked' : ''}`}
-          style={{
-            left:      `${t.xPercent}%`,
-            top:       `${t.yPercent}%`,
-            transform: `translate(-50%,-50%) rotate(${t.rotation || 0}deg) scale(${t.scale || 1})`,
-            opacity:   t.opacity ?? 1,
-            zIndex:    t.zIndex ?? 3,
-          }}
-          onPointerDown={e => onLayerPointerDown(t, e)}
-          onDoubleClick={e => { if (!t.locked) { setSelectedElement(t.id); setEditingTextId(t.id); } }}
-        >
+      {textLayers
+        ?.filter(t => (showBack ? t.side === 'back' : t.side === 'front') && (t.visible ?? true))
+        .map(t => (
           <div
-            className="text-box"
+            key={t.id}
+            /* Store DOM ref in our ref-map so the drag handler can mutate it directly */
+            ref={el => { if (el) layerDomRefs.current[t.id] = el; else delete layerDomRefs.current[t.id]; }}
+            className={`text-layer ${!previewMode && selectedTextId === t.id ? 'selected' : ''} ${t.locked ? 'locked' : ''}`}
             style={{
-              fontFamily:     t.fontFamily || 'Arial',
-              fontSize:       `${t.fontSize || 32}px`,
-              fontWeight:     t.fontWeight || 400,
-              fontStyle:      t.fontStyle || 'normal',
-              letterSpacing:  `${t.letterSpacing || 0}px`,
-              lineHeight:     t.lineHeight || 1.2,
-              color:          t.color || '#111827',
-              textDecoration: t.textDecoration || 'none',
-              background:     t.backgroundEnabled ? (t.backgroundColor || '#fff') : 'transparent',
-              padding:        t.backgroundEnabled ? `${t.padding || 4}px` : '0px',
-              border:         t.borderEnabled ? `${t.borderWidth || 1}px ${t.borderStyle || 'solid'} ${t.borderColor || '#000'}` : 'none',
-              boxShadow:      t.shadowEnabled ? `${t.shadowX || 0}px ${t.shadowY || 0}px ${t.shadowBlur || 0}px ${t.shadowColor || 'rgba(0,0,0,0.3)'}` : 'none',
-              cursor:         t.locked ? 'not-allowed' : 'move',
-              userSelect:     editingTextId === t.id ? 'text' : 'none',
+              left:        `${t.xPercent}%`,
+              top:         `${t.yPercent}%`,
+              transform:   `translate(-50%,-50%) rotate(${t.rotation || 0}deg) scale(${t.scale || 1})`,
+              opacity:     t.opacity ?? 1,
+              zIndex:      t.zIndex ?? 3,
+              touchAction: 'none',
             }}
-            contentEditable={editingTextId === t.id}
-            suppressContentEditableWarning
-            onInput={e => onEditInput(t, e)}
-            onBlur={() => setEditingTextId(null)}
-          >{t.content || 'Votre texte'}</div>
-          {selectedTextId === t.id && !t.locked && (<>
-            <div className="selection-ring" />
-            <div className="rotate-handle" onPointerDown={e => onRotatePointerDown(t, e)} />
-          </>)}
-        </div>
-      ))}
+            onPointerDown={ev => onLayerPointerDown(t, ev)}
+            onDoubleClick={ev => { if (!t.locked) { setSelectedElement(t.id); setEditingTextId(t.id); } }}
+          >
+            <div
+              className="text-box"
+              style={{
+                fontFamily:     t.fontFamily || 'Arial',
+                fontSize:       `${t.fontSize || 32}px`,
+                fontWeight:     t.fontWeight || 400,
+                fontStyle:      t.fontStyle || 'normal',
+                letterSpacing:  `${t.letterSpacing || 0}px`,
+                lineHeight:     t.lineHeight || 1.2,
+                color:          t.color || '#111827',
+                textDecoration: t.textDecoration || 'none',
+                background:     t.backgroundEnabled ? (t.backgroundColor || '#fff') : 'transparent',
+                padding:        t.backgroundEnabled ? `${t.padding || 4}px` : '0px',
+                border:         t.borderEnabled ? `${t.borderWidth || 1}px ${t.borderStyle || 'solid'} ${t.borderColor || '#000'}` : 'none',
+                boxShadow:      t.shadowEnabled ? `${t.shadowX || 0}px ${t.shadowY || 0}px ${t.shadowBlur || 0}px ${t.shadowColor || 'rgba(0,0,0,0.3)'}` : 'none',
+                cursor:         t.locked ? 'not-allowed' : 'move',
+                userSelect:     editingTextId === t.id ? 'text' : 'none',
+              }}
+              contentEditable={editingTextId === t.id}
+              suppressContentEditableWarning
+              onInput={ev => onEditInput(t, ev)}
+              onBlur={() => setEditingTextId(null)}
+            >{t.content || 'Votre texte'}</div>
 
+            {selectedTextId === t.id && !t.locked && (<>
+              <div className="selection-ring" />
+              <div
+                className="rotate-handle"
+                style={{ touchAction: 'none' }}
+                onPointerDown={ev => onRotatePointerDown(t, ev)}
+              />
+            </>)}
+          </div>
+        ))}
+
+      {/* ── Snap guide lines ── */}
       {nearCenterX && <div className="guide-line vertical" />}
       {nearCenterY && <div className="guide-line horizontal" />}
       {uploadedImageUrl && Math.abs(imageXPercent - 50) < 1 && <div className="guide-line vertical" />}
       {uploadedImageUrl && Math.abs(imageYPercent - 50) < 1 && <div className="guide-line horizontal" />}
 
+      {/* ── Rulers, safe area, user guides ── */}
       {!previewMode && (<>
         <div className="safe-area" aria-hidden="true" />
         <div className="guide-line vertical"   aria-hidden="true" />
         <div className="guide-line horizontal" aria-hidden="true" />
+
         <div className="ruler ruler-bottom" aria-hidden="true">
           {xTicks.map(x => (
             <React.Fragment key={`rx-${x}`}>
@@ -1731,6 +1832,7 @@ const PreviewCanvas = React.memo(({
             </React.Fragment>
           ))}
         </div>
+
         <div className="ruler ruler-left" aria-hidden="true">
           {yTicks.map(y => (
             <React.Fragment key={`ry-${y}`}>
@@ -1743,14 +1845,19 @@ const PreviewCanvas = React.memo(({
             </React.Fragment>
           ))}
         </div>
+
         {guideLines?.filter(g => showBack ? g.side === 'back' : g.side === 'front').map(g => (
           <div
             key={g.id}
             className={`user-guide ${g.type}`}
             style={g.type === 'vertical' ? { left: `${g.percent}%` } : { top: `${g.percent}%` }}
-            onPointerDown={e => onGuidePointerDown(g, e)}
+            onPointerDown={ev => onGuidePointerDown(g, ev)}
           >
-            <button className="guide-delete" title="Supprimer" onClick={e => { e.stopPropagation(); deleteGuideLine(g.id); }}>×</button>
+            <button
+              className="guide-delete"
+              title="Supprimer"
+              onClick={ev => { ev.stopPropagation(); deleteGuideLine(g.id); }}
+            >×</button>
           </div>
         ))}
       </>)}
