@@ -494,6 +494,24 @@ const ProductDetail = () => {
 
         {/* Informations du produit */}
         <div className="product-info">
+          {availableColors.length > 0 && (
+            <div className="product-variants product-colors-top">
+              <h3 className="variant-color">Couleur</h3>
+              <div className="variants-grid">
+                {availableColors.map((color) => (
+                  <button
+                     className={`variant-option ${selectedColorName === color ? 'selected' : ''}`}
+                     onClick={() => handleColorSelect(color)}
+                  >
+                    <div className="variant-info">
+                      <span className="variant-name">{color}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="product-header">
             <h1>{currentProduct.name}</h1>
             <div className="product-rating">
@@ -559,25 +577,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Sélecteurs Couleur et Taille */}
-          {availableColors.length > 0 && (
-            <div className="product-variants">
-              <h3 className="variant-color">Couleur</h3>
-              <div className="variants-grid">
-                {availableColors.map((color) => (
-                  <button
-                     className={`variant-option ${selectedColorName === color ? 'selected' : ''}`}
-                     onClick={() => handleColorSelect(color)}
-                  >
-                    <div className="variant-info">
-                      <span className="variant-name">{color}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* Sélecteurs Taille */}
           {availableSizes.length > 0 && (
             <div className="product-variants">
               <h3 className="variant-size">Taille</h3>
