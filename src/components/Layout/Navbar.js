@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine, FaInfoCircle, FaCalendarAlt, FaBrush } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaMicrophone, FaHome, FaBox, FaPalette, FaUserCircle, FaClipboardList, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChartLine, FaInfoCircle, FaCalendarAlt, FaBrush, FaRegCommentDots } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { logout, loadUser } from '../../store/slices/authSlice';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -206,6 +206,10 @@ const Navbar = () => {
             <FaCalendarAlt className="navbar-icon" />
             Événements
           </Link>
+          <Link to="/avis-suggestions" className="navbar-link">
+            <FaRegCommentDots className="navbar-icon" />
+            Avis
+          </Link>
           <Link to="/design" className="navbar-link">
             <FaBrush className="navbar-icon" />
             Design
@@ -347,6 +351,10 @@ const Navbar = () => {
           <Link to="/events" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
             <FaCalendarAlt className="mobile-icon" />
             Événements
+          </Link>
+          <Link to="/avis-suggestions" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
+            <FaRegCommentDots className="mobile-icon" />
+            Avis & Suggestions
           </Link>
           <Link to="/design" className="mobile-link" onClick={() => setIsMenuOpen(false)}>
             <FaBrush className="mobile-icon" />

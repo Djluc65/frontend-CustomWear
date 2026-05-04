@@ -28,6 +28,8 @@ import CreateDesign from './pages/CreateDesign';
 import DesignSuccess from './pages/DesignSuccess';
 import DesignCancel from './pages/DesignCancel';
 import DesignMessages from './pages/DesignMessages';
+import Feedback from './pages/Feedback';
+import FeedbackFloatingButton from './components/Common/FeedbackFloatingButton';
 
 // Import des composants Admin
 import AdminRoute from './components/Admin/AdminRoute';
@@ -43,6 +45,7 @@ import AdminProductCreate from './pages/Admin/AdminProductCreate';
 import AdminModels from './pages/Admin/AdminModels';
 import AdminProductEdit from './pages/Admin/AdminProductEdit';
 import AdminDesignRequests from './pages/Admin/AdminDesignRequests';
+import AdminFeedback from './pages/Admin/AdminFeedback';
 
 // Import des styles
 import 'react-toastify/dist/ReactToastify.css';
@@ -66,6 +69,7 @@ function ScrollToTop({ children }) {
       { match: /^\/customize$/, title: `Personnalisation | ${brand}`, description: "Personnalisez votre modèle : ajoutez une image, du texte, et enregistrez votre création." },
       { match: /^\/events$/, title: `Événements | ${brand}`, description: "Événements saisonniers, collections et offres CustomWear." },
       { match: /^\/design(\/.*)?$/, title: `Créer mon design | ${brand}`, description: "Créez votre design personnalisé : brief, choix du pack et échange avec l'équipe." },
+      { match: /^\/avis-suggestions$/, title: `Avis & Suggestions | ${brand}`, description: "Partagez vos avis et suggestions pour améliorer CustomWear : bugs, idées et améliorations." },
       { match: /^\/cart$/, title: `Panier | ${brand}`, description: "Votre panier CustomWear : produits, options et quantités avant paiement." },
       { match: /^\/checkout(\/.*)?$/, title: `Paiement | ${brand}`, description: "Finalisez votre commande CustomWear en toute sécurité." },
       { match: /^\/auth$/, title: `Connexion | ${brand}`, description: "Connectez-vous à CustomWear pour accéder à votre compte et à vos sauvegardes." },
@@ -143,6 +147,7 @@ function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="feedback" element={<AdminFeedback />} />
           </Route>
 
           {/* Routes publiques */}
@@ -172,9 +177,11 @@ function App() {
                   <Route path="/design/cancel" element={<DesignCancel />} />
                   <Route path="/design/messages" element={<DesignMessages />} />
                   <Route path="/search" element={<Search />} />
+                  <Route path="/avis-suggestions" element={<Feedback />} />
                   <Route path="/test-admin" element={<TestAdmin />} />
                 </Routes>
               </main>
+              <FeedbackFloatingButton />
               <Footer />
             </>
           } />

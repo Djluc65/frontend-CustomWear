@@ -1,0 +1,241 @@
+.feedback-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 4rem;
+}
+
+.feedback-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.feedback-hero h1 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.feedback-hero p {
+  color: var(--text-secondary, #475569);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.feedback-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.feedback-card {
+  background: var(--pd-surface, #fff);
+  border: 1px solid var(--pd-border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.feedback-card-inner {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feedback-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feedback-form-row label {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.feedback-form-row input,
+.feedback-form-row select,
+.feedback-form-row textarea {
+  width: 100%;
+  border: 1px solid var(--pd-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  background: var(--pd-surface, #fff);
+  color: var(--pd-text-primary, #0f172a);
+}
+
+.feedback-form-row textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.feedback-form-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.feedback-btn {
+  border: 0;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.feedback-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.feedback-btn.ghost {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.feedback-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.feedback-similar {
+  border-top: 1px solid var(--pd-border, #e2e8f0);
+  padding-top: 0.75rem;
+}
+
+.feedback-similar-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.feedback-similar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feedback-similar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--pd-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+.feedback-similar-item strong {
+  font-size: 0.92rem;
+}
+
+.feedback-similar-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feedback-toolbar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.9rem;
+  border-bottom: 1px solid var(--pd-border, #e2e8f0);
+}
+
+.feedback-toolbar input,
+.feedback-toolbar select {
+  border: 1px solid var(--pd-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  font-size: 0.95rem;
+}
+
+.feedback-item {
+  padding: 0.9rem;
+}
+
+.feedback-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.feedback-item-title {
+  font-weight: 900;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.feedback-item-body {
+  margin-top: 0.4rem;
+  color: #334155;
+  line-height: 1.55;
+  font-size: 0.92rem;
+  white-space: pre-line;
+}
+
+.feedback-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.feedback-pill.type {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #dbeafe;
+}
+
+.feedback-pill.status {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.feedback-vote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.feedback-vote-count {
+  font-weight: 900;
+  color: #0f172a;
+}
+
+@media (max-width: 1024px) {
+  .feedback-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .feedback-page {
+    padding: 1rem 0.75rem 4rem;
+  }
+  .feedback-hero h1 {
+    font-size: 1.25rem;
+  }
+}
+

@@ -1,0 +1,33 @@
+.feedback-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 2000;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.feedback-fab:hover {
+  filter: brightness(1.03);
+}
+
+.feedback-fab svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 1025px) {
+  .feedback-fab {
+    display: none;
+  }
+}
+

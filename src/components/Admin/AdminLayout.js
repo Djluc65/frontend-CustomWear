@@ -14,7 +14,8 @@ import {
   FiMenu, 
   FiX,
   FiBell,
-  FiSearch
+  FiSearch,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { logout } from '../../store/slices/authSlice';
 import { 
@@ -42,6 +43,7 @@ const AdminLayout = () => {
     { path: '/admin/models', icon: FiLayers, label: 'Modèles' },
     { path: '/admin/orders', icon: FiShoppingBag, label: 'Commandes' },
     { path: '/admin/design-requests', icon: FiPenTool, label: 'Demandes Design' },
+    { path: '/admin/feedback', icon: FiMessageSquare, label: 'Avis Global' },
     { path: '/admin/users', icon: FiUsers, label: 'Utilisateurs' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytiques' },
     { path: '/admin/settings', icon: FiSettings, label: 'Paramètres' }

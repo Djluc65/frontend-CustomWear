@@ -168,6 +168,11 @@ export const adminAPI = {
   updateDesignRequest: (id, payload) => api.patch(`/api/design-requests/admin/${id}`, payload),
   sendDesignRequestMessage: (id, payload) => api.post(`/api/design-requests/admin/${id}/messages`, payload),
   markDesignRequestRead: (id) => api.post(`/api/design-requests/admin/${id}/mark-read`),
+
+  // Avis & Suggestions (global)
+  getGlobalFeedback: (params = {}) => api.get('/api/admin/feedback', { params }),
+  updateGlobalFeedback: (id, payload) => api.patch(`/api/admin/feedback/${id}`, payload),
+  mergeGlobalFeedback: (id, targetId) => api.post(`/api/admin/feedback/${id}/merge`, { targetId }),
 };
 
 // Services API pour l'authentification
@@ -208,6 +213,27 @@ export const productsAPI = {
   getCategories: () => api.get('/api/products/categories'),
   // Ajout d'un avis sur un produit
   addReview: (productId, { rating, comment }) => api.post(`/api/products/${productId}/reviews`, { rating, comment }),
+};
+
+export const feedbackAPI = {
+  list: (params = {}) => api.get('/api/feedback', { params }),
+  get: (id) => api.get(`/api/feedback/${id}`),
+  findSimilar: (params = {}) => api.get('/api/feedback/similar', { params }),
+  create: ({ type, title, description, rating, pageUrl, attachment }) => {
+    if (attachment) {
+      const formData = new FormData();
+      formData.append('type', type);
+      formData.append('title', title);
+      formData.append('description', description);
+      if (rating !== undefined && rating !== null && rating !== '') formData.append('rating', String(rating));
+      if (pageUrl) formData.append('pageUrl', pageUrl);
+      formData.append('attachment', attachment);
+      return api.post('/api/feedback', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    }
+    return api.post('/api/feedback', { type, title, description, rating, pageUrl });
+  },
+  vote: (id) => api.post(`/api/feedback/${id}/votes`),
+  unvote: (id) => api.delete(`/api/feedback/${id}/votes`),
 };
 
 // Services API pour les commandes (côté client)
