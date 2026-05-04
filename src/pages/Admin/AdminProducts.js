@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiTrash2, FiSearch, FiPackage, FiEdit2, FiChevronLeft, FiChevronRight, FiMoreVertical, FiX } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiSearch, FiPackage, FiEdit2, FiChevronLeft, FiChevronRight, FiMoreVertical, FiX, FiStar } from 'react-icons/fi';
 import { adminAPI } from '../../services/api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -42,6 +42,10 @@ const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
+  const [reviewsData, setReviewsData] = useState(null);
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
@@ -118,6 +122,33 @@ const AdminProducts = () => {
     }
   };
 
+  const openReviews = async (productId) => {
+    try {
+      setReviewsOpen(true);
+      setReviewsLoading(true);
+      setReviewsError('');
+      setReviewsData(null);
+      const res = await adminAPI.getProductReviews(productId);
+      if (res?.data?.success && res?.data?.data) {
+        setReviewsData(res.data.data);
+      } else {
+        setReviewsError('Impossible de charger les avis');
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Impossible de charger les avis';
+      setReviewsError(msg);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const closeReviews = () => {
+    setReviewsOpen(false);
+    setReviewsError('');
+    setReviewsData(null);
+    setReviewsLoading(false);
+  };
+
   const paginatedLabel = useMemo(() => {
     return `Page ${page} / ${totalPages}`;
   }, [page, totalPages]);
@@ -144,6 +175,68 @@ const AdminProducts = () => {
 
   return (
     <div className="p-4 lg:p-8 max-w-[1600px] mx-auto min-h-screen bg-slate-50/50 space-y-8">
+      {reviewsOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40" onClick={closeReviews} />
+          <div className="absolute left-1/2 top-1/2 w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white shadow-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100">
+              <div className="min-w-0">
+                <div className="text-sm text-slate-500">Avis produit</div>
+                <div className="text-lg font-semibold text-slate-900 truncate">
+                  {reviewsData?.productName || '...'}
+                </div>
+                {reviewsData?.ratings && (
+                  <div className="mt-1 text-sm text-slate-600">
+                    Note moyenne: <span className="font-semibold text-slate-900">{Number(reviewsData.ratings.average || 0).toFixed(1)}</span> · {reviewsData.ratings.count || 0} avis
+                  </div>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" onClick={closeReviews} className="h-9 w-9 p-0 text-slate-500 hover:text-slate-900">
+                <FiX className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto p-5">
+              {reviewsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                </div>
+              ) : reviewsError ? (
+                <div className="text-sm text-red-600">{reviewsError}</div>
+              ) : (reviewsData?.reviews?.length || 0) === 0 ? (
+                <div className="text-sm text-slate-600">Aucun avis pour le moment.</div>
+              ) : (
+                <div className="space-y-3">
+                  {reviewsData.reviews.map((r, idx) => {
+                    const ratingValue = Number(r?.rating) || 0;
+                    const dateValue = r?.date ? new Date(r.date).toLocaleDateString('fr-FR') : '';
+                    return (
+                      <div key={`${r?.user || 'u'}-${r?.date || idx}`} className="rounded-lg border border-slate-200 bg-slate-50/30 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 truncate">{r?.userName || 'Utilisateur'}</div>
+                            <div className="text-xs text-slate-500">{dateValue}</div>
+                          </div>
+                          <div className="inline-flex items-center gap-1 text-sm font-semibold text-slate-900">
+                            <FiStar className="h-4 w-4 text-yellow-500" />
+                            {ratingValue.toFixed(1)}
+                          </div>
+                        </div>
+                        {r?.comment ? (
+                          <div className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{r.comment}</div>
+                        ) : (
+                          <div className="mt-2 text-sm text-slate-500">Aucun commentaire.</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Produits</h1>
@@ -255,6 +348,9 @@ const AdminProducts = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="sm" onClick={() => openReviews(product._id)} className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100" title="Voir les avis">
+                              <FiStar className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/products/${product._id}/edit`)} className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100">
                               <FiEdit2 className="h-4 w-4" />
                             </Button>
@@ -312,6 +408,10 @@ const AdminProducts = () => {
                            {(product.price?.base ?? product.priceBase ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                          </span>
                          <div className="flex gap-1">
+                          <Button variant="outline" size="sm" onClick={() => openReviews(product._id)} className="h-8 px-3 text-xs">
+                            <FiStar className="mr-2 h-4 w-4" />
+                            Avis
+                          </Button>
                            <Button variant="outline" size="sm" onClick={() => navigate(`/admin/products/${product._id}/edit`)} className="h-8 px-3 text-xs">
                              Modifier
                            </Button>

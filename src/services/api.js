@@ -148,6 +148,7 @@ export const adminAPI = {
   
   // Gestion des produits
   getAllProducts: (params = {}) => api.get('/api/admin/products', { params }),
+  getProductReviews: (productId) => api.get(`/api/admin/products/${productId}/reviews`),
   createProduct: (productData) => api.post('/api/admin/products', productData),
   updateProduct: (productId, productData) => api.put(`/api/admin/products/${productId}`, productData),
   deleteProduct: (productId) => api.delete(`/api/admin/products/${productId}`),
